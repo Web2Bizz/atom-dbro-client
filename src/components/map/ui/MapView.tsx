@@ -9,7 +9,9 @@ import {
 import { useMapCenter } from '../hooks/useMapCenter'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
+import { Actions } from './actions/Actions'
 import { MapController } from './MapController'
+import { OrganizationPopup } from './OrganizationPopup'
 
 // Иконка для найденного адреса
 const searchMarkerIcon = L.divIcon({
@@ -68,6 +70,8 @@ export function MapView({
 					url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 				/>
 
+				<Actions />
+
 				{searchCenter && (
 					<Marker position={searchCenter} icon={searchMarkerIcon}>
 						<Popup>
@@ -92,17 +96,10 @@ export function MapView({
 						}}
 					>
 						<Popup>
-							<div className='popup-content'>
-								<h3>{organization.name}</h3>
-								<p>{organization.summary}</p>
-								<button
-									type='button'
-									className='primary-button'
-									onClick={() => onSelect(organization)}
-								>
-									Подробнее
-								</button>
-							</div>
+							<OrganizationPopup
+								organization={organization}
+								onSelect={onSelect}
+							/>
 						</Popup>
 					</Marker>
 				))}

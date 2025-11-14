@@ -129,3 +129,23 @@ leaflet-control {
 	align-items: center;
 	height: 100vh;
 }
+
+.leaflet-bar {
+	background-color: var(--background);
+	padding: 10px;
+	border: none !important;
+	border-radius: 10px !important;
+	box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1) !important;
+	overflow: hidden !important;
+	opacity: 1 !important;
+	transition: opacity 0.3s ease-in-out !important;
+	transition-delay: 0.3s !important;
+	transition-timing-function: ease-in-out !important;
+	transition-duration: 0.3s !important;
+}
+
+.leaflet-bar a {
+	border: none !important;
+	border-top-left-radius: 5px !important;
+	border-top-right-radius: 5px !important;
+}
