@@ -33,7 +33,7 @@ const searchMarkerIcon = L.divIcon({
 interface MapViewProps {
 	readonly organizations: Organization[]
 	readonly onSelect: (organization: Organization) => void
-	readonly onMarkerClick?: () => void
+	readonly onMarkerClick?: (organization: Organization) => void
 	readonly searchCenter?: [number, number]
 	readonly searchZoom?: number
 }
@@ -90,7 +90,7 @@ export function MapView({
 						eventHandlers={{
 							click: () => {
 								if (onMarkerClick) {
-									onMarkerClick()
+									onMarkerClick(organization)
 								}
 							},
 						}}
