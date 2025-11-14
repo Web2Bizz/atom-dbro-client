@@ -106,9 +106,7 @@ export default function LoginPage() {
 							{isLogin ? 'Вход' : 'Регистрация'}
 						</h1>
 						<p className='text-slate-600'>
-							{isLogin
-								? 'Войдите в свой аккаунт'
-								: 'Создайте новый аккаунт'}
+							{isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
 						</p>
 					</div>
 
@@ -220,7 +218,7 @@ export default function LoginPage() {
 									confirmPassword: '',
 								})
 							}}
-							className='text-sm text-blue-600 hover:text-blue-700 font-medium'
+							className='text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer'
 						>
 							{isLogin
 								? 'Нет аккаунта? Зарегистрируйтесь'
@@ -232,4 +230,3 @@ export default function LoginPage() {
 		</div>
 	)
 }
-

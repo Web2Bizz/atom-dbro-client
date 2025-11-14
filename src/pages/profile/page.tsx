@@ -2,38 +2,34 @@ import { ActiveQuests } from '@/components/profile/ActiveQuests'
 import { ProfileAchievements } from '@/components/profile/ProfileAchievements'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileLevelProgress } from '@/components/profile/ProfileLevelProgress'
-import { ProfileStats } from '@/components/profile/ProfileStats'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
-import type { Achievement } from '@/types/user'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 
 export default function ProfilePage() {
 	const { user, logout } = useUser()
 
+	useEffect(() => {
+		if (!user) {
+			const timer = setTimeout(() => {
+				globalThis.location.href = '/login'
+			}, 800) // Задержка 800ms перед переадресацией
+
+			return () => clearTimeout(timer)
+		}
+	}, [user])
+
 	if (!user) {
-		return (
-			<div className='min-h-screen flex items-center justify-center'>
-				<div className='text-center'>
-					<p className='text-slate-600 mb-4'>Пожалуйста, войдите в систему</p>
-					<Button asChild>
-						<a href='/login'>Войти</a>
-					</Button>
-				</div>
-			</div>
-		)
+		return <Spinner />
 	}
 
 	const handleLogout = () => {
 		logout()
 		toast.success('Вы вышли из аккаунта')
-		window.location.href = '/'
+		globalThis.location.href = '/login'
 	}
-
-	const unlockedAchievements = user.achievements.filter(
-		(achievement: Achievement) => achievement.unlockedAt !== undefined
-	)
 
 	return (
 		<ProtectedRoute>

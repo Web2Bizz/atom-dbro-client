@@ -11,7 +11,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
 	useEffect(() => {
 		if (!user) {
-			window.location.href = '/'
+			window.location.href = '/login'
 		}
 	}, [user])
 
