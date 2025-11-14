@@ -1,4 +1,10 @@
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import {
+	MapContainer,
+	Marker,
+	Popup,
+	TileLayer,
+	ZoomControl,
+} from 'react-leaflet'
 import { useMapCenter } from '../hooks/useMapCenter'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
@@ -23,8 +29,11 @@ export function MapView({
 				zoom={mapCenter.zoom}
 				minZoom={4}
 				scrollWheelZoom
+				zoomControl={false}
 				style={{ height: '100%', width: '100%' }}
 			>
+				{/* Позиция контролов зума: 'topleft' | 'topright' | 'bottomleft' | 'bottomright' */}
+				<ZoomControl position='topright' />
 				<TileLayer
 					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 					url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'

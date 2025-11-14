@@ -118,3 +118,12 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+.leaflet-control-attribution,
+leaflet-control {
+	display: none;
+}
+
+.leaflet-right {
+	margin-top: 72px;
+}
