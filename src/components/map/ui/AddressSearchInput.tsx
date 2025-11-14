@@ -1,33 +1,59 @@
 import { Input } from '@/components/ui/input'
-import { Loader2, MapPin, Search } from 'lucide-react'
+import { Building2, Loader2, MapPin, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useGeocode, type GeocodeResult } from '../hooks/useGeocode'
+import { useOrganizationSearch } from '../hooks/useOrganizationSearch'
+import type { Organization } from '../types/types'
+
+type SearchResult =
+	| { type: 'address'; data: GeocodeResult }
+	| { type: 'organization'; data: Organization }
 
 interface AddressSearchInputProps {
+	readonly organizations: Organization[]
 	readonly onAddressSelect: (result: GeocodeResult) => void
+	readonly onOrganizationSelect: (organization: Organization) => void
 	readonly placeholder?: string
 	readonly className?: string
 }
 
 export function AddressSearchInput({
+	organizations,
 	onAddressSelect,
-	placeholder = 'Поиск по адресу...',
+	onOrganizationSelect,
+	placeholder = 'Поиск по адресу или организации...',
 	className,
 }: AddressSearchInputProps) {
 	const [query, setQuery] = useState('')
-	const [suggestions, setSuggestions] = useState<GeocodeResult[]>([])
+	const [suggestions, setSuggestions] = useState<SearchResult[]>([])
 	const [showSuggestions, setShowSuggestions] = useState(false)
 	const [selectedIndex, setSelectedIndex] = useState(-1)
-	const { searchAddress, isLoading } = useGeocode()
+	const { searchAddress, isLoading: isAddressLoading } = useGeocode()
+	const { searchOrganizations } = useOrganizationSearch(organizations)
 	const inputRef = useRef<HTMLInputElement>(null)
 	const suggestionsRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		const timeoutId = setTimeout(async () => {
-			if (query.trim().length >= 3) {
-				const results = await searchAddress(query)
+			if (query.trim().length >= 2) {
+				const results: SearchResult[] = []
+
+				// Поиск организаций (быстрый, локальный)
+				const orgResults = searchOrganizations(query)
+				for (const org of orgResults) {
+					results.push({ type: 'organization', data: org })
+				}
+
+				// Поиск адресов (медленный, API)
+				if (query.trim().length >= 3) {
+					const addressResults = await searchAddress(query)
+					for (const addr of addressResults) {
+						results.push({ type: 'address', data: addr })
+					}
+				}
+
 				setSuggestions(results)
-				setShowSuggestions(true)
+				setShowSuggestions(results.length > 0)
 				setSelectedIndex(-1)
 			} else {
 				setSuggestions([])
@@ -36,12 +62,18 @@ export function AddressSearchInput({
 		}, 300) // Debounce 300ms
 
 		return () => clearTimeout(timeoutId)
-	}, [query, searchAddress])
+	}, [query, searchAddress, searchOrganizations])
 
-	const handleSelect = (result: GeocodeResult) => {
-		setQuery(result.display_name)
-		setShowSuggestions(false)
-		onAddressSelect(result)
+	const handleSelect = (result: SearchResult) => {
+		if (result.type === 'address') {
+			setQuery(result.data.display_name)
+			setShowSuggestions(false)
+			onAddressSelect(result.data)
+		} else {
+			setQuery(result.data.name)
+			setShowSuggestions(false)
+			onOrganizationSelect(result.data)
+		}
 	}
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -60,6 +92,12 @@ export function AddressSearchInput({
 			setShowSuggestions(false)
 		}
 	}
+
+	const organizationResults = suggestions.filter(s => s.type === 'organization')
+	const addressResults = suggestions.filter(s => s.type === 'address')
+	const hasOrganizations = organizationResults.length > 0
+	const hasAddresses = addressResults.length > 0
+	const isLoading = isAddressLoading && query.trim().length >= 3
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -105,25 +143,69 @@ export function AddressSearchInput({
 					ref={suggestionsRef}
 					className='absolute z-50 mt-1 w-full rounded-md bg-white shadow-lg border border-slate-200 max-h-60 overflow-auto'
 				>
-					{suggestions.map((result, index) => (
-						<button
-							key={result.place_id}
-							type='button'
-							onClick={() => handleSelect(result)}
-							className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${
-								index === selectedIndex ? 'bg-slate-100' : ''
-							}`}
-						>
-							<div className='flex items-start gap-2'>
-								<MapPin className='h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0' />
-								<div className='flex-1 min-w-0'>
-									<p className='text-sm text-slate-900 truncate'>
-										{result.display_name}
-									</p>
-								</div>
-							</div>
-						</button>
-					))}
+					{/* Организации */}
+					{hasOrganizations && (
+						<>
+							{organizationResults.map(result => {
+								const globalIndex = suggestions.indexOf(result)
+								return (
+									<button
+										key={`org-${result.data.id}`}
+										type='button'
+										onClick={() => handleSelect(result)}
+										className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${
+											globalIndex === selectedIndex ? 'bg-slate-100' : ''
+										}`}
+									>
+										<div className='flex items-start gap-2'>
+											<Building2 className='h-4 w-4 text-blue-500 mt-0.5 shrink-0' />
+											<div className='flex-1 min-w-0'>
+												<p className='text-sm font-medium text-slate-900 truncate'>
+													{result.data.name}
+												</p>
+												<p className='text-xs text-slate-500 truncate'>
+													{result.data.city} • {result.data.type}
+												</p>
+											</div>
+										</div>
+									</button>
+								)
+							})}
+						</>
+					)}
+
+					{/* Divider между организациями и адресами */}
+					{hasOrganizations && hasAddresses && (
+						<div className='border-t border-slate-200 my-1' />
+					)}
+
+					{/* Адреса */}
+					{hasAddresses && (
+						<>
+							{addressResults.map(result => {
+								const globalIndex = suggestions.indexOf(result)
+								return (
+									<button
+										key={`addr-${result.data.place_id}`}
+										type='button'
+										onClick={() => handleSelect(result)}
+										className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors ${
+											globalIndex === selectedIndex ? 'bg-slate-100' : ''
+										}`}
+									>
+										<div className='flex items-start gap-2'>
+											<MapPin className='h-4 w-4 text-slate-400 mt-0.5 shrink-0' />
+											<div className='flex-1 min-w-0'>
+												<p className='text-sm text-slate-900 truncate'>
+													{result.data.display_name}
+												</p>
+											</div>
+										</div>
+									</button>
+								)
+							})}
+						</>
+					)}
 				</div>
 			)}
 		</div>

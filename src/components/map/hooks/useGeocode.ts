@@ -47,8 +47,8 @@ export function useGeocode() {
 				const data: NominatimResponse[] = await response.json()
 
 				return data.map(item => ({
-					lat: parseFloat(item.lat),
-					lon: parseFloat(item.lon),
+					lat: Number.parseFloat(item.lat),
+					lon: Number.parseFloat(item.lon),
 					display_name: item.display_name,
 					place_id: item.place_id,
 				}))

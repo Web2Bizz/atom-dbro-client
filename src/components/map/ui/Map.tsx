@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { organizations } from '../data/organizations'
 import type { GeocodeResult } from '../hooks/useGeocode'
+import type { Organization } from '../types/types'
 import { AddressSearchInput } from './AddressSearchInput'
 import { MapView } from './MapView'
 
@@ -15,6 +16,11 @@ export const MapComponent = () => {
 		setSearchZoom(15) // Увеличенный зум для найденного адреса
 	}
 
+	const handleOrganizationSelect = (organization: Organization) => {
+		setSearchCenter(organization.coordinates)
+		setSearchZoom(15) // Увеличенный зум для организации
+	}
+
 	return (
 		<div className='relative w-full h-full'>
 			<MapView
@@ -26,8 +32,10 @@ export const MapComponent = () => {
 			/>
 			<div className='absolute top-20 left-5 w-full max-w-[400px] z-999'>
 				<AddressSearchInput
+					organizations={organizations}
 					onAddressSelect={handleAddressSelect}
-					placeholder='Поиск по адресу...'
+					onOrganizationSelect={handleOrganizationSelect}
+					placeholder='Поиск по адресу или организации...'
 				/>
 			</div>
 		</div>
