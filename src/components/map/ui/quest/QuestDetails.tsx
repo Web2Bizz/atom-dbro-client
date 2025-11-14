@@ -12,11 +12,17 @@ import {
 	X,
 } from 'lucide-react'
 import { useState } from 'react'
-import type { QuestStage } from '../../types/quest-types'
+import type { Quest, QuestStage } from '../../types/quest-types'
 import { AmbassadorShare } from './AmbassadorShare'
 import { DonationPanel } from './DonationPanel'
-import { RoleSelection } from './RoleSelection'
 import { VolunteerRegistration } from './VolunteerRegistration'
+
+interface QuestDetailsProps {
+	quest: Quest | undefined
+	onClose?: () => void
+	isClosing?: boolean
+	onParticipate?: (questId: string) => void
+}
 
 function getStageIcon(stage: QuestStage) {
 	switch (stage.status) {
@@ -43,7 +49,6 @@ export function QuestDetails({
 	} = useUser()
 	const { addNotification } = useNotifications()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
-	const [showRoleSelection, setShowRoleSelection] = useState(false)
 	const [showDonation, setShowDonation] = useState<{
 		stage: QuestStage
 	} | null>(null)
@@ -60,30 +65,20 @@ export function QuestDetails({
 	const isParticipating = user?.participatingQuests.includes(quest.id) ?? false
 
 	const handleParticipate = () => {
-		setShowRoleSelection(true)
-	}
-
-	const handleRoleSelect = (role: Parameters<typeof participateInQuest>[1]) => {
 		if (quest) {
-			participateInQuest(quest.id, role)
+			// Автоматически добавляем пользователя в квест
+			participateInQuest(quest.id)
 			checkAndUnlockAchievements(quest.id)
 
 			// Добавляем уведомление об успешном участии
 			addNotification({
 				type: 'quest_update',
 				title: 'Добро пожаловать в квест!',
-				message: `Вы успешно присоединились к квесту "${quest.title}" в роли ${
-					role === 'financial'
-						? 'Финансового воина'
-						: role === 'volunteer'
-						? 'Волонтера-героя'
-						: 'Амбассадора'
-				}`,
+				message: `Вы успешно присоединились к квесту "${quest.title}"`,
 				questId: quest.id,
 				icon: '🎯',
 			})
 
-			setShowRoleSelection(false)
 			if (onParticipate) {
 				onParticipate(quest.id)
 			}
@@ -95,11 +90,10 @@ export function QuestDetails({
 			contributeToQuest({
 				questId: quest.id,
 				stageId,
-				role: 'financial',
 				amount,
 				contributedAt: new Date().toISOString(),
 				impact: `Внесли ${formatCurrency(amount)} на этап "${
-					quest.stages.find(s => s.id === stageId)?.title
+					quest.stages.find((s: QuestStage) => s.id === stageId)?.title
 				}"`,
 			})
 			checkAndUnlockAchievements(quest.id)
@@ -107,7 +101,7 @@ export function QuestDetails({
 				type: 'donation_received',
 				title: 'Спасибо за поддержку!',
 				message: `Вы внесли ${formatCurrency(amount)} на этап "${
-					quest.stages.find(s => s.id === stageId)?.title
+					quest.stages.find((s: QuestStage) => s.id === stageId)?.title
 				}"`,
 				questId: quest.id,
 				stageId,
@@ -127,7 +121,7 @@ export function QuestDetails({
 			type: 'volunteer_registered',
 			title: 'Регистрация успешна!',
 			message: `Вы зарегистрировались на событие "${
-				quest?.stages.find(s => s.id === stageId)?.title
+				quest?.stages.find((s: QuestStage) => s.id === stageId)?.title
 			}"`,
 			questId: quest!.id,
 			stageId,
@@ -141,13 +135,6 @@ export function QuestDetails({
 
 	return (
 		<>
-			{showRoleSelection && (
-				<RoleSelection
-					onSelect={handleRoleSelect}
-					onCancel={() => setShowRoleSelection(false)}
-				/>
-			)}
-
 			{showDonation && quest && (
 				<DonationPanel
 					stage={showDonation.stage}
@@ -228,7 +215,7 @@ export function QuestDetails({
 									onClick={handleParticipate}
 									className='w-full px-4 py-3 rounded-xl font-semibold text-white bg-gradient-to-br from-[#22d3ee] to-[#0284c7] hover:from-[#06b6d4] hover:to-[#0369a1] transition-all shadow-lg hover:shadow-xl'
 								>
-									🎯 Вступить в квест
+									Вступить в квест
 								</button>
 							) : (
 								<div className='space-y-2'>
@@ -237,16 +224,14 @@ export function QuestDetails({
 											✅ Вы участвуете в этом квесте!
 										</span>
 									</div>
-									{user?.role.includes('ambassador') && (
-										<Button
-											type='button'
-											onClick={() => setShowAmbassadorShare(true)}
-											className='w-full bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700'
-										>
-											<Share2 className='h-4 w-4 mr-2' />
-											Поделиться квестом
-										</Button>
-									)}
+									<Button
+										type='button'
+										onClick={() => setShowAmbassadorShare(true)}
+										className='w-full bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700'
+									>
+										<Share2 className='h-4 w-4 mr-2' />
+										Поделиться квестом
+									</Button>
 								</div>
 							)}
 						</header>
@@ -300,7 +285,7 @@ export function QuestDetails({
 							{/* Контент табов */}
 							{activeTab === 'stages' && (
 								<div className='space-y-4'>
-									{quest.stages.map((stage, index) => (
+									{quest.stages.map((stage: QuestStage, index: number) => (
 										<div
 											key={stage.id}
 											className='p-4 rounded-xl border border-slate-200 bg-slate-50/50'
@@ -377,7 +362,6 @@ export function QuestDetails({
 																</span>
 															</div>
 															{isParticipating &&
-																user?.role.includes('volunteer') &&
 																stage.status !== 'completed' && (
 																	<Button
 																		size='sm'
@@ -424,38 +408,47 @@ export function QuestDetails({
 											Пока нет обновлений
 										</p>
 									) : (
-										quest.updates.map(update => (
-											<div
-												key={update.id}
-												className='p-4 rounded-xl border border-slate-200 bg-white'
-											>
-												<div className='flex items-start justify-between mb-2'>
-													<div>
-														<h4 className='text-base font-semibold text-slate-900 m-0'>
-															{update.title}
-														</h4>
-														<p className='text-xs text-slate-500 m-0 mt-1'>
-															{formatDate(update.date)} • {update.author}
-														</p>
+										quest.updates.map(
+											(update: {
+												id: string
+												title: string
+												date: string
+												author: string
+												content: string
+												images?: string[]
+											}) => (
+												<div
+													key={update.id}
+													className='p-4 rounded-xl border border-slate-200 bg-white'
+												>
+													<div className='flex items-start justify-between mb-2'>
+														<div>
+															<h4 className='text-base font-semibold text-slate-900 m-0'>
+																{update.title}
+															</h4>
+															<p className='text-xs text-slate-500 m-0 mt-1'>
+																{formatDate(update.date)} • {update.author}
+															</p>
+														</div>
 													</div>
+													<p className='text-sm text-slate-700 leading-relaxed m-0 mb-3'>
+														{update.content}
+													</p>
+													{update.images && update.images.length > 0 && (
+														<div className='grid grid-cols-2 gap-2'>
+															{update.images.map((img: string, idx: number) => (
+																<img
+																	key={idx}
+																	src={img}
+																	alt={update.title}
+																	className='w-full h-32 object-cover rounded-lg'
+																/>
+															))}
+														</div>
+													)}
 												</div>
-												<p className='text-sm text-slate-700 leading-relaxed m-0 mb-3'>
-													{update.content}
-												</p>
-												{update.images && update.images.length > 0 && (
-													<div className='grid grid-cols-2 gap-2'>
-														{update.images.map((img, idx) => (
-															<img
-																key={idx}
-																src={img}
-																alt={update.title}
-																className='w-full h-32 object-cover rounded-lg'
-															/>
-														))}
-													</div>
-												)}
-											</div>
-										))
+											)
+										)
 									)}
 								</div>
 							)}
@@ -509,17 +502,19 @@ export function QuestDetails({
 										Соцсети
 									</h3>
 									<div className='flex flex-wrap gap-2'>
-										{quest.socials.map(social => (
-											<a
-												key={social.url}
-												href={social.url}
-												target='_blank'
-												rel='noreferrer'
-												className='inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors'
-											>
-												{social.name}
-											</a>
-										))}
+										{quest.socials.map(
+											(social: { name: string; url: string }) => (
+												<a
+													key={social.url}
+													href={social.url}
+													target='_blank'
+													rel='noreferrer'
+													className='inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors'
+												>
+													{social.name}
+												</a>
+											)
+										)}
 									</div>
 								</div>
 							)}

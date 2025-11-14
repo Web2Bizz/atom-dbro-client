@@ -6,8 +6,6 @@ export type QuestStatus = 'active' | 'completed' | 'archived'
 
 export type QuestProgressColor = 'red' | 'orange' | 'yellow' | 'green' | 'victory'
 
-export type ParticipationRole = 'financial' | 'volunteer' | 'ambassador'
-
 export type StageStatus = 'pending' | 'in_progress' | 'completed'
 
 export interface QuestStage {
@@ -48,7 +46,6 @@ export interface QuestUpdate {
 
 export interface QuestParticipation {
 	userId: string
-	role: ParticipationRole
 	joinedAt: string // ISO date
 	contributions: {
 		stageId: string

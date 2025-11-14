@@ -9,7 +9,6 @@ export { QuestDetails } from './ui/quest/QuestDetails'
 export { QuestList } from './ui/quest/QuestList'
 export { QuestPopup } from './ui/quest/QuestPopup'
 export { DonationPanel } from './ui/quest/DonationPanel'
-export { RoleSelection } from './ui/quest/RoleSelection'
 export { VolunteerRegistration } from './ui/quest/VolunteerRegistration'
 export { AmbassadorShare } from './ui/quest/AmbassadorShare'
 

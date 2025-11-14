@@ -1,7 +1,5 @@
 // Типы для системы пользователей и геймификации
 
-export type UserRole = 'financial' | 'volunteer' | 'ambassador'
-
 export type AchievementId =
 	| 'first_quest'
 	| 'lake_saver'
@@ -48,7 +46,6 @@ export interface User {
 	name: string
 	email?: string
 	avatar?: string
-	role: UserRole[]
 	level: UserLevel
 	stats: UserStats
 	achievements: Achievement[]
@@ -61,7 +58,6 @@ export interface User {
 export interface QuestContribution {
 	questId: string
 	stageId: string
-	role: UserRole
 	amount?: number // для финансовых взносов
 	action?: string // для других действий
 	contributedAt: string

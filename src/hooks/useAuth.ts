@@ -25,7 +25,6 @@ export function useAuth(): {
 				id: `user-${Date.now()}`,
 				name: credentials.name,
 				email: credentials.email,
-				role: [],
 				level: {
 					level: 1,
 					experience: 0,

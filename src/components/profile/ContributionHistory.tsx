@@ -1,4 +1,4 @@
-import { Calendar, Heart, Users, Share2 } from 'lucide-react'
+import { Calendar, Heart, Users } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import { quests } from '@/components/map/data/quests'
 import { formatDateTime } from '@/utils/format'
@@ -9,7 +9,6 @@ const mockContributions: QuestContribution[] = [
 	{
 		questId: 'ozero-chistoe',
 		stageId: 'stage-2',
-		role: 'financial',
 		amount: 1000,
 		contributedAt: '2025-03-05T10:00:00Z',
 		impact: 'Внесли 1 000 руб. на этап "Закупка инвентаря"',
@@ -17,7 +16,6 @@ const mockContributions: QuestContribution[] = [
 	{
 		questId: 'volk-berkut',
 		stageId: 'stage-2',
-		role: 'financial',
 		amount: 500,
 		contributedAt: '2025-03-01T14:30:00Z',
 		impact: 'Внесли 500 руб. на этап "Обеспечение питания"',
@@ -34,31 +32,6 @@ export function ContributionHistory() {
 	// В реальном приложении это будет загружаться из API
 	const contributions = mockContributions
 
-	const getRoleIcon = (role: string) => {
-		switch (role) {
-			case 'financial':
-				return <Heart className='h-4 w-4 text-green-600' />
-			case 'volunteer':
-				return <Users className='h-4 w-4 text-blue-600' />
-			case 'ambassador':
-				return <Share2 className='h-4 w-4 text-purple-600' />
-			default:
-				return null
-		}
-	}
-
-	const getRoleLabel = (role: string) => {
-		switch (role) {
-			case 'financial':
-				return 'Финансовый вклад'
-			case 'volunteer':
-				return 'Волонтерство'
-			case 'ambassador':
-				return 'Распространение'
-			default:
-				return role
-		}
-	}
 
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-8'>
@@ -89,7 +62,11 @@ export function ContributionHistory() {
 							>
 								<div className='flex items-start gap-4'>
 									<div className='p-2 rounded-lg bg-slate-100'>
-										{getRoleIcon(contribution.role)}
+										{contribution.amount ? (
+											<Heart className='h-4 w-4 text-green-600' />
+										) : (
+											<Users className='h-4 w-4 text-blue-600' />
+										)}
 									</div>
 									<div className='flex-1'>
 										<div className='flex items-start justify-between mb-2'>
@@ -97,9 +74,11 @@ export function ContributionHistory() {
 												<h3 className='font-semibold text-slate-900 mb-1'>
 													{quest.title}
 												</h3>
-												<p className='text-sm text-slate-600 mb-1'>
-													{getRoleLabel(contribution.role)}
-												</p>
+												{contribution.amount && (
+													<p className='text-sm text-slate-600 mb-1'>
+														Финансовый вклад
+													</p>
+												)}
 											</div>
 											{contribution.amount && (
 												<span className='text-lg font-bold text-green-600'>

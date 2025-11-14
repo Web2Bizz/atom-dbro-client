@@ -12,7 +12,7 @@ export function useQuestActions() {
 	const { setUser } = context
 
 	const participateInQuest = useCallback(
-		(questId: string, role: User['role'][number]) => {
+		(questId: string) => {
 			setUser(currentUser => {
 				if (!currentUser) {
 					return currentUser
@@ -22,20 +22,11 @@ export function useQuestActions() {
 					currentUser.participatingQuests.includes(questId)
 
 				if (alreadyParticipating) {
-					if (currentUser.role.includes(role)) {
-						return currentUser
-					}
-					return {
-						...currentUser,
-						role: [...currentUser.role, role],
-					}
+					return currentUser
 				}
 
 				const updatedUser: User = {
 					...currentUser,
-					role: currentUser.role.includes(role)
-						? currentUser.role
-						: [...currentUser.role, role],
 					participatingQuests: [...currentUser.participatingQuests, questId],
 					stats: {
 						...currentUser.stats,
@@ -73,9 +64,7 @@ export function useQuestActions() {
 							currentUser.stats.totalDonations + (contribution.amount || 0),
 						totalVolunteerHours:
 							currentUser.stats.totalVolunteerHours +
-							(contribution.role === 'volunteer' && contribution.action
-								? 1
-								: 0),
+							(contribution.action ? 1 : 0),
 					},
 				}
 

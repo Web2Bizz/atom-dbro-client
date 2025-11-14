@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Share2, Copy, Check, X } from 'lucide-react'
-import type { Quest } from '../../types/quest-types'
 import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/hooks/useNotifications'
+import { Check, Copy, Share2, X } from 'lucide-react'
+import { useState } from 'react'
+import type { Quest } from '../../types/quest-types'
 
 interface AmbassadorShareProps {
 	readonly quest: Quest
@@ -14,37 +14,47 @@ const sharePlatforms = [
 	{
 		id: 'vk',
 		name: 'ВКонтакте',
-		icon: '🔵',
+		icon: '/public/vk.png',
 		color: 'bg-blue-500 hover:bg-blue-600',
 		url: (text: string, url: string) =>
-			`https://vk.com/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
+			`https://vk.com/share.php?url=${encodeURIComponent(
+				url
+			)}&title=${encodeURIComponent(text)}`,
 	},
 	{
 		id: 'telegram',
 		name: 'Telegram',
-		icon: '💬',
+		icon: '/public/telegram.png',
 		color: 'bg-cyan-500 hover:bg-cyan-600',
 		url: (text: string, url: string) =>
-			`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+			`https://t.me/share/url?url=${encodeURIComponent(
+				url
+			)}&text=${encodeURIComponent(text)}`,
 	},
 	{
 		id: 'whatsapp',
 		name: 'WhatsApp',
-		icon: '💚',
+		icon: '/public/whatsapp.png',
 		color: 'bg-green-500 hover:bg-green-600',
 		url: (text: string, url: string) =>
 			`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
 	},
 ]
 
-export function AmbassadorShare({ quest, onClose, onShare }: AmbassadorShareProps) {
+export function AmbassadorShare({
+	quest,
+	onClose,
+	onShare,
+}: AmbassadorShareProps) {
 	const { addNotification } = useNotifications()
 	const [copied, setCopied] = useState(false)
 
 	const shareUrl = `${window.location.origin}/map?quest=${quest.id}`
-	const shareText = `Присоединяйтесь к квесту "${quest.title}"! ${quest.story.substring(0, 100)}...`
+	const shareText = `Присоединяйтесь к квесту "${
+		quest.title
+	}"! ${quest.story.substring(0, 100)}...`
 
-	const handleShare = (platform: typeof sharePlatforms[0]) => {
+	const handleShare = (platform: (typeof sharePlatforms)[0]) => {
 		const url = platform.url(shareText, shareUrl)
 		window.open(url, '_blank', 'width=600,height=400')
 		onShare(platform.id)
@@ -109,7 +119,11 @@ export function AmbassadorShare({ quest, onClose, onShare }: AmbassadorShareProp
 							onClick={() => handleShare(platform)}
 							className={`w-full p-4 rounded-xl ${platform.color} text-white flex items-center gap-3 transition-all hover:scale-[1.02]`}
 						>
-							<span className='text-2xl'>{platform.icon}</span>
+							<img
+								src={platform.icon}
+								alt={platform.name}
+								className='w-6 h-6'
+							/>
 							<span className='font-semibold'>{platform.name}</span>
 						</button>
 					))}
@@ -151,16 +165,15 @@ export function AmbassadorShare({ quest, onClose, onShare }: AmbassadorShareProp
 				{/* Мотивация */}
 				<div className='p-4 rounded-xl bg-purple-50 border border-purple-200'>
 					<p className='text-sm text-slate-700 mb-2'>
-						<strong>💡 Совет:</strong> Чем больше людей узнают о квесте, тем быстрее
-						он будет завершен!
+						<strong>💡 Совет:</strong> Чем больше людей узнают о квесте, тем
+						быстрее он будет завершен!
 					</p>
 					<p className='text-xs text-slate-600'>
-						За каждую публикацию вы получаете опыт и помогаете квесту найти новых
-						участников.
+						За каждую публикацию вы получаете опыт и помогаете квесту найти
+						новых участников.
 					</p>
 				</div>
 			</div>
 		</div>
 	)
 }
-
