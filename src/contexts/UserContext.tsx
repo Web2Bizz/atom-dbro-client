@@ -7,6 +7,8 @@ import { createContext, useCallback, useMemo } from 'react'
 interface UserContextType {
 	user: User | null
 	setUser: (user: User | null) => void
+	login: (credentials: { email: string; name: string }) => void
+	logout: () => void
 	participateInQuest: (questId: string, role: User['role'][number]) => void
 	contributeToQuest: (contribution: QuestContribution) => void
 	checkAndUnlockAchievements: (questId: string) => void
@@ -54,10 +56,7 @@ const createMockUser = (): User => ({
 })
 
 export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
-	const [user, setUser] = useLocalStorage<User | null>(
-		'ecoquest_user',
-		createMockUser()
-	)
+	const [user, setUser] = useLocalStorage<User | null>('ecoquest_user', null)
 
 	// Сохранение пользователя
 	const saveUser = useCallback(
@@ -66,6 +65,46 @@ export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
 		},
 		[setUser]
 	)
+
+	// Авторизация
+	const login = useCallback(
+		(credentials: { email: string; name: string }) => {
+			const newUser: User = {
+				id: `user-${Date.now()}`,
+				name: credentials.name,
+				email: credentials.email,
+				role: [],
+				level: {
+					level: 1,
+					experience: 0,
+					experienceToNext: 100,
+					title: 'Новичок',
+				},
+				stats: {
+					totalQuests: 0,
+					completedQuests: 0,
+					totalDonations: 0,
+					totalVolunteerHours: 0,
+					totalImpact: {
+						treesPlanted: 0,
+						animalsHelped: 0,
+						areasCleaned: 0,
+						livesChanged: 0,
+					},
+				},
+				achievements: [],
+				participatingQuests: [],
+				createdAt: new Date().toISOString(),
+			}
+			setUser(newUser)
+		},
+		[setUser]
+	)
+
+	// Выход из аккаунта
+	const logout = useCallback(() => {
+		setUser(null)
+	}, [setUser])
 
 	const participateInQuest = useCallback(
 		(questId: string, role: User['role'][number]) => {
@@ -378,6 +417,8 @@ export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
 		() => ({
 			user,
 			setUser: saveUser,
+			login,
+			logout,
 			participateInQuest,
 			contributeToQuest,
 			checkAndUnlockAchievements,
@@ -394,6 +435,8 @@ export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
 		[
 			user,
 			saveUser,
+			login,
+			logout,
 			participateInQuest,
 			contributeToQuest,
 			checkAndUnlockAchievements,

@@ -1,5 +1,6 @@
 import { AddQuestForm } from '@/components/forms/AddQuestForm'
 import { AddOrganizationForm } from '@/components/forms/AddOrganizationForm'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useUser } from '@/hooks/useUser'
 import { useState } from 'react'
 
@@ -17,8 +18,9 @@ export default function AddOrganizationPage() {
 	}
 
 	return (
-		<div className='min-h-screen bg-slate-50 pt-24 pb-12'>
-			<div className='max-w-4xl mx-auto px-6'>
+		<ProtectedRoute>
+			<div className='min-h-screen bg-slate-50 pt-24 pb-12'>
+				<div className='max-w-4xl mx-auto px-6'>
 				<div className='mb-8'>
 					<h1 className='text-3xl font-bold text-slate-900 mb-2'>
 						Добавить точку на карте
@@ -76,7 +78,8 @@ export default function AddOrganizationPage() {
 						один квест. Это помогает поддерживать качество контента на платформе.
 					</p>
 				</div>
+				</div>
 			</div>
-		</div>
+		</ProtectedRoute>
 	)
 }

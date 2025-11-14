@@ -1,7 +1,10 @@
 import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { useUser } from '@/hooks/useUser'
+import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 
 export const Header = () => {
+	const { user } = useUser()
 	const [currentPath, setCurrentPath] = useState(
 		globalThis.location?.pathname || '/'
 	)
@@ -28,12 +31,14 @@ export const Header = () => {
 		}
 	}, [])
 
-	const navLinks = [
-		{ href: '/', label: 'Главная' },
-		{ href: '/map', label: 'Карта' },
-		{ href: '/add-organization', label: 'Добавить точку' },
-		{ href: '/profile', label: 'Профиль' },
-	]
+	const navLinks = user
+		? [
+				{ href: '/', label: 'Главная' },
+				{ href: '/map', label: 'Карта' },
+				{ href: '/add-organization', label: 'Добавить точку' },
+				{ href: '/profile', label: 'Профиль' },
+		  ]
+		: [{ href: '/', label: 'Главная' }]
 
 	const isActive = (href: string) => {
 		if (href === '/') {
@@ -71,7 +76,13 @@ export const Header = () => {
 							)
 						})}
 					</div>
-					<NotificationBell />
+					{user ? (
+						<NotificationBell />
+					) : (
+						<Button asChild variant='outline'>
+							<a href='/login'>Войти</a>
+						</Button>
+					)}
 				</div>
 			</div>
 		</nav>
