@@ -10,7 +10,9 @@ export function getUserCreatedQuests(): Quest[] {
 		if (!stored) return []
 		return JSON.parse(stored) as Quest[]
 	} catch (error) {
-		console.error('Error loading user created quests:', error)
+		if (process.env.NODE_ENV === 'development') {
+			console.error('Error loading user created quests:', error)
+		}
 		return []
 	}
 }
@@ -24,7 +26,9 @@ export function getUserCreatedOrganizations(): Organization[] {
 		if (!stored) return []
 		return JSON.parse(stored) as Organization[]
 	} catch (error) {
-		console.error('Error loading user created organizations:', error)
+		if (process.env.NODE_ENV === 'development') {
+			console.error('Error loading user created organizations:', error)
+		}
 		return []
 	}
 }
@@ -54,7 +58,9 @@ export function updateUserQuest(quest: Quest): void {
 		const updatedQuests = existingQuests.map(q => (q.id === quest.id ? quest : q))
 		localStorage.setItem('user_created_quests', JSON.stringify(updatedQuests))
 	} catch (error) {
-		console.error('Error updating quest:', error)
+		if (process.env.NODE_ENV === 'development') {
+			console.error('Error updating quest:', error)
+		}
 	}
 }
 
@@ -69,7 +75,9 @@ export function updateUserOrganization(organization: Organization): void {
 		)
 		localStorage.setItem('user_created_organizations', JSON.stringify(updatedOrganizations))
 	} catch (error) {
-		console.error('Error updating organization:', error)
+		if (process.env.NODE_ENV === 'development') {
+			console.error('Error updating organization:', error)
+		}
 	}
 }
 

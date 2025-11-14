@@ -7,13 +7,6 @@ import { toast } from 'sonner'
 
 export default function LoginPage() {
 	const { login, user } = useUser()
-
-	// Если пользователь уже авторизован, перенаправляем на главную
-	if (user) {
-		window.location.href = '/'
-		return null
-	}
-
 	const [isLogin, setIsLogin] = useState(true)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [formData, setFormData] = useState({
@@ -22,6 +15,12 @@ export default function LoginPage() {
 		password: '',
 		confirmPassword: '',
 	})
+
+	// Если пользователь уже авторизован, перенаправляем на главную
+	if (user) {
+		window.location.href = '/'
+		return null
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -51,7 +50,9 @@ export default function LoginPage() {
 				toast.success('Вы успешно вошли в систему')
 				window.location.href = '/'
 			} catch (error) {
-				console.error('Login error:', error)
+				if (process.env.NODE_ENV === 'development') {
+					console.error('Login error:', error)
+				}
 				toast.error('Ошибка входа. Попробуйте еще раз.')
 			} finally {
 				setIsSubmitting(false)
@@ -86,7 +87,9 @@ export default function LoginPage() {
 				toast.success('Регистрация успешна! Добро пожаловать!')
 				window.location.href = '/'
 			} catch (error) {
-				console.error('Registration error:', error)
+				if (process.env.NODE_ENV === 'development') {
+					console.error('Registration error:', error)
+				}
 				toast.error('Ошибка регистрации. Попробуйте еще раз.')
 			} finally {
 				setIsSubmitting(false)

@@ -15,7 +15,9 @@ export function useLocalStorage<T>(
 			const item = window.localStorage.getItem(key)
 			return item ? JSON.parse(item) : initialValue
 		} catch (error) {
-			console.error(`Error reading localStorage key "${key}":`, error)
+			if (process.env.NODE_ENV === 'development') {
+				console.error(`Error reading localStorage key "${key}":`, error)
+			}
 			return initialValue
 		}
 	})
@@ -35,7 +37,9 @@ export function useLocalStorage<T>(
 					return valueToStore
 				})
 			} catch (error) {
-				console.error(`Error setting localStorage key "${key}":`, error)
+				if (process.env.NODE_ENV === 'development') {
+					console.error(`Error setting localStorage key "${key}":`, error)
+				}
 			}
 		},
 		[key]
@@ -48,7 +52,9 @@ export function useLocalStorage<T>(
 				try {
 					setStoredValue(JSON.parse(e.newValue))
 				} catch (error) {
-					console.error(`Error parsing storage event for key "${key}":`, error)
+					if (process.env.NODE_ENV === 'development') {
+						console.error(`Error parsing storage event for key "${key}":`, error)
+					}
 				}
 			}
 		}

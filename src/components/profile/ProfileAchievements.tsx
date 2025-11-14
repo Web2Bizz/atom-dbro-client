@@ -1,0 +1,112 @@
+import { memo, useMemo } from 'react'
+import { Award } from 'lucide-react'
+import { allAchievements } from '@/data/achievements'
+import type { User } from '@/types/user'
+
+interface ProfileAchievementsProps {
+	userAchievements: User['achievements']
+}
+
+const rarityColors = {
+	common: 'bg-slate-100 border-slate-300 text-slate-700',
+	rare: 'bg-blue-100 border-blue-300 text-blue-700',
+	epic: 'bg-purple-100 border-purple-300 text-purple-700',
+	legendary: 'bg-yellow-100 border-yellow-400 text-yellow-800',
+} as const
+
+export const ProfileAchievements = memo(function ProfileAchievements({
+	userAchievements,
+}: ProfileAchievementsProps) {
+	const unlockedAchievements = useMemo(
+		() => userAchievements.filter(a => a.unlockedAt),
+		[userAchievements]
+	)
+
+	const lockedAchievements = useMemo(
+		() =>
+			Object.values(allAchievements).filter(
+				a => !userAchievements.some(ua => ua.id === a.id)
+			),
+		[userAchievements]
+	)
+
+	return (
+		<div className='bg-white rounded-2xl shadow-lg p-8'>
+			<h2 className='text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2'>
+				<Award className='h-6 w-6 text-yellow-600' />
+				Достижения ({unlockedAchievements.length} /{' '}
+				{Object.keys(allAchievements).length})
+			</h2>
+
+			{unlockedAchievements.length > 0 && (
+				<div className='mb-8'>
+					<h3 className='text-lg font-semibold text-slate-700 mb-4'>
+						Разблокированные
+					</h3>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+						{unlockedAchievements.map(achievement => {
+							const achievementData = allAchievements[achievement.id]
+							if (!achievementData) return null
+
+							return (
+								<div
+									key={achievement.id}
+									className={`p-4 rounded-xl border-2 ${
+										rarityColors[achievementData.rarity]
+									}`}
+								>
+									<div className='flex items-start gap-3'>
+										<div className='text-3xl'>{achievementData.icon}</div>
+										<div className='flex-1'>
+											<h4 className='font-semibold text-slate-900 mb-1'>
+												{achievementData.title}
+											</h4>
+											<p className='text-sm text-slate-600 mb-2'>
+												{achievementData.description}
+											</p>
+											{achievement.unlockedAt && (
+												<p className='text-xs text-slate-500'>
+													Разблокировано:{' '}
+													{new Date(achievement.unlockedAt).toLocaleDateString(
+														'ru-RU'
+													)}
+												</p>
+											)}
+										</div>
+									</div>
+								</div>
+							)
+						})}
+					</div>
+				</div>
+			)}
+
+			{lockedAchievements.length > 0 && (
+				<div>
+					<h3 className='text-lg font-semibold text-slate-700 mb-4'>
+						Заблокированные
+					</h3>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+						{lockedAchievements.map(achievement => (
+							<div
+								key={achievement.id}
+								className='p-4 rounded-xl border-2 border-slate-200 bg-slate-50 opacity-60'
+							>
+								<div className='flex items-start gap-3'>
+									<div className='text-3xl grayscale'>{achievement.icon}</div>
+									<div className='flex-1'>
+										<h4 className='font-semibold text-slate-600 mb-1'>???</h4>
+										<p className='text-sm text-slate-500'>
+											Достижение заблокировано
+										</p>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+		</div>
+	)
+})
+

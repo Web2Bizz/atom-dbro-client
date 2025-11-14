@@ -1,8 +1,6 @@
 import { ASSISTANCE_OPTIONS } from '@/constants'
 import type { Organization } from '../../types/types'
 import type { Quest } from '../../types/quest-types'
-import { OrganizationList } from './OrganizationList'
-import { QuestList } from '../quest/QuestList'
 
 interface UnifiedListProps {
 	readonly quests: Quest[]

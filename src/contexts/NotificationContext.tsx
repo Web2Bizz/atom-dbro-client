@@ -1,21 +1,34 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
 import { NOTIFICATION_MAX_COUNT } from '@/constants'
-import type { Notification, NotificationType } from '@/types/notifications'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import type { Notification } from '@/types/notifications'
+import {
+	createContext,
+	useCallback,
+	useEffect,
+	useMemo,
+	type ReactNode,
+} from 'react'
 
-interface NotificationContextType {
+export interface NotificationContextType {
 	notifications: Notification[]
 	unreadCount: number
-	addNotification: (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => void
+	addNotification: (
+		notification: Omit<Notification, 'id' | 'read' | 'createdAt'>
+	) => void
 	markAsRead: (id: string) => void
 	markAllAsRead: () => void
 	clearNotification: (id: string) => void
 	clearAll: () => void
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
+// eslint-disable-next-line react-refresh/only-export-components
+export const NotificationContext = createContext<
+	NotificationContextType | undefined
+>(undefined)
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
+export function NotificationProvider({
+	children,
+}: Readonly<{ children: ReactNode }>) {
 	const [notifications, setNotifications] = useLocalStorage<Notification[]>(
 		'ecoquest_notifications',
 		[]
@@ -27,12 +40,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 		(notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
 			const newNotification: Notification = {
 				...notification,
-				id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				id: `notif-${Date.now()}-${Math.random()
+					.toString(36)
+					.substring(2, 11)}`,
 				read: false,
 				createdAt: new Date().toISOString(),
 			}
 
-			setNotifications(prev => [newNotification, ...prev].slice(0, NOTIFICATION_MAX_COUNT))
+			setNotifications(prev =>
+				[newNotification, ...prev].slice(0, NOTIFICATION_MAX_COUNT)
+			)
 
 			// Показываем браузерное уведомление (если разрешено)
 			if ('Notification' in window && Notification.permission === 'granted') {
@@ -42,26 +59,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 				})
 			}
 		},
-		[]
+		[setNotifications]
 	)
 
-	const markAsRead = useCallback((id: string) => {
-		setNotifications(prev =>
-			prev.map(n => (n.id === id ? { ...n, read: true } : n))
-		)
-	}, [])
+	const markAsRead = useCallback(
+		(id: string) => {
+			setNotifications(prev =>
+				prev.map(n => (n.id === id ? { ...n, read: true } : n))
+			)
+		},
+		[setNotifications]
+	)
 
 	const markAllAsRead = useCallback(() => {
 		setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-	}, [])
+	}, [setNotifications])
 
-	const clearNotification = useCallback((id: string) => {
-		setNotifications(prev => prev.filter(n => n.id !== id))
-	}, [])
+	const clearNotification = useCallback(
+		(id: string) => {
+			setNotifications(prev => prev.filter(n => n.id !== id))
+		},
+		[setNotifications]
+	)
 
 	const clearAll = useCallback(() => {
 		setNotifications([])
-	}, [])
+	}, [setNotifications])
 
 	// Запрашиваем разрешение на уведомления при первом рендере
 	useEffect(() => {
@@ -70,28 +93,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 		}
 	}, [])
 
+	const value = useMemo(
+		() => ({
+			notifications,
+			unreadCount,
+			addNotification,
+			markAsRead,
+			markAllAsRead,
+			clearNotification,
+			clearAll,
+		}),
+		[
+			notifications,
+			unreadCount,
+			addNotification,
+			markAsRead,
+			markAllAsRead,
+			clearNotification,
+			clearAll,
+		]
+	)
+
 	return (
-		<NotificationContext.Provider
-			value={{
-				notifications,
-				unreadCount,
-				addNotification,
-				markAsRead,
-				markAllAsRead,
-				clearNotification,
-				clearAll,
-			}}
-		>
+		<NotificationContext.Provider value={value}>
 			{children}
 		</NotificationContext.Provider>
 	)
 }
 
-export function useNotifications() {
-	const context = useContext(NotificationContext)
-	if (context === undefined) {
-		throw new Error('useNotifications must be used within a NotificationProvider')
-	}
-	return context
-}
-
+// useNotifications hook exported from separate file to fix Fast Refresh

@@ -10,7 +10,7 @@ export default function AddOrganizationPage() {
 	const { canCreateQuest, canCreateOrganization } = useUser()
 	const [formType, setFormType] = useState<FormType>('organization')
 
-	const handleSuccess = (id: string) => {
+	const handleSuccess = () => {
 		// Перенаправляем на карту после успешного создания
 		setTimeout(() => {
 			window.location.href = '/map'

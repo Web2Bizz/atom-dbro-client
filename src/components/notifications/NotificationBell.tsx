@@ -1,12 +1,18 @@
-import { Bell, X } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { useNotifications } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
+import { useNotifications } from '@/hooks/useNotifications'
+import type { Notification } from '@/types/notifications'
 import { formatShortDate } from '@/utils/format'
+import { Bell, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export function NotificationBell() {
-	const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotification } =
-		useNotifications()
+	const {
+		notifications,
+		unreadCount,
+		markAsRead,
+		markAllAsRead,
+		clearNotification,
+	} = useNotifications()
 	const [isOpen, setIsOpen] = useState(false)
 	const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -24,10 +30,13 @@ export function NotificationBell() {
 		return () => document.removeEventListener('mousedown', handleClickOutside)
 	}, [])
 
-	const handleNotificationClick = (notification: typeof notifications[0]) => {
+	const handleNotificationClick = (notification: Notification) => {
 		markAsRead(notification.id)
 		if (notification.actionUrl) {
-			window.location.href = notification.actionUrl
+			// Используем setTimeout для избежания прямого изменения window.location в обработчике
+			setTimeout(() => {
+				window.location.href = notification.actionUrl!
+			}, 0)
 		}
 	}
 
@@ -92,17 +101,19 @@ export function NotificationBell() {
 							</div>
 						) : (
 							<div className='divide-y divide-slate-100'>
-								{notifications.map(notification => (
-									<div
+								{notifications.map((notification: Notification) => (
+									<button
 										key={notification.id}
-										className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer ${
-											!notification.read ? 'bg-blue-50/50' : ''
+										type='button'
+										className={`w-full text-left p-4 hover:bg-slate-50 transition-colors cursor-pointer ${
+											notification.read ? '' : 'bg-blue-50/50'
 										}`}
 										onClick={() => handleNotificationClick(notification)}
 									>
 										<div className='flex items-start gap-3'>
 											<div className='text-2xl shrink-0'>
-												{notification.icon || getNotificationIcon(notification.type)}
+												{notification.icon ||
+													getNotificationIcon(notification.type)}
 											</div>
 											<div className='flex-1 min-w-0'>
 												<div className='flex items-start justify-between gap-2 mb-1'>
@@ -131,7 +142,7 @@ export function NotificationBell() {
 												<X className='h-3 w-3 text-slate-400' />
 											</button>
 										</div>
-									</div>
+									</button>
 								))}
 							</div>
 						)}
@@ -141,4 +152,3 @@ export function NotificationBell() {
 		</div>
 	)
 }
-

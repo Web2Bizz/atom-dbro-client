@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Share2, Copy, Check, X } from 'lucide-react'
 import type { Quest } from '../../types/quest-types'
 import { Button } from '@/components/ui/button'
-import { useUser } from '@/hooks/useUser'
-import { useNotifications } from '@/contexts/NotificationContext'
+import { useNotifications } from '@/hooks/useNotifications'
 
 interface AmbassadorShareProps {
 	readonly quest: Quest
@@ -39,7 +38,6 @@ const sharePlatforms = [
 ]
 
 export function AmbassadorShare({ quest, onClose, onShare }: AmbassadorShareProps) {
-	const { user } = useUser()
 	const { addNotification } = useNotifications()
 	const [copied, setCopied] = useState(false)
 
@@ -72,7 +70,9 @@ export function AmbassadorShare({ quest, onClose, onShare }: AmbassadorShareProp
 				icon: '📋',
 			})
 		} catch (err) {
-			console.error('Failed to copy:', err)
+			if (process.env.NODE_ENV === 'development') {
+				console.error('Failed to copy:', err)
+			}
 		}
 	}
 

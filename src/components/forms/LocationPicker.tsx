@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button'
+import { getCityCoordinates } from '@/utils/cityCoordinates'
+import L from 'leaflet'
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
-import { getCityCoordinates } from '@/utils/cityCoordinates'
-import L from 'leaflet'
 
 // Иконка для выбранного местоположения
 const selectedMarkerIcon = L.divIcon({
@@ -22,10 +22,10 @@ const selectedMarkerIcon = L.divIcon({
 })
 
 interface LocationPickerProps {
-	city?: string
-	initialCoordinates?: { lat: number; lng: number }
-	onSelect: (coordinates: { lat: number; lng: number }) => void
-	onClose: () => void
+	readonly city?: string
+	readonly initialCoordinates?: { lat: number; lng: number }
+	readonly onSelect: (coordinates: { lat: number; lng: number }) => void
+	readonly onClose: () => void
 }
 
 function MapClickHandler({
@@ -57,7 +57,11 @@ export function LocationPicker({
 		if (city && !selectedCoords) {
 			const cityCoords = getCityCoordinates(city)
 			if (cityCoords) {
-				setSelectedCoords(cityCoords)
+				// Используем setTimeout для избежания синхронного setState в эффекте
+				const timeoutId = setTimeout(() => {
+					setSelectedCoords(cityCoords)
+				}, 0)
+				return () => clearTimeout(timeoutId)
 			}
 		}
 	}, [city, selectedCoords])
@@ -74,16 +78,20 @@ export function LocationPicker({
 	}
 
 	// Определяем центр карты
-	const mapCenter: [number, number] = selectedCoords
-		? [selectedCoords.lat, selectedCoords.lng]
-		: city
-			? (() => {
-					const cityCoords = getCityCoordinates(city)
-					return cityCoords
-						? [cityCoords.lat, cityCoords.lng]
-						: [55.751244, 37.618423] // Москва по умолчанию
-				})()
-			: [55.751244, 37.618423]
+	const getMapCenter = (): [number, number] => {
+		if (selectedCoords) {
+			return [selectedCoords.lat, selectedCoords.lng]
+		}
+		if (city) {
+			const cityCoords = getCityCoordinates(city)
+			return cityCoords
+				? [cityCoords.lat, cityCoords.lng]
+				: [55.751244, 37.618423] // Москва по умолчанию
+		}
+		return [55.751244, 37.618423] // Москва по умолчанию
+	}
+
+	const mapCenter = getMapCenter()
 
 	return (
 		<div className='fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4'>
@@ -126,7 +134,8 @@ export function LocationPicker({
 					<div className='flex-1'>
 						{selectedCoords ? (
 							<p className='text-sm text-slate-600'>
-								Координаты: {selectedCoords.lat.toFixed(6)}, {selectedCoords.lng.toFixed(6)}
+								Координаты: {selectedCoords.lat.toFixed(6)},{' '}
+								{selectedCoords.lng.toFixed(6)}
 							</p>
 						) : (
 							<p className='text-sm text-slate-500'>
@@ -147,4 +156,3 @@ export function LocationPicker({
 		</div>
 	)
 }
-

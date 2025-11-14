@@ -13,8 +13,6 @@ interface DonationPanelProps {
 	readonly onClose: () => void
 }
 
-const quickAmounts = [200, 500, 1000, 2000, 5000]
-
 export function DonationPanel({
 	stage,
 	questTitle,

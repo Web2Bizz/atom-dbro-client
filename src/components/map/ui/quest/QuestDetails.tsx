@@ -1,10 +1,10 @@
 import { CheckCircle2, Circle, Clock, Heart, Share2, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useUser } from '@/hooks/useUser'
-import { useNotifications } from '@/contexts/NotificationContext'
+import { useNotifications } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatCurrency } from '@/utils/format'
-import type { Quest, QuestStage } from '../../types/quest-types'
+import type { QuestStage } from '../../types/quest-types'
 import { DonationPanel } from './DonationPanel'
 import { RoleSelection } from './RoleSelection'
 import { VolunteerRegistration } from './VolunteerRegistration'
@@ -48,12 +48,6 @@ export function QuestDetails({
 	const isParticipating =
 		user?.participatingQuests.includes(quest.id) ?? false
 	
-	// Отладка
-	console.log('QuestDetails render:', {
-		questId: quest.id,
-		isParticipating,
-		participatingQuests: user?.participatingQuests,
-	})
 
 	const handleParticipate = () => {
 		setShowRoleSelection(true)
@@ -104,10 +98,11 @@ export function QuestDetails({
 
 	const handleVolunteerRegister = (
 		stageId: string,
-		data: { name: string; phone: string; email?: string }
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		_data: { name: string; phone: string; email?: string }
 	) => {
 		// Здесь будет API вызов для регистрации
-		console.log('Volunteer registration:', { stageId, data })
+		// _data будет использоваться для будущей реализации API
 		addNotification({
 			type: 'volunteer_registered',
 			title: 'Регистрация успешна!',
@@ -118,7 +113,7 @@ export function QuestDetails({
 		})
 	}
 
-	const handleShare = (platform: string) => {
+	const handleShare = () => {
 		// Логика уже в AmbassadorShare
 	}
 
