@@ -9,6 +9,9 @@ export {
 } from './auth/model/auth-service'
 export type { LoginErrorResponse } from './auth/model/type'
 
+export { experienceService, useAddExperienceMutation } from './experience'
+export type { AddExperienceRequest, AddExperienceResponse } from './experience'
+
 export {
 	useContributeMutation,
 	useCreateQuestMutation,

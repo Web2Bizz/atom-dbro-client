@@ -3,6 +3,7 @@ import { persistReducer, persistStore } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { achievementService } from './entities/achievement'
 import { authService } from './entities/auth'
+import { experienceService } from './entities/experience'
 import { questService } from './entities/quest'
 
 const persistConfig = {
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
 	[authService.reducerPath]: authService.reducer,
 	[questService.reducerPath]: questService.reducer,
 	[achievementService.reducerPath]: achievementService.reducer,
+	[experienceService.reducerPath]: experienceService.reducer,
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
@@ -40,7 +42,8 @@ export const setupStore = () => {
 			}).concat(
 				authService.middleware,
 				questService.middleware,
-				achievementService.middleware
+				achievementService.middleware,
+				experienceService.middleware
 			),
 	})
 

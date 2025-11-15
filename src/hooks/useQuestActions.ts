@@ -1,30 +1,36 @@
+import type { Quest } from '@/components/map/types/quest-types'
 import { UserContext } from '@/contexts/UserContext'
 import { allAchievements } from '@/data/achievements'
+import { useAddExperienceMutation, useLazyGetUserQuery } from '@/store/entities'
 import type { Achievement, QuestContribution, User } from '@/types/user'
-import { getLevelTitle, MAX_LEVEL, normalizeUserLevel } from '@/utils/level'
+import { transformUserFromAPI } from '@/utils/auth'
+import {
+	calculateExperienceToNext,
+	getLevelTitle,
+	normalizeUserLevel,
+} from '@/utils/level'
 import { useCallback, useContext } from 'react'
-import type { Quest } from '@/components/map/types/quest-types'
+import { toast } from 'sonner'
 
 export function useQuestActions() {
 	const context = useContext(UserContext)
 	if (context === undefined) {
 		throw new Error('useQuestActions must be used within a UserProvider')
 	}
-	const { setUser } = context
+	const { setUser, user } = context
+	const [addExperience] = useAddExperienceMutation()
+	const [getUser] = useLazyGetUserQuery()
 
 	const participateInQuest = useCallback(
-		(questId: string) => {
+		async (questId: string) => {
+			if (!user) return
+
+			const alreadyParticipating = user.participatingQuests.includes(questId)
+			if (alreadyParticipating) return
+
+			// Обновляем локальное состояние
 			setUser(currentUser => {
-				if (!currentUser) {
-					return currentUser
-				}
-
-				const alreadyParticipating =
-					currentUser.participatingQuests.includes(questId)
-
-				if (alreadyParticipating) {
-					return currentUser
-				}
+				if (!currentUser) return currentUser
 
 				const updatedUser: User = {
 					...currentUser,
@@ -48,12 +54,101 @@ export function useQuestActions() {
 
 				return updatedUser
 			})
+
+			// Начисляем опыт за участие в квесте (50 опыта)
+			const experienceGain = 50
+			try {
+				if (import.meta.env.DEV) {
+					console.log('Adding experience (participate):', {
+						userId: user.id,
+						amount: experienceGain,
+					})
+				}
+
+				const result = await addExperience({
+					userId: user.id,
+					data: { amount: experienceGain },
+				}).unwrap()
+
+				if (import.meta.env.DEV) {
+					console.log('Experience added successfully (participate):', result)
+				}
+
+				// Обновляем данные пользователя с сервера
+				try {
+					const userResult = await getUser(user.id).unwrap()
+					if (userResult) {
+						const transformedUser = transformUserFromAPI(userResult)
+						setUser(transformedUser)
+
+						if (import.meta.env.DEV) {
+							console.log('User data updated from server:', transformedUser)
+						}
+					}
+				} catch (error) {
+					if (import.meta.env.DEV) {
+						console.error('Error fetching updated user data:', error)
+					}
+					// Если не удалось получить данные с сервера, обновляем локально
+					setUser(currentUser => {
+						if (!currentUser) return currentUser
+
+						const normalized = normalizeUserLevel(
+							result.level,
+							result.experience,
+							calculateExperienceToNext(result.level)
+						)
+
+						return {
+							...currentUser,
+							level: {
+								level: normalized.level,
+								experience: normalized.experience,
+								experienceToNext: normalized.experienceToNext,
+								title: getLevelTitle(normalized.level),
+							},
+						}
+					})
+				}
+
+				// Показываем уведомление
+				if (result.levelUp) {
+					toast.success(
+						`🎉 Поздравляем! Вы достигли ${result.levelUp.newLevel} уровня!`,
+						{
+							description: `Получено опыта: +${result.levelUp.experienceGain}`,
+							duration: 5000,
+						}
+					)
+				} else {
+					toast.success(`Получено опыта: +${experienceGain}`, {
+						duration: 3000,
+					})
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: 'Не удалось начислить опыт. Попробуйте еще раз.'
+				toast.error(errorMessage)
+				if (import.meta.env.DEV) {
+					console.error('Error adding experience on participate:', error)
+				}
+			}
 		},
-		[setUser]
+		[setUser, user, addExperience, getUser]
 	)
 
 	const contributeToQuest = useCallback(
-		(contribution: QuestContribution) => {
+		async (contribution: QuestContribution) => {
+			if (!user) return
+
+			// Вычисляем количество опыта для начисления
+			const experienceGain = contribution.amount
+				? Math.floor(contribution.amount / 100)
+				: 10
+
+			// Обновляем локальное состояние (статистика и достижения)
 			setUser(currentUser => {
 				if (!currentUser) return currentUser
 
@@ -93,34 +188,90 @@ export function useQuestActions() {
 					}
 				}
 
-				// Добавляем опыт
-				const experienceGain = contribution.amount
-					? Math.floor(contribution.amount / 100)
-					: 10
-
-				// Если уже максимальный уровень, не добавляем опыт
-				if (updatedUser.level.level >= MAX_LEVEL) {
-					return updatedUser
-				}
-
-				updatedUser.level.experience += experienceGain
-
-				// Нормализуем уровень и опыт (обрабатываем избыточный опыт в цикле)
-				const normalized = normalizeUserLevel(
-					updatedUser.level.level,
-					updatedUser.level.experience,
-					updatedUser.level.experienceToNext
-				)
-
-				updatedUser.level.level = normalized.level
-				updatedUser.level.experience = normalized.experience
-				updatedUser.level.experienceToNext = normalized.experienceToNext
-				updatedUser.level.title = getLevelTitle(updatedUser.level.level)
-
 				return updatedUser
 			})
+
+			// Начисляем опыт через API
+			try {
+				if (import.meta.env.DEV) {
+					console.log('Adding experience (contribute):', {
+						userId: user.id,
+						amount: experienceGain,
+					})
+				}
+
+				const result = await addExperience({
+					userId: user.id,
+					data: { amount: experienceGain },
+				}).unwrap()
+
+				if (import.meta.env.DEV) {
+					console.log('Experience added successfully (contribute):', result)
+				}
+
+				// Обновляем данные пользователя с сервера
+				try {
+					const userResult = await getUser(user.id).unwrap()
+					if (userResult) {
+						const transformedUser = transformUserFromAPI(userResult)
+						setUser(transformedUser)
+
+						if (import.meta.env.DEV) {
+							console.log('User data updated from server:', transformedUser)
+						}
+					}
+				} catch (error) {
+					if (import.meta.env.DEV) {
+						console.error('Error fetching updated user data:', error)
+					}
+					// Если не удалось получить данные с сервера, обновляем локально
+					setUser(currentUser => {
+						if (!currentUser) return currentUser
+
+						const normalized = normalizeUserLevel(
+							result.level,
+							result.experience,
+							calculateExperienceToNext(result.level)
+						)
+
+						return {
+							...currentUser,
+							level: {
+								level: normalized.level,
+								experience: normalized.experience,
+								experienceToNext: normalized.experienceToNext,
+								title: getLevelTitle(normalized.level),
+							},
+						}
+					})
+				}
+
+				// Показываем уведомление о повышении уровня, если произошло
+				if (result.levelUp) {
+					toast.success(
+						`🎉 Поздравляем! Вы достигли ${result.levelUp.newLevel} уровня!`,
+						{
+							description: `Получено опыта: +${result.levelUp.experienceGain}`,
+							duration: 5000,
+						}
+					)
+				} else {
+					toast.success(`Получено опыта: +${experienceGain}`, {
+						duration: 3000,
+					})
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: 'Не удалось начислить опыт. Попробуйте еще раз.'
+				toast.error(errorMessage)
+				if (import.meta.env.DEV) {
+					console.error('Error adding experience:', error)
+				}
+			}
 		},
-		[setUser]
+		[setUser, user, addExperience, getUser]
 	)
 
 	const checkAndUnlockAchievements = useCallback(
@@ -134,7 +285,9 @@ export function useQuestActions() {
 				// Проверяем различные достижения на основе квеста
 				if (
 					questId === 'ozero-chistoe' &&
-					!updatedUser.achievements.some((a: Achievement) => a.id === 'lake_saver')
+					!updatedUser.achievements.some(
+						(a: Achievement) => a.id === 'lake_saver'
+					)
 				) {
 					updatedUser.achievements.push({
 						...allAchievements.lake_saver,
@@ -145,7 +298,9 @@ export function useQuestActions() {
 
 				if (
 					questId === 'les-1000-derev' &&
-					!updatedUser.achievements.some((a: Achievement) => a.id === 'tree_planter')
+					!updatedUser.achievements.some(
+						(a: Achievement) => a.id === 'tree_planter'
+					)
 				) {
 					updatedUser.achievements.push({
 						...allAchievements.tree_planter,
@@ -156,7 +311,9 @@ export function useQuestActions() {
 
 				if (
 					questId === 'volk-berkut' &&
-					!updatedUser.achievements.some((a: Achievement) => a.id === 'wildlife_protector')
+					!updatedUser.achievements.some(
+						(a: Achievement) => a.id === 'wildlife_protector'
+					)
 				) {
 					updatedUser.achievements.push({
 						...allAchievements.wildlife_protector,
@@ -177,7 +334,11 @@ export function useQuestActions() {
 			questId: string,
 			questProgress: number,
 			customAchievement?: { icon: string; title: string; description: string },
-			onAchievementUnlocked?: (achievement: { id: string; title: string; icon: string }) => void
+			onAchievementUnlocked?: (achievement: {
+				id: string
+				title: string
+				icon: string
+			}) => void
 		) => {
 			setUser(currentUser => {
 				if (!currentUser || !customAchievement || questProgress < 100) {
@@ -191,7 +352,11 @@ export function useQuestActions() {
 
 				// Проверяем, что достижение еще не разблокировано
 				const achievementId = `custom-${questId}`
-				if (currentUser.achievements.some((a: Achievement) => a.id === achievementId)) {
+				if (
+					currentUser.achievements.some(
+						(a: Achievement) => a.id === achievementId
+					)
+				) {
 					return currentUser
 				}
 
@@ -231,7 +396,11 @@ export function useQuestActions() {
 		(
 			quest: Quest,
 			onQuestCompleted?: (quest: Quest) => void,
-			onAchievementUnlocked?: (achievement: { id: string; title: string; icon: string }) => void
+			onAchievementUnlocked?: (achievement: {
+				id: string
+				title: string
+				icon: string
+			}) => void
 		) => {
 			setUser(currentUser => {
 				if (!currentUser) return currentUser
@@ -251,9 +420,13 @@ export function useQuestActions() {
 				// Проверяем пользовательское достижение и добавляем его, если нужно
 				if (quest.customAchievement) {
 					const achievementId = `custom-${quest.id}`
-					
+
 					// Проверяем, что достижение еще не разблокировано
-					if (!updatedUser.achievements.some((a: Achievement) => a.id === achievementId)) {
+					if (
+						!updatedUser.achievements.some(
+							(a: Achievement) => a.id === achievementId
+						)
+					) {
 						// Разблокируем пользовательское достижение
 						updatedUser = {
 							...updatedUser,

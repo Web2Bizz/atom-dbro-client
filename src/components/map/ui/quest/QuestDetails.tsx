@@ -217,10 +217,10 @@ export function QuestDetails({
 		return null
 	}
 
-	const handleParticipate = () => {
+	const handleParticipate = async () => {
 		if (quest) {
 			// Автоматически добавляем пользователя в квест
-			participateInQuest(quest.id)
+			await participateInQuest(quest.id)
 			checkAndUnlockAchievements(quest.id)
 
 			// Добавляем уведомление об успешном участии
