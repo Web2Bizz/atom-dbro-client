@@ -224,7 +224,8 @@ export function useOrganizationForm(
 					data: requestData,
 				}).unwrap()
 
-				if (result.data?.organization) {
+				// Проверяем успешность запроса - если нет ошибки, значит успешно
+				if (result && !('error' in result)) {
 					toast.success('Организация успешно обновлена!')
 
 					// Сохраняем координаты для зума на карте
@@ -239,7 +240,7 @@ export function useOrganizationForm(
 						)
 					}
 
-					if (onSuccess) {
+					if (result.data?.organization && onSuccess) {
 						onSuccess(String(result.data.organization.id))
 					}
 				}
@@ -249,28 +250,31 @@ export function useOrganizationForm(
 					requestData as CreateOrganizationRequest
 				).unwrap()
 
-				if (result.data?.organization) {
-					const newOrgId = String(result.data.organization.id)
-
-					// Сохраняем ID организации в контексте пользователя
-					setUserOrganizationId(newOrgId)
-
+				// Проверяем успешность запроса - если нет ошибки, значит успешно
+				if (result && !('error' in result)) {
 					toast.success('Организация успешно создана!')
 
-					// Сохраняем координаты для зума на карте
-					if (data.latitude && data.longitude) {
-						localStorage.setItem(
-							'zoomToCoordinates',
-							JSON.stringify({
-								lat: Number.parseFloat(data.latitude),
-								lng: Number.parseFloat(data.longitude),
-								zoom: 15,
-							})
-						)
-					}
+					if (result.data?.organization) {
+						const newOrgId = String(result.data.organization.id)
 
-					if (onSuccess) {
-						onSuccess(newOrgId)
+						// Сохраняем ID организации в контексте пользователя
+						setUserOrganizationId(newOrgId)
+
+						// Сохраняем координаты для зума на карте
+						if (data.latitude && data.longitude) {
+							localStorage.setItem(
+								'zoomToCoordinates',
+								JSON.stringify({
+									lat: Number.parseFloat(data.latitude),
+									lng: Number.parseFloat(data.longitude),
+									zoom: 15,
+								})
+							)
+						}
+
+						if (onSuccess) {
+							onSuccess(newOrgId)
+						}
 					}
 				}
 			}
