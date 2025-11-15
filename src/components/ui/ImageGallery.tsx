@@ -23,12 +23,39 @@ export function ImageGallery({
 
 	// Сброс состояния загрузки при смене изображения
 	useEffect(() => {
-		// Используем setTimeout для избежания синхронного setState
-		const timeoutId = setTimeout(() => {
-			setImageLoading(true)
-		}, 0)
-		return () => clearTimeout(timeoutId)
-	}, [currentIndex])
+		setImageLoading(true)
+		
+		// Проверяем, загружено ли изображение уже в кеше
+		const img = new Image()
+		let isMounted = true
+		
+		const handleLoad = () => {
+			if (isMounted) {
+				setImageLoading(false)
+			}
+		}
+		
+		const handleError = () => {
+			if (isMounted) {
+				setImageLoading(false)
+			}
+		}
+		
+		img.onload = handleLoad
+		img.onerror = handleError
+		img.src = currentImage
+		
+		// Если изображение уже загружено (в кеше), сразу скрываем скелетон
+		if (img.complete) {
+			setImageLoading(false)
+		}
+		
+		return () => {
+			isMounted = false
+			img.onload = null
+			img.onerror = null
+		}
+	}, [currentIndex, currentImage])
 
 	// Сброс состояния загрузки миниатюр при смене массива изображений
 	useEffect(() => {
@@ -131,8 +158,13 @@ export function ImageGallery({
 					className={`max-w-full max-h-full object-contain rounded-lg transition-opacity duration-300 ${
 						imageLoading ? 'opacity-0 absolute' : 'opacity-100'
 					}`}
-					onLoad={() => setImageLoading(false)}
-					onError={() => setImageLoading(false)}
+					onLoad={() => {
+						setImageLoading(false)
+					}}
+					onError={() => {
+						setImageLoading(false)
+					}}
+					loading='eager'
 				/>
 			</div>
 
