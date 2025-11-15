@@ -1,11 +1,15 @@
-import type { Organization } from '@/components/map/types/types'
-import { cityMap, helpTypeMap, organizationTypeMap } from '@/components/map/data/organizations'
 import { useUser } from '@/hooks/useUser'
-import { getCityCoordinates } from '@/utils/cityCoordinates'
 import {
-	getUserOrganization as getUserOrganizationById,
-	updateUserOrganization,
-} from '@/utils/userData'
+	useCreateOrganizationMutation,
+	useDeleteOrganizationMutation,
+	useGetCitiesQuery,
+	useGetOrganizationQuery,
+	useUpdateOrganizationMutation,
+	useUploadImagesMutation,
+	type CityResponse,
+	type CreateOrganizationRequest,
+	type UpdateOrganizationRequest,
+} from '@/store/entities/organization'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
@@ -20,20 +24,35 @@ export function useOrganizationForm(
 ) {
 	const {
 		user,
-		createOrganization,
+		createOrganization: setUserOrganizationId,
 		canCreateOrganization,
-		deleteOrganization,
+		deleteOrganization: removeUserOrganizationId,
 		getUserOrganization: getUserOrgId,
 	} = useUser()
 
 	const existingOrgId = getUserOrgId()
-	const existingOrg = existingOrgId
-		? getUserOrganizationById(existingOrgId)
-		: null
+
+	// Загружаем организацию из API если есть ID
+	const { data: organizationResponse, isLoading: isLoadingOrganization } =
+		useGetOrganizationQuery(existingOrgId || '', {
+			skip: !existingOrgId,
+		})
+
+	const existingOrg = organizationResponse?.data?.organization || null
 	const isEditMode = !!existingOrg
 
+	const [createOrgMutation, { isLoading: isCreating }] =
+		useCreateOrganizationMutation()
+	const [updateOrgMutation, { isLoading: isUpdating }] =
+		useUpdateOrganizationMutation()
+	const [deleteOrgMutation, { isLoading: isDeleting }] =
+		useDeleteOrganizationMutation()
+	const [uploadImagesMutation, { isLoading: isUploadingImages }] =
+		useUploadImagesMutation()
+
 	const form = useForm<OrganizationFormData>({
-		resolver: zodResolver(organizationFormSchema),
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		resolver: zodResolver(organizationFormSchema) as any,
 		defaultValues: {
 			name: '',
 			cityId: 0,
@@ -58,7 +77,7 @@ export function useOrganizationForm(
 
 	// Загружаем данные существующей организации при редактировании
 	useEffect(() => {
-		if (existingOrg && !form.formState.isDirty) {
+		if (existingOrg && !form.formState.isDirty && !isLoadingOrganization) {
 			const phoneContact = existingOrg.contacts.find(c => c.name === 'Телефон')
 			const emailContact = existingOrg.contacts.find(c => c.name === 'Email')
 
@@ -84,15 +103,15 @@ export function useOrganizationForm(
 					...(emailContact
 						? [emailContact]
 						: user?.email
-							? [{ name: 'Email', value: user.email }]
-							: []),
+						? [{ name: 'Email', value: user.email }]
+						: []),
 				],
 				latitude: existingOrg.latitude || '',
 				longitude: existingOrg.longitude || '',
 				gallery: existingOrg.gallery || [],
 			})
 		}
-	}, [existingOrg, user?.email, form])
+	}, [existingOrg, user?.email, form, isLoadingOrganization])
 
 	const onSubmit = async (data: OrganizationFormData) => {
 		if (!isEditMode && !canCreateOrganization()) {
@@ -108,101 +127,172 @@ export function useOrganizationForm(
 		}
 
 		try {
-			const organizationId =
-				existingOrg?.id || `user-${user?.id}-org-${Date.now()}`
+			// Сначала загружаем изображения, если они есть
+			let imageUrls: string[] = []
+			if (data.gallery && data.gallery.length > 0) {
+				if (import.meta.env.DEV) {
+					console.log('Uploading images:', data.gallery.length)
+				}
 
-			// Получаем данные города
-			const cityName = Object.values(cityMap).find(c => c.id === data.cityId)?.name || ''
-			const city = cityMap[cityName] || {
-				id: data.cityId,
-				name: cityName,
-				latitude: data.latitude,
-				longitude: data.longitude,
+				try {
+					// Конвертируем base64 строки в Blob и создаем FormData
+					const formData = new FormData()
+
+					for (let i = 0; i < data.gallery.length; i++) {
+						const base64String = data.gallery[i]
+
+						// Извлекаем MIME type и данные из base64 строки
+						const matches = base64String.match(
+							/^data:([A-Za-z-+/]+);base64,(.+)$/
+						)
+						if (!matches || matches.length !== 3) {
+							throw new Error(`Неверный формат base64 изображения ${i + 1}`)
+						}
+
+						const mimeType = matches[1]
+						const base64Data = matches[2]
+
+						// Конвертируем base64 в бинарные данные
+						const byteCharacters = atob(base64Data)
+						const byteNumbers = new Array(byteCharacters.length)
+						for (let j = 0; j < byteCharacters.length; j++) {
+							byteNumbers[j] = byteCharacters.charCodeAt(j)
+						}
+						const byteArray = new Uint8Array(byteNumbers)
+						const blob = new Blob([byteArray], { type: mimeType })
+
+						// Определяем расширение файла из MIME type
+						const extension = mimeType.split('/')[1] || 'jpg'
+						const fileName = `image-${i + 1}.${extension}`
+
+						// Добавляем файл в FormData
+						formData.append('images', blob, fileName)
+					}
+
+					const uploadResult = await uploadImagesMutation(formData).unwrap()
+
+					imageUrls = uploadResult.map(img => img.url)
+
+					if (import.meta.env.DEV) {
+						console.log('Images uploaded, URLs:', imageUrls)
+					}
+				} catch (uploadError) {
+					if (import.meta.env.DEV) {
+						console.error('Error uploading images:', uploadError)
+					}
+
+					const errorMessage =
+						uploadError &&
+						typeof uploadError === 'object' &&
+						'data' in uploadError
+							? (uploadError.data as { message?: string })?.message ||
+							  'Не удалось загрузить изображения'
+							: 'Не удалось загрузить изображения. Попробуйте еще раз.'
+
+					toast.error(errorMessage)
+					return
+				}
 			}
 
-			const newOrganization: Organization = {
-				id: organizationId,
-				name: data.name,
-				latitude: data.latitude,
-				longitude: data.longitude,
-				summary: data.summary,
-				mission: data.mission,
-				description: data.description,
-				goals: data.goals.filter(g => g.trim() !== ''),
-				needs: data.needs.filter(n => n.trim() !== ''),
-				address: data.address,
-				contacts: data.contacts.filter(c => c.value.trim() !== ''),
-				organizationTypes: [
-					{
-						id: data.organizationTypeId,
-						name:
-							Object.values(organizationTypeMap).find(
-								ot => ot.id === data.organizationTypeId
-							)?.name || '',
-					},
-				],
-				gallery: data.gallery,
-				city: {
-					id: city.id,
-					name: city.name,
-					latitude: city.latitude,
-					longitude: city.longitude,
-				},
-				helpTypes: data.helpTypeIds
-					.map(id => {
-						const helpType = Object.values(helpTypeMap).find(ht => ht.id === id)
-						return helpType ? { id: helpType.id, name: helpType.name } : null
-					})
-					.filter((ht): ht is { id: number; name: string } => ht !== null),
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-			}
+			// Подготавливаем данные для API
+			const requestData: CreateOrganizationRequest | UpdateOrganizationRequest =
+				{
+					name: data.name,
+					latitude: Number.parseFloat(data.latitude),
+					longitude: Number.parseFloat(data.longitude),
+					summary: data.summary,
+					mission: data.mission,
+					description: data.description,
+					goals: data.goals.filter(g => g.trim() !== ''),
+					needs: data.needs.filter(n => n.trim() !== ''),
+					address: data.address,
+					contacts: data.contacts.filter(c => c.value.trim() !== ''),
+					typeId: data.organizationTypeId,
+					helpTypeIds: data.helpTypeIds.map(id => id as number),
+					cityId: data.cityId,
+					gallery: imageUrls.length > 0 ? imageUrls : undefined,
+				}
 
-			if (isEditMode) {
-				updateUserOrganization(newOrganization)
-			} else {
-				const existingOrganizations = JSON.parse(
-					localStorage.getItem('user_created_organizations') || '[]'
-				)
-				existingOrganizations.push(newOrganization)
-				localStorage.setItem(
-					'user_created_organizations',
-					JSON.stringify(existingOrganizations)
-				)
-				createOrganization(organizationId)
-			}
-
-			toast.success(
-				isEditMode
-					? 'Организация успешно обновлена!'
-					: 'Организация успешно создана!'
-			)
-
-			// Сохраняем координаты для зума на карте при сохранении
-			if (data.latitude && data.longitude) {
-				localStorage.setItem(
-					'zoomToCoordinates',
-					JSON.stringify({
-						lat: parseFloat(data.latitude),
-						lng: parseFloat(data.longitude),
-						zoom: 15,
-					})
-				)
-			}
-
-			if (onSuccess) {
-				onSuccess(organizationId)
-			}
-		} catch (error) {
 			if (import.meta.env.DEV) {
-				console.error('Error creating organization:', error)
+				console.log('Request data:', requestData)
+				console.log('Request data gallery:', requestData.gallery)
 			}
-			toast.error('Не удалось создать организацию. Попробуйте еще раз.')
+			if (isEditMode && existingOrgId) {
+				// Обновление существующей организации
+				const result = await updateOrgMutation({
+					organizationId: String(existingOrgId),
+					data: requestData,
+				}).unwrap()
+
+				if (result.data?.organization) {
+					toast.success('Организация успешно обновлена!')
+
+					// Сохраняем координаты для зума на карте
+					if (data.latitude && data.longitude) {
+						localStorage.setItem(
+							'zoomToCoordinates',
+							JSON.stringify({
+								lat: Number.parseFloat(data.latitude),
+								lng: Number.parseFloat(data.longitude),
+								zoom: 15,
+							})
+						)
+					}
+
+					if (onSuccess) {
+						onSuccess(String(result.data.organization.id))
+					}
+				}
+			} else {
+				// Создание новой организации
+				const result = await createOrgMutation(
+					requestData as CreateOrganizationRequest
+				).unwrap()
+
+				if (result.data?.organization) {
+					const newOrgId = String(result.data.organization.id)
+
+					// Сохраняем ID организации в контексте пользователя
+					setUserOrganizationId(newOrgId)
+
+					toast.success('Организация успешно создана!')
+
+					// Сохраняем координаты для зума на карте
+					if (data.latitude && data.longitude) {
+						localStorage.setItem(
+							'zoomToCoordinates',
+							JSON.stringify({
+								lat: Number.parseFloat(data.latitude),
+								lng: Number.parseFloat(data.longitude),
+								zoom: 15,
+							})
+						)
+					}
+
+					if (onSuccess) {
+						onSuccess(newOrgId)
+					}
+				}
+			}
+		} catch (error: unknown) {
+			if (import.meta.env.DEV) {
+				console.error('Error saving organization:', error)
+			}
+
+			const errorMessage =
+				error && typeof error === 'object' && 'data' in error
+					? (error.data as { message?: string })?.message ||
+					  'Не удалось сохранить организацию'
+					: 'Не удалось сохранить организацию. Попробуйте еще раз.'
+
+			toast.error(errorMessage)
 		}
 	}
 
+	const { data: cities = [] } = useGetCitiesQuery()
+
 	const handleCityChange = (cityName: string) => {
-		const city = cityMap[cityName]
+		const city = cities.find((c: CityResponse) => c.name === cityName)
 		if (city) {
 			form.setValue('cityId', city.id)
 			// Устанавливаем координаты города для зума, но не перезаписываем координаты организации
@@ -212,17 +302,44 @@ export function useOrganizationForm(
 
 	const handleDelete = async () => {
 		if (!existingOrgId) return
-		deleteOrganization(existingOrgId)
-		toast.success('Организация успешно удалена.')
-		form.reset()
+
+		try {
+			await deleteOrgMutation(String(existingOrgId)).unwrap()
+
+			// Удаляем ID организации из контекста пользователя
+			removeUserOrganizationId(String(existingOrgId))
+
+			toast.success('Организация успешно удалена.')
+			form.reset()
+		} catch (error: unknown) {
+			if (import.meta.env.DEV) {
+				console.error('Error deleting organization:', error)
+			}
+
+			const errorMessage =
+				error && typeof error === 'object' && 'data' in error
+					? (error.data as { message?: string })?.message ||
+					  'Не удалось удалить организацию'
+					: 'Не удалось удалить организацию. Попробуйте еще раз.'
+
+			toast.error(errorMessage)
+		}
 	}
 
 	const handleSubmit = form.handleSubmit(onSubmit)
 
+	const isSubmitting =
+		isCreating ||
+		isUpdating ||
+		isDeleting ||
+		isUploadingImages ||
+		form.formState.isSubmitting
+
 	return {
 		form,
-		isSubmitting: form.formState.isSubmitting,
+		isSubmitting,
 		isEditMode,
+		isLoadingOrganization,
 		onSubmit: handleSubmit,
 		handleCityChange,
 		handleDelete,

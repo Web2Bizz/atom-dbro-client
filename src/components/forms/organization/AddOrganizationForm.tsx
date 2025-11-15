@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/spinner'
-import { cityMap } from '@/components/map/data/organizations'
+import { useGetCitiesQuery } from '@/store/entities/organization'
 import { useState } from 'react'
 import { DangerZone } from '../shared/DangerZone'
 import { LocationPicker } from '../shared/LocationPicker'
@@ -23,6 +23,7 @@ export function AddOrganizationForm({
 		form,
 		isSubmitting,
 		isEditMode,
+		isLoadingOrganization,
 		onSubmit,
 		handleCityChange,
 		handleDelete,
@@ -36,10 +37,22 @@ export function AddOrganizationForm({
 		setShowLocationPicker(false)
 	}
 
+	const { data: cities = [] } = useGetCitiesQuery()
 	const cityId = form.watch('cityId')
 	const cityName = cityId
-		? Object.values(cityMap).find(c => c.id === cityId)?.name
+		? cities.find(c => c.id === cityId)?.name
 		: undefined
+
+	if (isLoadingOrganization) {
+		return (
+			<div className='flex items-center justify-center py-12'>
+				<div className='flex flex-col items-center gap-4'>
+					<Spinner />
+					<p className='text-sm text-slate-600'>Загрузка данных организации...</p>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<Form {...form}>

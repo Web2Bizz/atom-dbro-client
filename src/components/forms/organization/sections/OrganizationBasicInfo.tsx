@@ -1,10 +1,4 @@
 import {
-	cityMap,
-	organizationTypeMap,
-	cities as orgCities,
-} from '@/components/map/data/organizations'
-import { questCities } from '@/components/map/data/quests'
-import {
 	FormControl,
 	FormField,
 	FormItem,
@@ -12,6 +6,8 @@ import {
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { useGetCitiesQuery, useGetOrganizationTypesQuery } from '@/store/entities/organization'
+import { Spinner } from '@/components/ui/spinner'
 import { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { MediaUpload } from '../../shared/MediaUpload'
@@ -25,17 +21,19 @@ export function OrganizationBasicInfo({
 	onCityChange,
 }: OrganizationBasicInfoProps) {
 	const form = useFormContext<OrganizationFormData>()
-	const allCities = useMemo(
-		() =>
-			Array.from(new Set([...questCities, ...orgCities])).sort((a, b) =>
-				a.localeCompare(b)
-			),
-		[]
+	
+	// Загружаем данные из API
+	const { data: cities = [], isLoading: isLoadingCities } = useGetCitiesQuery()
+	const { data: organizationTypes = [], isLoading: isLoadingTypes } = useGetOrganizationTypesQuery()
+
+	const sortedCities = useMemo(
+		() => [...cities].sort((a, b) => a.name.localeCompare(b.name)),
+		[cities]
 	)
 
-	const organizationTypes = useMemo(
-		() => Object.values(organizationTypeMap).sort((a, b) => a.name.localeCompare(b.name)),
-		[]
+	const sortedOrganizationTypes = useMemo(
+		() => [...organizationTypes].sort((a, b) => a.name.localeCompare(b.name)),
+		[organizationTypes]
 	)
 
 	return (
@@ -62,28 +60,32 @@ export function OrganizationBasicInfo({
 						<FormItem>
 							<FormLabel>Город *</FormLabel>
 							<FormControl>
-								<select
-									value={field.value || ''}
-									onChange={e => {
-										const cityId = Number(e.target.value)
-										field.onChange(cityId)
-										const cityName = Object.values(cityMap).find(c => c.id === cityId)?.name
-										if (cityName && onCityChange) {
-											onCityChange(cityName)
-										}
-									}}
-									className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
-								>
-									<option value=''>Выберите город</option>
-									{allCities.map(cityName => {
-										const city = cityMap[cityName]
-										return city ? (
+								{isLoadingCities ? (
+									<div className='flex items-center gap-2 h-9'>
+										<Spinner className='h-4 w-4' />
+										<span className='text-sm text-slate-500'>Загрузка...</span>
+									</div>
+								) : (
+									<select
+										value={field.value || ''}
+										onChange={e => {
+											const cityId = Number(e.target.value)
+											field.onChange(cityId)
+											const city = cities.find(c => c.id === cityId)
+											if (city && onCityChange) {
+												onCityChange(city.name)
+											}
+										}}
+										className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
+									>
+										<option value=''>Выберите город</option>
+										{sortedCities.map(city => (
 											<option key={city.id} value={city.id}>
 												{city.name}
 											</option>
-										) : null
-									})}
-								</select>
+										))}
+									</select>
+								)}
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -97,18 +99,25 @@ export function OrganizationBasicInfo({
 						<FormItem>
 							<FormLabel>Тип организации *</FormLabel>
 							<FormControl>
-								<select
-									value={field.value || ''}
-									onChange={e => field.onChange(Number(e.target.value))}
-									className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
-								>
-									<option value=''>Выберите тип</option>
-									{organizationTypes.map(type => (
-										<option key={type.id} value={type.id}>
-											{type.name}
-										</option>
-									))}
-								</select>
+								{isLoadingTypes ? (
+									<div className='flex items-center gap-2 h-9'>
+										<Spinner className='h-4 w-4' />
+										<span className='text-sm text-slate-500'>Загрузка...</span>
+									</div>
+								) : (
+									<select
+										value={field.value || ''}
+										onChange={e => field.onChange(Number(e.target.value))}
+										className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
+									>
+										<option value=''>Выберите тип</option>
+										{sortedOrganizationTypes.map(type => (
+											<option key={type.id} value={type.id}>
+												{type.name}
+											</option>
+										))}
+									</select>
+								)}
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -176,8 +185,13 @@ export function OrganizationBasicInfo({
 						<FormLabel>Галерея организации</FormLabel>
 						<FormControl>
 							<MediaUpload
-								images={field.value}
-								onImagesChange={field.onChange}
+								images={field.value || []}
+								onImagesChange={newImages => {
+									if (import.meta.env.DEV) {
+										console.log('Gallery changed:', newImages.length, 'images')
+									}
+									field.onChange(newImages)
+								}}
 								maxImages={10}
 							/>
 						</FormControl>

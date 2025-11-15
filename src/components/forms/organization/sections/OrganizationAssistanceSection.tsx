@@ -5,23 +5,22 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form'
-import { ASSISTANCE_OPTIONS } from '@/constants'
-import { helpTypeMap } from '@/components/map/data/organizations'
+import { useGetHelpTypesQuery } from '@/store/entities/organization'
+import { Spinner } from '@/components/ui/spinner'
+import { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import type { OrganizationFormData } from '../schemas/organization-form.schema'
 
 export function OrganizationAssistanceSection() {
 	const form = useFormContext<OrganizationFormData>()
+	
+	// Загружаем виды помощи из API
+	const { data: helpTypes = [], isLoading: isLoadingHelpTypes } = useGetHelpTypesQuery()
 
-	// Маппинг старых ID помощи на новые helpType IDs
-	const assistanceToHelpTypeMap: Record<string, number> = {
-		volunteers: helpTypeMap.volunteers.id,
-		donations: helpTypeMap.donations.id,
-		things: helpTypeMap.things.id,
-		mentors: helpTypeMap.mentors.id,
-		blood: helpTypeMap.blood.id,
-		experts: helpTypeMap.experts.id,
-	}
+	const sortedHelpTypes = useMemo(
+		() => [...helpTypes].sort((a, b) => a.name.localeCompare(b.name)),
+		[helpTypes]
+	)
 
 	return (
 		<FormField
@@ -31,34 +30,38 @@ export function OrganizationAssistanceSection() {
 				<FormItem>
 					<FormLabel>Вид помощи *</FormLabel>
 					<FormControl>
-						<div className='grid grid-cols-2 gap-2'>
-							{ASSISTANCE_OPTIONS.map(option => {
-								const helpTypeId = assistanceToHelpTypeMap[option.id]
-								return (
+						{isLoadingHelpTypes ? (
+							<div className='flex items-center gap-2 py-4'>
+								<Spinner className='h-4 w-4' />
+								<span className='text-sm text-slate-500'>Загрузка видов помощи...</span>
+							</div>
+						) : (
+							<div className='grid grid-cols-2 gap-2'>
+								{sortedHelpTypes.map(helpType => (
 									<label
-										key={option.id}
+										key={helpType.id}
 										className='flex items-center gap-2 cursor-pointer p-2 rounded-md hover:bg-slate-50'
 									>
 										<input
 											type='checkbox'
-											checked={field.value.includes(helpTypeId)}
+											checked={field.value.includes(helpType.id)}
 											onChange={e => {
 												const currentValue = field.value || []
 												if (e.target.checked) {
-													field.onChange([...currentValue, helpTypeId])
+													field.onChange([...currentValue, helpType.id])
 												} else {
 													field.onChange(
-														currentValue.filter(id => id !== helpTypeId)
+														currentValue.filter(id => id !== helpType.id)
 													)
 												}
 											}}
 											className='w-4 h-4 rounded border-slate-300 text-blue-600'
 										/>
-										<span className='text-sm text-slate-700'>{option.label}</span>
+										<span className='text-sm text-slate-700'>{helpType.name}</span>
 									</label>
-								)
-							})}
-						</div>
+								))}
+							</div>
+						)}
 					</FormControl>
 					<FormMessage />
 				</FormItem>

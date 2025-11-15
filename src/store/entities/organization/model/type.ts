@@ -14,8 +14,8 @@ export type {
 // Типы для запросов
 export interface CreateOrganizationRequest {
 	name: string
-	latitude: string
-	longitude: string
+	latitude: number
+	longitude: number
 	summary: string
 	mission: string
 	description: string
@@ -23,16 +23,16 @@ export interface CreateOrganizationRequest {
 	needs: string[]
 	address: string
 	contacts: Contact[]
-	organizationTypes: Array<{ id: number } | { name: string }>
-	helpTypes: Array<{ id: number } | { name: string }>
+	typeId: number
+	helpTypeIds: number[]
 	cityId: number
 	gallery?: string[]
 }
 
 export interface UpdateOrganizationRequest {
 	name?: string
-	latitude?: string
-	longitude?: string
+	latitude?: number
+	longitude?: number
 	summary?: string
 	mission?: string
 	description?: string
@@ -40,8 +40,8 @@ export interface UpdateOrganizationRequest {
 	needs?: string[]
 	address?: string
 	contacts?: Contact[]
-	organizationTypes?: Array<{ id: number } | { name: string }>
-	helpTypes?: Array<{ id: number } | { name: string }>
+	typeId?: number
+	helpTypeIds?: number[]
 	cityId?: number
 	gallery?: string[]
 }
@@ -81,4 +81,39 @@ export interface UpdateOrganizationResponse {
 
 export interface DeleteOrganizationResponse {
 	message: string
+}
+
+// Типы для справочников
+export interface OrganizationTypeResponse {
+	id: number
+	name: string
+	createdAt: string
+	updatedAt: string
+}
+
+export interface HelpTypeResponse {
+	id: number
+	name: string
+	createdAt: string
+	updatedAt: string
+}
+
+export interface CityResponse {
+	id: number
+	name: string
+	latitude: string
+	longitude: string
+	regionId: number
+	region: {
+		id: number
+		name: string
+	}
+	createdAt: string
+	updatedAt: string
+}
+
+// Типы для загрузки изображений
+export interface UploadImageResponse {
+	fileName: string
+	url: string
 }
