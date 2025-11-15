@@ -34,39 +34,6 @@ export function transformUserFromAPI(apiUser: UserFullData): User {
 		achievements: [],
 		participatingQuests: [],
 		createdAt: new Date().toISOString(),
-
-		// level: {
-		// 	level: apiUser.level.level || 1,
-		// 	experience: apiUser.level.experience || 0,
-		// 	experienceToNext:
-		// 		(apiUser.level as { experienceToNext?: number }).experienceToNext ||
-		// 		100,
-		// 	title: (apiUser.level as { title?: string }).title || 'Новичок',
-		// },
-		// stats: {
-		// 	totalQuests: apiUser.stats.totalQuests,
-		// 	completedQuests: apiUser.stats.completedQuests,
-		// 	totalDonations: apiUser.stats.totalDonations,
-		// 	totalVolunteerHours: apiUser.stats.totalVolunteerHours,
-		// 	totalImpact: {
-		// 		treesPlanted: 0,
-		// 		animalsHelped: 0,
-		// 		areasCleaned: 0,
-		// 		livesChanged: 0,
-		// 	},
-		// },
-		// achievements: apiUser.achievements.map(achievement => ({
-		// 	id: achievement.id,
-		// 	title: achievement.title,
-		// 	description: achievement.description,
-		// 	icon: achievement.icon,
-		// 	rarity: achievement.rarity,
-		// 	unlockedAt: achievement.unlockedAt,
-		// })),
-		// participatingQuests: apiUser.participatingQuests || [],
-		// createdQuestId: apiUser.createdQuestId,
-		// createdOrganizationId: apiUser.createdOrganizationId || undefined,
-		// createdAt: apiUser.createdAt,
 	}
 }
 

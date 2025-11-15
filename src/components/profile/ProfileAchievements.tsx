@@ -1,7 +1,7 @@
-import { memo, useMemo } from 'react'
-import { Award } from 'lucide-react'
 import { allAchievements } from '@/data/achievements'
 import type { User } from '@/types/user'
+import { Award } from 'lucide-react'
+import { memo, useMemo } from 'react'
 
 interface ProfileAchievementsProps {
 	userAchievements: User['achievements']
@@ -47,13 +47,11 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 		[userAchievements]
 	)
 
-	const totalAchievements = Object.keys(allAchievements).length + customAchievements.length
-
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-8'>
 			<h2 className='text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2'>
 				<Award className='h-6 w-6 text-yellow-600' />
-				Достижения ({unlockedAchievements.length} / {totalAchievements})
+				Достижения
 			</h2>
 
 			{unlockedAchievements.length > 0 && (
@@ -64,7 +62,8 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 						{/* Системные достижения */}
 						{systemAchievements.map(achievement => {
-							const achievementData = allAchievements[achievement.id as keyof typeof allAchievements]
+							const achievementData =
+								allAchievements[achievement.id as keyof typeof allAchievements]
 							if (!achievementData) return null
 
 							return (
@@ -138,7 +137,7 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 						Заблокированные
 					</h3>
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-						{lockedAchievements.map(achievement => (
+						{lockedAchievements.slice(0, 5).map(achievement => (
 							<div
 								key={achievement.id}
 								className='p-4 rounded-xl border-2 border-slate-200 bg-slate-50 opacity-60'
@@ -154,10 +153,19 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 								</div>
 							</div>
 						))}
+						{lockedAchievements.length > 6 && (
+							<div className='p-4 rounded-xl border-2 border-slate-200 bg-slate-50 opacity-60 flex items-center justify-center'>
+								<div className='text-center'>
+									<div className='text-3xl text-slate-400 mb-2'>...</div>
+									<p className='text-sm text-slate-500'>
+										Еще {lockedAchievements.length - 6} заблокированных
+									</p>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			)}
 		</div>
 	)
 })
-

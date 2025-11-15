@@ -8,7 +8,6 @@ import {
 	CheckCircle2,
 	Circle,
 	Clock,
-	Heart,
 	Share2,
 	Users,
 	X,
@@ -17,7 +16,6 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Quest, QuestStage } from '../../types/quest-types'
 import { AmbassadorShare } from './AmbassadorShare'
-import { DonationPanel } from './DonationPanel'
 import { VolunteerRegistration } from './VolunteerRegistration'
 
 interface QuestDetailsProps {
@@ -54,9 +52,6 @@ export function QuestDetails({
 	const { checkQuestCompletion } = useQuestActions()
 	const { addNotification } = useNotifications()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
-	const [showDonation, setShowDonation] = useState<{
-		stage: QuestStage
-	} | null>(null)
 	const [showVolunteerRegistration, setShowVolunteerRegistration] = useState<{
 		stage: QuestStage
 	} | null>(null)
@@ -171,31 +166,6 @@ export function QuestDetails({
 		}
 	}
 
-	const handleDonate = (amount: number, stageId: string) => {
-		if (quest) {
-			contributeToQuest({
-				questId: quest.id,
-				stageId,
-				amount,
-				contributedAt: new Date().toISOString(),
-				impact: `Внесли ${formatCurrency(amount)} на этап "${
-					quest.stages.find((s: QuestStage) => s.id === stageId)?.title
-				}"`,
-			})
-			checkAndUnlockAchievements(quest.id)
-			addNotification({
-				type: 'donation_received',
-				title: 'Спасибо за поддержку!',
-				message: `Вы внесли ${formatCurrency(amount)} на этап "${
-					quest.stages.find((s: QuestStage) => s.id === stageId)?.title
-				}"`,
-				questId: quest.id,
-				stageId,
-				icon: '💰',
-			})
-		}
-	}
-
 	const handleVolunteerRegister = (
 		stageId: string,
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -283,15 +253,6 @@ export function QuestDetails({
 
 	return (
 		<>
-			{showDonation && quest && (
-				<DonationPanel
-					stage={showDonation.stage}
-					questTitle={quest.title}
-					onDonate={handleDonate}
-					onClose={() => setShowDonation(null)}
-				/>
-			)}
-
 			{showVolunteerRegistration && quest && (
 				<VolunteerRegistration
 					stage={showVolunteerRegistration.stage}
@@ -524,35 +485,21 @@ export function QuestDetails({
 											{stage.requirements && (
 												<div className='ml-8 space-y-2'>
 													{stage.requirements.financial && (
-														<div className='flex items-center justify-between'>
-															<div className='text-sm'>
-																<span className='font-medium text-slate-700'>
-																	💰 Собрано:{' '}
-																</span>
-																<span className='text-slate-600'>
-																	{formatCurrency(
-																		stage.requirements.financial.collected,
-																		stage.requirements.financial.currency
-																	)}{' '}
-																	из{' '}
-																	{formatCurrency(
-																		stage.requirements.financial.needed,
-																		stage.requirements.financial.currency
-																	)}
-																</span>
-															</div>
-															{isParticipating &&
-																stage.status !== 'completed' && (
-																	<Button
-																		size='sm'
-																		onClick={() => setShowDonation({ stage })}
-																		className='bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
-																		type='button'
-																	>
-																		<Heart className='h-3 w-3 mr-1' />
-																		Поддержать
-																	</Button>
+														<div className='text-sm'>
+															<span className='font-medium text-slate-700'>
+																💰 Собрано:{' '}
+															</span>
+															<span className='text-slate-600'>
+																{formatCurrency(
+																	stage.requirements.financial.collected,
+																	stage.requirements.financial.currency
+																)}{' '}
+																из{' '}
+																{formatCurrency(
+																	stage.requirements.financial.needed,
+																	stage.requirements.financial.currency
 																)}
+															</span>
 														</div>
 													)}
 													{stage.requirements.volunteers && (

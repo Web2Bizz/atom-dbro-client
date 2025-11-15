@@ -63,9 +63,6 @@ export function useQuestActions() {
 						...currentUser.stats,
 						totalDonations:
 							currentUser.stats.totalDonations + (contribution.amount || 0),
-						totalVolunteerHours:
-							currentUser.stats.totalVolunteerHours +
-							(contribution.action ? 1 : 0),
 					},
 				}
 

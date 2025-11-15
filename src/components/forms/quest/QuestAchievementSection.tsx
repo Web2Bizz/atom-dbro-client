@@ -1,6 +1,6 @@
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { X, Trophy } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Trophy, X } from 'lucide-react'
 
 interface QuestAchievementSectionProps {
 	customAchievement?: {
@@ -8,11 +8,15 @@ interface QuestAchievementSectionProps {
 		title: string
 		description: string
 	}
-	onChange: (achievement: {
-		icon: string
-		title: string
-		description: string
-	} | undefined) => void
+	onChange: (
+		achievement:
+			| {
+					icon: string
+					title: string
+					description: string
+			  }
+			| undefined
+	) => void
 }
 
 export function QuestAchievementSection({
@@ -46,8 +50,8 @@ export function QuestAchievementSection({
 
 	return (
 		<div className='space-y-4 rounded-lg border border-slate-200 bg-white p-6'>
-			<div className='flex items-center justify-between'>
-				<div className='flex items-center gap-2'>
+			<div className=' items-center justify-center sm:justify-between grid grid-rows-2 sm:flex '>
+				<div className=' items-center gap-2 flex'>
 					<Trophy className='h-5 w-5 text-amber-500' />
 					<h3 className='text-lg font-semibold text-slate-900'>
 						Пользовательское достижение
@@ -176,4 +180,3 @@ export function QuestAchievementSection({
 		</div>
 	)
 }
-

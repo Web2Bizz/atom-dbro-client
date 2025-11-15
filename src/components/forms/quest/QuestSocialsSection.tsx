@@ -32,11 +32,14 @@ export function QuestSocialsSection({
 
 			<div className='space-y-2'>
 				{socials.map((social, index) => (
-					<div key={index} className='flex gap-2 items-start'>
+					<div
+						key={index}
+						className='gap-2 items-start grid grid-rows-2 grid-cols-3 sm:flex '
+					>
 						<select
 							value={social.name}
 							onChange={e => onUpdate(index, 'name', e.target.value)}
-							className='w-32 h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
+							className=' h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
 						>
 							<option value='VK'>VK</option>
 							<option value='Telegram'>Telegram</option>
@@ -47,13 +50,14 @@ export function QuestSocialsSection({
 							value={social.url}
 							onChange={e => onUpdate(index, 'url', e.target.value)}
 							placeholder='https://...'
-							className='flex-1'
+							className='flex-1 col-span-2'
 						/>
 						<Button
 							type='button'
 							variant='outline'
 							size='sm'
 							onClick={() => onRemove(index)}
+							className='col-span-3 row-start-2'
 						>
 							Удалить
 						</Button>
@@ -63,4 +67,3 @@ export function QuestSocialsSection({
 		</div>
 	)
 }
-

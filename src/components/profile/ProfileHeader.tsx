@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
-import { Award, Heart, LogOut, Mail, Trophy, Users } from 'lucide-react'
+import { Award, LogOut, Mail, Trophy } from 'lucide-react'
 import { memo } from 'react'
 
 interface ProfileHeaderProps {
@@ -70,7 +70,7 @@ export const ProfileHeader = memo(function ProfileHeader({
 				</div>
 
 				{/* Быстрая статистика */}
-				<div className='grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4'>
+				<div className='grid grid-cols-2 gap-3 sm:gap-4'>
 					<div className='bg-white/95 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white shadow-lg'>
 						<div className='flex items-center gap-2 mb-1'>
 							<Trophy className='h-4 w-4 sm:h-5 sm:w-5 text-blue-600 shrink-0' />
@@ -80,30 +80,6 @@ export const ProfileHeader = memo(function ProfileHeader({
 						</div>
 						<p className='text-xl sm:text-2xl font-bold text-slate-900'>
 							{user.stats.totalQuests}
-						</p>
-					</div>
-
-					<div className='bg-white/95 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white shadow-lg'>
-						<div className='flex items-center gap-2 mb-1'>
-							<Heart className='h-4 w-4 sm:h-5 sm:w-5 text-red-500 shrink-0' />
-							<span className='text-xs sm:text-sm text-slate-700 font-medium'>
-								Донатов
-							</span>
-						</div>
-						<p className='text-lg sm:text-xl md:text-2xl font-bold text-slate-900 truncate'>
-							{user.stats.totalDonations.toLocaleString()} ₽
-						</p>
-					</div>
-
-					<div className='bg-white/95 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white shadow-lg'>
-						<div className='flex items-center gap-2 mb-1'>
-							<Users className='h-4 w-4 sm:h-5 sm:w-5 text-purple-600 shrink-0' />
-							<span className='text-xs sm:text-sm text-slate-700 font-medium'>
-								Часов
-							</span>
-						</div>
-						<p className='text-xl sm:text-2xl font-bold text-slate-900'>
-							{user.stats.totalVolunteerHours}
 						</p>
 					</div>
 
