@@ -6,6 +6,7 @@ import {
 	TileLayer,
 	ZoomControl,
 } from 'react-leaflet'
+import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
 import { useMapCenter } from '../hooks/useMapCenter'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
@@ -82,8 +83,8 @@ export function MapView({
 				{organizations.map(organization => (
 					<Marker
 						key={organization.id}
-						position={organization.coordinates}
-						icon={getMarkerIcon(organization.type)}
+						position={getOrganizationCoordinates(organization)}
+						icon={getMarkerIcon(organization.organizationTypes[0]?.name || '')}
 						eventHandlers={{
 							click: () => {
 								if (onMarkerClick) {

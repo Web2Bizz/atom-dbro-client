@@ -15,11 +15,11 @@ export function useMapCenter(organizations: Organization[]): MapCenter {
 		}
 
 		const latSum = organizations.reduce(
-			(acc, org) => acc + org.coordinates[0],
+			(acc, org) => acc + parseFloat(org.latitude),
 			0
 		)
 		const lngSum = organizations.reduce(
-			(acc, org) => acc + org.coordinates[1],
+			(acc, org) => acc + parseFloat(org.longitude),
 			0
 		)
 		const avgLat = latSum / organizations.length

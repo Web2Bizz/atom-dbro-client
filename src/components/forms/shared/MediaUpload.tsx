@@ -21,7 +21,7 @@ export function MediaUpload({
 	onImagesChange,
 	maxImages = 10,
 	maxImageSizeMB = DEFAULT_MAX_IMAGE_SIZE_MB,
-	label = 'Медиафайлы',
+	label = '',
 }: MediaUploadProps) {
 	const [isDragging, setIsDragging] = useState(false)
 	const [isUploading, setIsUploading] = useState(false)

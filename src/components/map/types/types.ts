@@ -1,23 +1,46 @@
-import type { AssistanceTypeId, SocialLink, Coordinates, ContactInfo } from '@/types/common'
+// Новые типы для организации согласно API
 
-export interface Organization {
-	id: string
+export interface City {
+	id: number
 	name: string
-	city: string
-	type: string
-	assistance: AssistanceTypeId[]
-	summary: string
-	description: string
-	mission: string
-	goals: string[]
-	needs: string[]
-	coordinates: Coordinates
-	address: string
-	contacts: ContactInfo
-	website?: string
-	socials?: SocialLink[]
-	gallery: string[]
+	latitude: string
+	longitude: string
 }
 
-// Re-export для обратной совместимости
-export type { AssistanceTypeId, SocialLink }
+export interface OrganizationType {
+	id: number
+	name: string
+}
+
+export interface HelpType {
+	id: number
+	name: string
+}
+
+export interface Contact {
+	name: string
+	value: string
+}
+
+export interface Organization {
+	id: number | string
+	name: string
+	latitude: string
+	longitude: string
+	summary: string
+	mission: string
+	description: string
+	goals: string[]
+	needs: string[]
+	address: string
+	contacts: Contact[]
+	organizationTypes: OrganizationType[]
+	gallery: string[]
+	createdAt?: string
+	updatedAt?: string
+	city: City
+	helpTypes: HelpType[]
+}
+
+// Re-export для обратной совместимости (старые типы)
+export type { AssistanceTypeId, SocialLink } from '@/types/common'

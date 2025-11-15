@@ -169,7 +169,7 @@ export function AddressSearchInput({
 													{result.data.name}
 												</p>
 												<p className='text-xs text-slate-500 truncate'>
-													{result.data.city} • {result.data.type}
+													{result.data.city?.name || 'Неизвестный город'} • {result.data.organizationTypes?.[0]?.name || ''}
 												</p>
 											</div>
 										</div>

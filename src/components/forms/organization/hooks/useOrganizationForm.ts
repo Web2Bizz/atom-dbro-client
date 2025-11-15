@@ -1,33 +1,19 @@
 import type { Organization } from '@/components/map/types/types'
+import { cityMap, helpTypeMap, organizationTypeMap } from '@/components/map/data/organizations'
 import { useUser } from '@/hooks/useUser'
-import type { AssistanceTypeId } from '@/types/common'
 import { getCityCoordinates } from '@/utils/cityCoordinates'
 import {
 	getUserOrganization as getUserOrganizationById,
 	updateUserOrganization,
 } from '@/utils/userData'
-import { useEffect, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import type { SocialFormData } from '../../quest'
-
-export interface OrganizationFormData {
-	name: string
-	city: string
-	type: string
-	assistance: AssistanceTypeId[]
-	summary: string
-	description: string
-	mission: string
-	goals: string[]
-	needs: string[]
-	address: string
-	phone: string
-	email: string
-	website: string
-	coordinates: { lat: number; lng: number }
-	socials: SocialFormData[]
-	gallery: string[]
-}
+import {
+	organizationFormSchema,
+	type OrganizationFormData,
+} from '../schemas/organization-form.schema'
 
 export function useOrganizationForm(
 	onSuccess?: (organizationId: string) => void
@@ -39,8 +25,6 @@ export function useOrganizationForm(
 		deleteOrganization,
 		getUserOrganization: getUserOrgId,
 	} = useUser()
-	const [isSubmitting, setIsSubmitting] = useState(false)
-	const [isDataLoaded, setIsDataLoaded] = useState(false)
 
 	const existingOrgId = getUserOrgId()
 	const existingOrg = existingOrgId
@@ -48,32 +32,41 @@ export function useOrganizationForm(
 		: null
 	const isEditMode = !!existingOrg
 
-	const [formData, setFormData] = useState<OrganizationFormData>({
-		name: '',
-		city: '',
-		type: '',
-		assistance: [],
-		summary: '',
-		description: '',
-		mission: '',
-		goals: [''],
-		needs: [''],
-		address: '',
-		phone: '',
-		email: user?.email || '',
-		website: '',
-		coordinates: { lat: 0, lng: 0 },
-		socials: [{ name: 'VK', url: '' }],
-		gallery: [],
+	const form = useForm<OrganizationFormData>({
+		resolver: zodResolver(organizationFormSchema),
+		defaultValues: {
+			name: '',
+			cityId: 0,
+			organizationTypeId: 0,
+			helpTypeIds: [],
+			summary: '',
+			description: '',
+			mission: '',
+			goals: [''],
+			needs: [''],
+			address: '',
+			contacts: [
+				{ name: 'Телефон', value: '' },
+				...(user?.email ? [{ name: 'Email', value: user.email }] : []),
+			],
+			latitude: '',
+			longitude: '',
+			gallery: [],
+		},
+		mode: 'onChange',
 	})
 
+	// Загружаем данные существующей организации при редактировании
 	useEffect(() => {
-		if (existingOrg?.contacts && !isDataLoaded) {
-			setFormData({
+		if (existingOrg && !form.formState.isDirty) {
+			const phoneContact = existingOrg.contacts.find(c => c.name === 'Телефон')
+			const emailContact = existingOrg.contacts.find(c => c.name === 'Email')
+
+			form.reset({
 				name: existingOrg.name || '',
-				city: existingOrg.city || '',
-				type: existingOrg.type || '',
-				assistance: existingOrg.assistance || [],
+				cityId: existingOrg.city.id || 0,
+				organizationTypeId: existingOrg.organizationTypes[0]?.id || 0,
+				helpTypeIds: existingOrg.helpTypes.map(ht => ht.id),
 				summary: existingOrg.summary || '',
 				description: existingOrg.description || '',
 				mission: existingOrg.mission || '',
@@ -86,34 +79,22 @@ export function useOrganizationForm(
 						? existingOrg.needs
 						: [''],
 				address: existingOrg.address || '',
-				phone: existingOrg.contacts?.phone || '',
-				email: existingOrg.contacts?.email || user?.email || '',
-				website: existingOrg.website || '',
-				coordinates:
-					existingOrg.coordinates && existingOrg.coordinates.length >= 2
-						? {
-								lat: existingOrg.coordinates[0],
-								lng: existingOrg.coordinates[1],
-						  }
-						: { lat: 0, lng: 0 },
-				socials:
-					existingOrg.socials && existingOrg.socials.length > 0
-						? existingOrg.socials.map(s => ({
-								name: s.name,
-								url: s.url || '',
-						  }))
-						: [{ name: 'VK' as const, url: '' }],
+				contacts: [
+					...(phoneContact ? [phoneContact] : [{ name: 'Телефон', value: '' }]),
+					...(emailContact
+						? [emailContact]
+						: user?.email
+							? [{ name: 'Email', value: user.email }]
+							: []),
+				],
+				latitude: existingOrg.latitude || '',
+				longitude: existingOrg.longitude || '',
 				gallery: existingOrg.gallery || [],
 			})
-			setIsDataLoaded(true)
-		} else if (!existingOrg) {
-			setIsDataLoaded(false)
 		}
-	}, [existingOrg, user?.email, isDataLoaded])
+	}, [existingOrg, user?.email, form])
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-
+	const onSubmit = async (data: OrganizationFormData) => {
 		if (!isEditMode && !canCreateOrganization()) {
 			toast.error(
 				'Вы уже создали организацию. Один пользователь может создать только одну организацию.'
@@ -121,42 +102,60 @@ export function useOrganizationForm(
 			return
 		}
 
-		if (!formData.coordinates.lat || !formData.coordinates.lng) {
+		if (!data.latitude || !data.longitude) {
 			toast.error('Пожалуйста, выберите местоположение на карте.')
 			return
 		}
-
-		setIsSubmitting(true)
 
 		try {
 			const organizationId =
 				existingOrg?.id || `user-${user?.id}-org-${Date.now()}`
 
+			// Получаем данные города
+			const cityName = Object.values(cityMap).find(c => c.id === data.cityId)?.name || ''
+			const city = cityMap[cityName] || {
+				id: data.cityId,
+				name: cityName,
+				latitude: data.latitude,
+				longitude: data.longitude,
+			}
+
 			const newOrganization: Organization = {
 				id: organizationId,
-				name: formData.name,
-				city: formData.city,
-				type: formData.type,
-				assistance: formData.assistance,
-				summary: formData.summary,
-				description: formData.description,
-				mission: formData.mission,
-				goals: formData.goals.filter(g => g.trim() !== ''),
-				needs: formData.needs.filter(n => n.trim() !== ''),
-				coordinates: [formData.coordinates.lat, formData.coordinates.lng],
-				address: formData.address,
-				contacts: {
-					phone: formData.phone,
-					email: formData.email || undefined,
+				name: data.name,
+				latitude: data.latitude,
+				longitude: data.longitude,
+				summary: data.summary,
+				mission: data.mission,
+				description: data.description,
+				goals: data.goals.filter(g => g.trim() !== ''),
+				needs: data.needs.filter(n => n.trim() !== ''),
+				address: data.address,
+				contacts: data.contacts.filter(c => c.value.trim() !== ''),
+				organizationTypes: [
+					{
+						id: data.organizationTypeId,
+						name:
+							Object.values(organizationTypeMap).find(
+								ot => ot.id === data.organizationTypeId
+							)?.name || '',
+					},
+				],
+				gallery: data.gallery,
+				city: {
+					id: city.id,
+					name: city.name,
+					latitude: city.latitude,
+					longitude: city.longitude,
 				},
-				website: formData.website || undefined,
-				socials: formData.socials
-					.filter(social => social.url.trim() !== '')
-					.map(social => ({
-						name: social.name,
-						url: social.url,
-					})),
-				gallery: formData.gallery,
+				helpTypes: data.helpTypeIds
+					.map(id => {
+						const helpType = Object.values(helpTypeMap).find(ht => ht.id === id)
+						return helpType ? { id: helpType.id, name: helpType.name } : null
+					})
+					.filter((ht): ht is { id: number; name: string } => ht !== null),
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
 			}
 
 			if (isEditMode) {
@@ -180,12 +179,12 @@ export function useOrganizationForm(
 			)
 
 			// Сохраняем координаты для зума на карте при сохранении
-			if (formData.coordinates.lat && formData.coordinates.lng) {
+			if (data.latitude && data.longitude) {
 				localStorage.setItem(
 					'zoomToCoordinates',
 					JSON.stringify({
-						lat: formData.coordinates.lat,
-						lng: formData.coordinates.lng,
+						lat: parseFloat(data.latitude),
+						lng: parseFloat(data.longitude),
 						zoom: 15,
 					})
 				)
@@ -199,52 +198,32 @@ export function useOrganizationForm(
 				console.error('Error creating organization:', error)
 			}
 			toast.error('Не удалось создать организацию. Попробуйте еще раз.')
-		} finally {
-			setIsSubmitting(false)
 		}
 	}
 
-	const handleCityChange = (city: string) => {
-		setFormData(prev => {
-			const cityCoords = getCityCoordinates(city)
-			return {
-				...prev,
-				city,
-				coordinates: cityCoords || prev.coordinates,
-			}
-		})
+	const handleCityChange = (cityName: string) => {
+		const city = cityMap[cityName]
+		if (city) {
+			form.setValue('cityId', city.id)
+			// Устанавливаем координаты города для зума, но не перезаписываем координаты организации
+			// Координаты организации должны устанавливаться через карту
+		}
 	}
 
 	const handleDelete = async () => {
 		if (!existingOrgId) return
 		deleteOrganization(existingOrgId)
 		toast.success('Организация успешно удалена.')
-		setFormData({
-			name: '',
-			city: '',
-			type: '',
-			assistance: [],
-			summary: '',
-			description: '',
-			mission: '',
-			goals: [''],
-			needs: [''],
-			address: '',
-			phone: '',
-			email: user?.email || '',
-			website: '',
-			coordinates: { lat: 0, lng: 0 },
-			socials: [{ name: 'VK', url: '' }],
-			gallery: [],
-		})
+		form.reset()
 	}
 
+	const handleSubmit = form.handleSubmit(onSubmit)
+
 	return {
-		formData,
-		setFormData,
-		isSubmitting,
+		form,
+		isSubmitting: form.formState.isSubmitting,
 		isEditMode,
-		handleSubmit,
+		onSubmit: handleSubmit,
 		handleCityChange,
 		handleDelete,
 	}

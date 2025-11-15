@@ -13,8 +13,8 @@ export function useOrganizationSearch(organizations: Organization[]) {
 			return organizations.filter(org => {
 				const searchableText = [
 					org.name,
-					org.city,
-					org.type,
+					org.city.name,
+					org.organizationTypes[0]?.name || '',
 					org.summary,
 					org.description,
 					org.address,

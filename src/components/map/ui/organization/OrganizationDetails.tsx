@@ -79,13 +79,13 @@ export function OrganizationDetails({
 						<div className='flex items-start justify-between gap-4'>
 							<div className='flex-1 min-w-0'>
 								<p className='text-xs font-medium text-slate-500 uppercase tracking-wider mb-1'>
-									{organization.city}
+									{organization.city.name}
 								</p>
 								<h2 className='text-2xl font-bold text-slate-900 m-0 mb-2'>
 									{organization.name}
 								</h2>
 								<p className='text-sm text-slate-600 m-0'>
-									{organization.type}
+									{organization.organizationTypes[0]?.name || ''}
 								</p>
 							</div>
 							{onClose && (
@@ -150,12 +150,12 @@ export function OrganizationDetails({
 								Как можно помочь
 							</h3>
 							<div className='flex flex-wrap gap-2'>
-								{organization.assistance.map(item => (
+								{organization.helpTypes.map((item, index) => (
 									<span
-										key={item}
+										key={item.id || index}
 										className='inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200'
 									>
-										{assistanceLabels[item] ?? item}
+										{item.name}
 									</span>
 								))}
 							</div>
@@ -169,58 +169,40 @@ export function OrganizationDetails({
 								<span className='font-medium text-slate-500'>Адрес</span>
 								<p className='text-slate-700 m-0'>{organization.address}</p>
 
-								<span className='font-medium text-slate-500'>Телефон</span>
-								<a
-									href={`tel:${organization.contacts.phone}`}
-									className='text-blue-600 hover:text-blue-700 hover:underline m-0'
-								>
-									{organization.contacts.phone}
-								</a>
-
-								{organization.contacts.email && (
+								{organization.contacts.map((contact, index) => (
 									<>
-										<span className='font-medium text-slate-500'>Email</span>
-										<a
-											href={`mailto:${organization.contacts.email}`}
-											className='text-blue-600 hover:text-blue-700 hover:underline m-0'
+										<span
+											key={`label-${index}`}
+											className='font-medium text-slate-500'
 										>
-											{organization.contacts.email}
-										</a>
+											{contact.name}
+										</span>
+										{contact.name === 'Телефон' ? (
+											<a
+												key={`value-${index}`}
+												href={`tel:${contact.value}`}
+												className='text-blue-600 hover:text-blue-700 hover:underline m-0'
+											>
+												{contact.value}
+											</a>
+										) : contact.name === 'Email' ? (
+											<a
+												key={`value-${index}`}
+												href={`mailto:${contact.value}`}
+												className='text-blue-600 hover:text-blue-700 hover:underline m-0'
+											>
+												{contact.value}
+											</a>
+										) : (
+											<p
+												key={`value-${index}`}
+												className='text-slate-700 m-0'
+											>
+												{contact.value}
+											</p>
+										)}
 									</>
-								)}
-
-								{organization.website && (
-									<>
-										<span className='font-medium text-slate-500'>Сайт</span>
-										<a
-											href={organization.website}
-											target='_blank'
-											rel='noreferrer'
-											className='text-blue-600 hover:text-blue-700 hover:underline m-0 break-all'
-										>
-											{organization.website}
-										</a>
-									</>
-								)}
-
-								{organization.socials && organization.socials.length > 0 && (
-									<>
-										<span className='font-medium text-slate-500'>Соцсети</span>
-										<div className='flex flex-wrap gap-2'>
-											{organization.socials.map(social => (
-												<a
-													key={social.url}
-													href={social.url}
-													target='_blank'
-													rel='noreferrer'
-													className='text-blue-600 hover:text-blue-700 hover:underline text-sm'
-												>
-													{social.name}
-												</a>
-											))}
-										</div>
-									</>
-								)}
+								))}
 							</div>
 						</div>
 

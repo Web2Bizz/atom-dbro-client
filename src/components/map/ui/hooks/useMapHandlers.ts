@@ -1,4 +1,5 @@
 import { ANIMATION_DURATION, SEARCH_MAP_ZOOM } from '@/constants'
+import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
 import { useCallback } from 'react'
 import type { GeocodeResult } from '../../hooks/useGeocode'
 import type { Quest } from '../../types/quest-types'
@@ -64,7 +65,7 @@ export function useMapHandlers({
 
 	const handleSelectOrganization = useCallback(
 		(organization: Organization) => {
-			setSearchCenter(organization.coordinates)
+			setSearchCenter(getOrganizationCoordinates(organization))
 			setSearchZoom(SEARCH_MAP_ZOOM)
 			// Закрываем квест, если открыт
 			if (selectedQuest) {

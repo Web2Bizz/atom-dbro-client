@@ -27,18 +27,18 @@ export function OrganizationPopup({
 				<p className='m-0 text-xs text-slate-600 mb-2'>
 					{organization.summary}
 				</p>
-				{organization.assistance.length > 0 && (
-					<div className='flex flex-wrap gap-1.5 mb-2'>
-						{organization.assistance.map(item => (
-							<span
-								key={item}
-								className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200'
-							>
-								{assistanceLabels[item] ?? item}
-							</span>
-						))}
-					</div>
-				)}
+			{organization.helpTypes.length > 0 && (
+				<div className='flex flex-wrap gap-1.5 mb-2'>
+					{organization.helpTypes.map((item, index) => (
+						<span
+							key={item.id || index}
+							className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200'
+						>
+							{item.name}
+						</span>
+					))}
+				</div>
+			)}
 			</div>
 			<button
 				type='button'

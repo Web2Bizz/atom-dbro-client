@@ -159,10 +159,10 @@ export function UnifiedList({
 												>
 													<div className='flex items-center justify-between gap-2 mb-2'>
 														<span className='text-xs font-medium text-blue-600 uppercase tracking-wider'>
-															{organization.city}
+															{organization.city.name}
 														</span>
 														<span className='text-xs font-medium text-slate-500'>
-															{organization.type}
+															{organization.organizationTypes[0]?.name || ''}
 														</span>
 													</div>
 													<h3 className='text-base font-semibold text-slate-900 m-0 mb-2 line-clamp-1'>
@@ -171,14 +171,14 @@ export function UnifiedList({
 													<p className='text-sm text-slate-600 m-0 mb-3 line-clamp-2'>
 														{organization.summary}
 													</p>
-													{organization.assistance.length > 0 && (
+													{organization.helpTypes.length > 0 && (
 														<div className='flex flex-wrap gap-1.5 mb-3'>
-															{organization.assistance.map(item => (
+															{organization.helpTypes.map((item, index) => (
 																<span
-																	key={item}
+																	key={item.id || index}
 																	className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200'
 																>
-																	{assistanceLabels[item] ?? item}
+																	{item.name}
 																</span>
 															))}
 														</div>

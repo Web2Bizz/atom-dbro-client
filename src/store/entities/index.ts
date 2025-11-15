@@ -26,3 +26,23 @@ export {
 	useUpdateQuestMutation,
 } from './quest/model/quest-service'
 export type { QuestResponse } from './quest/model/type'
+
+export {
+	organizationService,
+	useCreateOrganizationMutation,
+	useDeleteOrganizationMutation,
+	useGetOrganizationQuery,
+	useGetOrganizationsQuery,
+	useLazyGetOrganizationQuery,
+	useLazyGetOrganizationsQuery,
+	useUpdateOrganizationMutation,
+} from './organization'
+export type {
+	CreateOrganizationRequest,
+	CreateOrganizationResponse,
+	DeleteOrganizationResponse,
+	OrganizationResponse,
+	OrganizationsListResponse,
+	UpdateOrganizationRequest,
+	UpdateOrganizationResponse,
+} from './organization'

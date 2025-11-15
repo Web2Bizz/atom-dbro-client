@@ -8,6 +8,7 @@ import {
 	ZoomControl,
 } from 'react-leaflet'
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/constants'
+import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
 import type { Quest } from '../types/quest-types'
@@ -53,10 +54,9 @@ export function UnifiedMapView({
 }: UnifiedMapViewProps) {
 	// Вычисляем центр карты для всех элементов
 	const mapCenter = useMemo(() => {
-		const allItems = [
-			...quests.map(q => q.coordinates),
-			...organizations.map(o => o.coordinates),
-		]
+		const questCoords = quests.map(q => q.coordinates)
+		const orgCoords = organizations.map(o => getOrganizationCoordinates(o))
+		const allItems = [...questCoords, ...orgCoords]
 
 		if (allItems.length === 0) {
 			return { lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1], zoom: DEFAULT_MAP_ZOOM }
@@ -126,8 +126,8 @@ export function UnifiedMapView({
 				{organizations.map(organization => (
 					<Marker
 						key={`org-${organization.id}`}
-						position={organization.coordinates}
-						icon={getMarkerIcon(organization.type)}
+						position={getOrganizationCoordinates(organization)}
+						icon={getMarkerIcon(organization.organizationTypes[0]?.name || '')}
 						eventHandlers={{
 							click: () => {
 								if (onMarkerClick) {

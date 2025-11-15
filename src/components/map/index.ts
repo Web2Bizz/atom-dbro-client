@@ -15,5 +15,5 @@ export type * from './types/quest-types'
 
 // Data
 export { quests, questCities, questTypes, questCategories } from './data/quests'
-export { organizations, cities, organizationTypes, assistanceOptions } from './data/organizations'
+export { organizations, cities, organizationTypes } from './data/organizations'
 
