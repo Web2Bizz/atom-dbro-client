@@ -15,7 +15,10 @@ export function QuestList({
 	onClose,
 	isClosing = false,
 }: QuestListProps) {
-	const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>, quest: Quest) => {
+	const handleKeyDown = (
+		event: React.KeyboardEvent<HTMLElement>,
+		quest: Quest
+	) => {
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault()
 			onSelect(quest)
@@ -61,8 +64,8 @@ export function QuestList({
 					{quests.length === 0 ? (
 						<div className='text-center py-12 px-4'>
 							<p className='text-slate-500 text-sm'>
-								Не найдено квестов, подходящих под выбранные фильтры.
-								Попробуйте изменить запрос.
+								Не найдено квестов, подходящих под выбранные фильтры. Попробуйте
+								изменить запрос.
 							</p>
 						</div>
 					) : (
@@ -85,9 +88,21 @@ export function QuestList({
 										<span className='text-xs font-medium text-blue-600 uppercase tracking-wider'>
 											{quest.city}
 										</span>
-										<span className='text-xs font-medium text-slate-500'>
-											{quest.type}
-										</span>
+										<div className='flex items-center gap-2'>
+											{quest.customAchievement && (
+												<span
+													className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200'
+													title={`Достижение: ${quest.customAchievement.title}`}
+												>
+													<span className='hidden sm:inline'>
+														Есть достижение
+													</span>
+												</span>
+											)}
+											<span className='text-xs font-medium text-slate-500'>
+												{quest.type}
+											</span>
+										</div>
 									</div>
 									<h3 className='text-base font-semibold text-slate-900 m-0 mb-2 line-clamp-2'>
 										{quest.title}
@@ -123,4 +138,3 @@ export function QuestList({
 		</section>
 	)
 }
-

@@ -15,6 +15,9 @@ export const UserContext = createContext<UserContextType | undefined>(undefined)
 export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
 	const [user, setUser] = useLocalStorage<User | null>('ecoquest_user', null)
 
+	// При загрузке приложения данные пользователя берутся только из localStorage
+	// Остальные данные (квесты, достижения и т.д.) загружаются только после авторизации
+
 	// Нормализуем уровень пользователя при загрузке
 	useEffect(() => {
 		if (user && user.level) {

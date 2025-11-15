@@ -24,6 +24,12 @@ export interface QuestFormData {
 	coordinates: { lat: number; lng: number }
 	stages: StageFormData[]
 	socials: SocialFormData[]
+	// Пользовательское достижение (опционально)
+	customAchievement?: {
+		icon: string
+		title: string
+		description: string
+	}
 }
 
 export function useQuestForm(onSuccess?: (questId: string) => void) {
@@ -59,6 +65,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			},
 		],
 		socials: [{ name: 'VK', url: '' }],
+		customAchievement: undefined,
 	})
 
 	// Загружаем данные существующего квеста для редактирования
@@ -114,6 +121,13 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 								url: s.url || '',
 						  })) as SocialFormData[])
 						: [{ name: 'VK' as const, url: '' }],
+				customAchievement: existingQuest.customAchievement
+					? {
+							icon: existingQuest.customAchievement.icon || '',
+							title: existingQuest.customAchievement.title || '',
+							description: existingQuest.customAchievement.description || '',
+					  }
+					: undefined,
 			})
 			setIsDataLoaded(true)
 		} else if (!existingQuest) {
@@ -134,6 +148,22 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 		if (!formData.coordinates.lat || !formData.coordinates.lng) {
 			toast.error('Пожалуйста, выберите местоположение на карте.')
 			return
+		}
+
+		// Валидация пользовательского достижения
+		if (formData.customAchievement) {
+			if (!formData.customAchievement.icon?.trim()) {
+				toast.error('Укажите эмодзи для достижения.')
+				return
+			}
+			if (!formData.customAchievement.title?.trim()) {
+				toast.error('Укажите название достижения.')
+				return
+			}
+			if (!formData.customAchievement.description?.trim()) {
+				toast.error('Укажите описание достижения.')
+				return
+			}
 		}
 
 		setIsSubmitting(true)
@@ -228,6 +258,14 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 					})),
 				// Ограничиваем галерею - оставляем только первые 5 изображений для экономии места
 				gallery: formData.gallery.slice(0, 5),
+				// Пользовательское достижение
+				customAchievement: formData.customAchievement
+					? {
+							icon: formData.customAchievement.icon,
+							title: formData.customAchievement.title,
+							description: formData.customAchievement.description,
+					  }
+					: undefined,
 				createdAt:
 					existingQuest?.createdAt || new Date().toISOString().split('T')[0],
 				updatedAt: new Date().toISOString().split('T')[0],
@@ -331,6 +369,8 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			type: '',
 			category: 'environment',
 			story: '',
+			storyImage: undefined,
+			gallery: [],
 			address: '',
 			curatorName: user?.name || '',
 			curatorPhone: '',
@@ -345,6 +385,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 				},
 			],
 			socials: [{ name: 'VK', url: '' }],
+			customAchievement: undefined,
 		})
 	}
 

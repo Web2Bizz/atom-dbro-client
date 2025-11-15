@@ -3,6 +3,7 @@ import { allAchievements } from '@/data/achievements'
 import type { QuestContribution, User } from '@/types/user'
 import { getLevelTitle, MAX_LEVEL, normalizeUserLevel } from '@/utils/level'
 import { useCallback, useContext } from 'react'
+import type { Quest } from '@/components/map/types/quest-types'
 
 export function useQuestActions() {
 	const context = useContext(UserContext)
@@ -173,9 +174,133 @@ export function useQuestActions() {
 		[setUser]
 	)
 
+	// Проверка пользовательского достижения при завершении квеста на 100%
+	const checkCustomAchievement = useCallback(
+		(
+			questId: string,
+			questProgress: number,
+			customAchievement?: { icon: string; title: string; description: string },
+			onAchievementUnlocked?: (achievement: { id: string; title: string; icon: string }) => void
+		) => {
+			setUser(currentUser => {
+				if (!currentUser || !customAchievement || questProgress < 100) {
+					return currentUser
+				}
+
+				// Проверяем, что пользователь участвует в квесте
+				if (!currentUser.participatingQuests.includes(questId)) {
+					return currentUser
+				}
+
+				// Проверяем, что достижение еще не разблокировано
+				const achievementId = `custom-${questId}`
+				if (currentUser.achievements.some(a => a.id === achievementId)) {
+					return currentUser
+				}
+
+				// Разблокируем пользовательское достижение
+				const updatedUser = {
+					...currentUser,
+					achievements: [
+						...currentUser.achievements,
+						{
+							id: achievementId,
+							title: customAchievement.title,
+							description: customAchievement.description,
+							icon: customAchievement.icon,
+							rarity: 'common' as const, // Пользовательские достижения всегда common
+							unlockedAt: new Date().toISOString(),
+						},
+					],
+				}
+
+				// Вызываем callback для уведомления
+				if (onAchievementUnlocked) {
+					onAchievementUnlocked({
+						id: achievementId,
+						title: customAchievement.title,
+						icon: customAchievement.icon,
+					})
+				}
+
+				return updatedUser
+			})
+		},
+		[setUser]
+	)
+
+	// Проверка завершения квеста и отправка уведомлений
+	const checkQuestCompletion = useCallback(
+		(
+			quest: Quest,
+			onQuestCompleted?: (quest: Quest) => void,
+			onAchievementUnlocked?: (achievement: { id: string; title: string; icon: string }) => void
+		) => {
+			setUser(currentUser => {
+				if (!currentUser) return currentUser
+
+				// Проверяем, что пользователь участвует в квесте
+				if (!currentUser.participatingQuests.includes(quest.id)) {
+					return currentUser
+				}
+
+				// Проверяем, что квест завершен на 100%
+				if (quest.overallProgress < 100) {
+					return currentUser
+				}
+
+				let updatedUser = currentUser
+
+				// Проверяем пользовательское достижение и добавляем его, если нужно
+				if (quest.customAchievement) {
+					const achievementId = `custom-${quest.id}`
+					
+					// Проверяем, что достижение еще не разблокировано
+					if (!updatedUser.achievements.some(a => a.id === achievementId)) {
+						// Разблокируем пользовательское достижение
+						updatedUser = {
+							...updatedUser,
+							achievements: [
+								...updatedUser.achievements,
+								{
+									id: achievementId,
+									title: quest.customAchievement.title,
+									description: quest.customAchievement.description,
+									icon: quest.customAchievement.icon,
+									rarity: 'common' as const,
+									unlockedAt: new Date().toISOString(),
+								},
+							],
+						}
+
+						// Вызываем callback для уведомления о разблокировке
+						if (onAchievementUnlocked) {
+							onAchievementUnlocked({
+								id: achievementId,
+								title: quest.customAchievement.title,
+								icon: quest.customAchievement.icon,
+							})
+						}
+					}
+				}
+
+				// Вызываем callback для уведомления о завершении
+				// (проверка на дубликаты выполняется в компонентах через useRef)
+				if (onQuestCompleted) {
+					onQuestCompleted(quest)
+				}
+
+				return updatedUser
+			})
+		},
+		[setUser]
+	)
+
 	return {
 		participateInQuest,
 		contributeToQuest,
 		checkAndUnlockAchievements,
+		checkCustomAchievement,
+		checkQuestCompletion,
 	}
 }

@@ -54,6 +54,13 @@ export interface QuestParticipation {
 	}[]
 }
 
+// Пользовательское достижение для квеста
+export interface QuestCustomAchievement {
+	icon: string // Эмодзи
+	title: string
+	description: string
+}
+
 export interface Quest {
 	id: string
 	title: string // Заголовок-проблема
@@ -98,6 +105,10 @@ export interface Quest {
 	
 	// Галерея
 	gallery: string[]
+	
+	// Пользовательское достижение (опционально)
+	// Выдается участникам при завершении квеста на 100%
+	customAchievement?: QuestCustomAchievement
 	
 	// Метаданные
 	createdAt: string

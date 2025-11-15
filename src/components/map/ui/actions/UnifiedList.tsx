@@ -1,6 +1,6 @@
 import { ASSISTANCE_OPTIONS } from '@/constants'
-import type { Organization } from '../../types/types'
 import type { Quest } from '../../types/quest-types'
+import type { Organization } from '../../types/types'
 
 interface UnifiedListProps {
 	readonly quests: Quest[]
@@ -102,9 +102,21 @@ export function UnifiedList({
 														<span className='text-xs font-medium text-blue-600 uppercase tracking-wider'>
 															{quest.city}
 														</span>
-														<span className='text-xs font-medium text-slate-500'>
-															{quest.type}
-														</span>
+														<div className='flex items-center gap-2'>
+															{quest.customAchievement && (
+																<span
+																	className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200'
+																	title={`Достижение: ${quest.customAchievement.title}`}
+																>
+																	<span className='hidden sm:inline'>
+																		Есть достижение
+																	</span>
+																</span>
+															)}
+															<span className='text-xs font-medium text-slate-500'>
+																{quest.type}
+															</span>
+														</div>
 													</div>
 													<h3 className='text-base font-semibold text-slate-900 m-0 mb-2 line-clamp-1'>
 														{quest.title}
@@ -132,13 +144,10 @@ export function UnifiedList({
 											const isActive = organization.id === activeOrgId
 											const assistanceLabels = ASSISTANCE_OPTIONS.reduce<
 												Record<string, string>
-											>(
-												(acc, option) => {
-													acc[option.id] = option.label
-													return acc
-												},
-												{}
-											)
+											>((acc, option) => {
+												acc[option.id] = option.label
+												return acc
+											}, {})
 											return (
 												<article
 													key={organization.id}
@@ -198,12 +207,11 @@ export function UnifiedList({
 			{totalCount > 0 && (
 				<footer className='sticky bottom-0 bg-white/98 backdrop-blur-xl border-t border-slate-200 p-4 flex-shrink-0'>
 					<p className='text-sm text-slate-600 m-0 text-center'>
-						Найдено: <strong className='text-slate-900'>{totalCount}</strong>{' '}
-						({quests.length} квестов, {organizations.length} организаций)
+						Найдено: <strong className='text-slate-900'>{totalCount}</strong> (
+						{quests.length} квестов, {organizations.length} организаций)
 					</p>
 				</footer>
 			)}
 		</section>
 	)
 }
-

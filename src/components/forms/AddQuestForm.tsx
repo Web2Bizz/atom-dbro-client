@@ -6,6 +6,7 @@ import { QuestStagesSection } from './quest/QuestStagesSection'
 import { QuestLocationSection } from './quest/QuestLocationSection'
 import { QuestCuratorSection } from './quest/QuestCuratorSection'
 import { QuestSocialsSection } from './quest/QuestSocialsSection'
+import { QuestAchievementSection } from './quest/QuestAchievementSection'
 import { DangerZone } from './shared/DangerZone'
 import { useQuestForm } from './quest/hooks/useQuestForm'
 import { useState } from 'react'
@@ -166,6 +167,13 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 				onAdd={addSocial}
 				onRemove={removeSocial}
 				onUpdate={updateSocial}
+			/>
+
+			<QuestAchievementSection
+				customAchievement={formData.customAchievement}
+				onChange={achievement =>
+					setFormData(prev => ({ ...prev, customAchievement: achievement }))
+				}
 			/>
 
 			<Button type='submit' disabled={isSubmitting} className='w-full'>

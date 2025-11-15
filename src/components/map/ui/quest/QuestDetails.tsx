@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { ImageGallery } from '@/components/ui/ImageGallery'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
 import { formatCurrency, formatDate } from '@/utils/format'
 import {
@@ -12,7 +13,7 @@ import {
 	Users,
 	X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Quest, QuestStage } from '../../types/quest-types'
 import { AmbassadorShare } from './AmbassadorShare'
@@ -50,6 +51,7 @@ export function QuestDetails({
 		contributeToQuest,
 		checkAndUnlockAchievements,
 	} = useUser()
+	const { checkQuestCompletion } = useQuestActions()
 	const { addNotification } = useNotifications()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
 	const [showDonation, setShowDonation] = useState<{
@@ -61,12 +63,92 @@ export function QuestDetails({
 	const [showAmbassadorShare, setShowAmbassadorShare] = useState(false)
 	const [galleryIndex, setGalleryIndex] = useState<number | null>(null)
 
+	const isParticipating =
+		user?.participatingQuests.includes(quest?.id ?? '') ?? false
+
+	// Проверка завершения квеста и отправка уведомлений
+	useEffect(() => {
+		if (!quest || !isParticipating) return
+
+		// Проверяем завершение квеста
+		if (quest.overallProgress === 100) {
+			// Проверяем, было ли уже отправлено уведомление о завершении этого квеста
+			// Проверяем существующие уведомления в localStorage
+			const existingNotifications = JSON.parse(
+				localStorage.getItem('ecoquest_notifications') || '[]'
+			) as Array<{ type: string; questId?: string; achievementId?: string }>
+
+			const hasQuestNotification = existingNotifications.some(
+				n => n.type === 'quest_completed' && n.questId === quest.id
+			)
+
+			// Уведомление о завершении квеста (отправляем только один раз)
+			if (!hasQuestNotification) {
+				checkQuestCompletion(
+					quest,
+					// Callback для уведомления о завершении квеста
+					completedQuest => {
+						// Дополнительная проверка перед добавлением
+						const currentNotifications = JSON.parse(
+							localStorage.getItem('ecoquest_notifications') || '[]'
+						) as Array<{ type: string; questId?: string }>
+
+						const alreadyExists = currentNotifications.some(
+							n =>
+								n.type === 'quest_completed' && n.questId === completedQuest.id
+						)
+
+						if (!alreadyExists) {
+							addNotification({
+								type: 'quest_completed',
+								title: '🎉 Квест завершен!',
+								message: `Квест "${completedQuest.title}" успешно завершен на 100%!`,
+								questId: completedQuest.id,
+								icon: '🎉',
+								actionUrl: `/map?quest=${completedQuest.id}`,
+							})
+						}
+					},
+					// Callback для уведомления о разблокировке достижения
+					achievement => {
+						// Проверяем, было ли уже отправлено уведомление об этом достижении
+						const currentNotifications = JSON.parse(
+							localStorage.getItem('ecoquest_notifications') || '[]'
+						) as Array<{ type: string; achievementId?: string }>
+
+						const alreadyExists = currentNotifications.some(
+							n =>
+								n.type === 'achievement_unlocked' &&
+								n.achievementId === achievement.id
+						)
+
+						if (!alreadyExists) {
+							addNotification({
+								type: 'achievement_unlocked',
+								title: '🏆 Достижение разблокировано!',
+								message: `${achievement.icon} "${achievement.title}" - Вы получили пользовательское достижение за завершение квеста!`,
+								questId: quest.id,
+								achievementId: achievement.id,
+								icon: achievement.icon,
+								actionUrl: '/profile',
+							})
+
+							// Показываем toast уведомление
+							toast.success('🏆 Достижение разблокировано!', {
+								description: `${achievement.icon} "${achievement.title}"`,
+								duration: 5000,
+							})
+						}
+					}
+				)
+			}
+		}
+	}, [quest, isParticipating, checkQuestCompletion, addNotification])
+
 	// Если quest undefined, возвращаем null (во время анимации закрытия или когда не выбран)
 	if (!quest) {
 		return null
 	}
-
-	const isParticipating = user?.participatingQuests.includes(quest.id) ?? false
 
 	const handleParticipate = () => {
 		if (quest) {
@@ -240,9 +322,19 @@ export function QuestDetails({
 									<p className='text-xs font-medium text-slate-500 uppercase tracking-wider mb-1'>
 										{quest.city} • {quest.type}
 									</p>
-									<h2 className='text-2xl font-bold text-slate-900 m-0 mb-2'>
-										{quest.title}
-									</h2>
+									<div className='flex items-start justify-between gap-3 mb-2'>
+										<h2 className='text-2xl font-bold text-slate-900 m-0 flex-1'>
+											{quest.title}
+										</h2>
+										{quest.customAchievement && (
+											<span
+												className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold border border-amber-200 shadow-sm shrink-0'
+												title={`Достижение: ${quest.customAchievement.title} - ${quest.customAchievement.description}`}
+											>
+												<span>Есть достижение</span>
+											</span>
+										)}
+									</div>
 								</div>
 								{onClose && (
 									<button

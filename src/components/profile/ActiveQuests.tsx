@@ -1,11 +1,17 @@
-import { ArrowRight, Clock } from 'lucide-react'
-import { useUser } from '@/hooks/useUser'
-import { getAllQuests } from '@/utils/userData'
 import { quests as baseQuests } from '@/components/map/data/quests'
 import { Button } from '@/components/ui/button'
+import { useNotifications } from '@/hooks/useNotifications'
+import { useQuestActions } from '@/hooks/useQuestActions'
+import { useUser } from '@/hooks/useUser'
+import { getAllQuests } from '@/utils/userData'
+import { ArrowRight, Clock } from 'lucide-react'
+import { useEffect } from 'react'
+import { toast } from 'sonner'
 
 export function ActiveQuests() {
 	const { user } = useUser()
+	const { checkQuestCompletion } = useQuestActions()
+	const { addNotification } = useNotifications()
 
 	if (!user) {
 		return null
@@ -18,6 +24,87 @@ export function ActiveQuests() {
 	const participatingQuests = allQuests.filter(q =>
 		user.participatingQuests.includes(q.id)
 	)
+
+	// Проверка завершения квестов и отправка уведомлений
+	useEffect(() => {
+		if (!user || participatingQuests.length === 0) return
+
+		// Получаем существующие уведомления из localStorage
+		const existingNotifications = JSON.parse(
+			localStorage.getItem('ecoquest_notifications') || '[]'
+		) as Array<{ type: string; questId?: string; achievementId?: string }>
+
+		participatingQuests.forEach(quest => {
+			if (quest.overallProgress === 100) {
+				// Проверяем, было ли уже отправлено уведомление о завершении этого квеста
+				const hasQuestNotification = existingNotifications.some(
+					n => n.type === 'quest_completed' && n.questId === quest.id
+				)
+
+				// Уведомление о завершении квеста (отправляем только один раз)
+				if (!hasQuestNotification) {
+					checkQuestCompletion(
+						quest,
+						// Callback для уведомления о завершении квеста
+						completedQuest => {
+							// Дополнительная проверка перед добавлением
+							const currentNotifications = JSON.parse(
+								localStorage.getItem('ecoquest_notifications') || '[]'
+							) as Array<{ type: string; questId?: string }>
+
+							const alreadyExists = currentNotifications.some(
+								n =>
+									n.type === 'quest_completed' &&
+									n.questId === completedQuest.id
+							)
+
+							if (!alreadyExists) {
+								addNotification({
+									type: 'quest_completed',
+									title: '🎉 Квест завершен!',
+									message: `Квест "${completedQuest.title}" успешно завершен на 100%!`,
+									questId: completedQuest.id,
+									icon: '🎉',
+									actionUrl: `/map?quest=${completedQuest.id}`,
+								})
+							}
+						},
+						// Callback для уведомления о разблокировке достижения
+						achievement => {
+							// Проверяем, было ли уже отправлено уведомление об этом достижении
+							const currentNotifications = JSON.parse(
+								localStorage.getItem('ecoquest_notifications') || '[]'
+							) as Array<{ type: string; achievementId?: string }>
+
+							const alreadyExists = currentNotifications.some(
+								n =>
+									n.type === 'achievement_unlocked' &&
+									n.achievementId === achievement.id
+							)
+
+							if (!alreadyExists) {
+								addNotification({
+									type: 'achievement_unlocked',
+									title: '🏆 Достижение разблокировано!',
+									message: `${achievement.icon} "${achievement.title}" - Вы получили пользовательское достижение за завершение квеста!`,
+									questId: quest.id,
+									achievementId: achievement.id,
+									icon: achievement.icon,
+									actionUrl: '/profile',
+								})
+
+								// Показываем toast уведомление
+								toast.success('🏆 Достижение разблокировано!', {
+									description: `${achievement.icon} "${achievement.title}"`,
+									duration: 5000,
+								})
+							}
+						}
+					)
+				}
+			}
+		})
+	}, [participatingQuests, user?.id, checkQuestCompletion, addNotification])
 
 	if (participatingQuests.length === 0) {
 		return (
@@ -83,6 +170,16 @@ export function ActiveQuests() {
 											<h3 className='text-base sm:text-lg font-bold text-slate-900 mb-1 line-clamp-2'>
 												{quest.title}
 											</h3>
+											{quest.customAchievement && (
+												<div className='mb-2'>
+													<span
+														className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200'
+														title={`Достижение: ${quest.customAchievement.title} - ${quest.customAchievement.description}`}
+													>
+														<span>Есть достижение</span>
+													</span>
+												</div>
+											)}
 											<p className='text-xs sm:text-sm text-slate-600 mb-3 line-clamp-2 sm:line-clamp-2'>
 												{quest.story}
 											</p>
@@ -127,4 +224,3 @@ export function ActiveQuests() {
 		</div>
 	)
 }
-

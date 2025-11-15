@@ -12,9 +12,10 @@ export type AchievementId =
 	| 'donation_champion'
 	| 'quest_completer'
 	| 'social_ambassador'
+	| string // Позволяет использовать пользовательские достижения с ID вида "custom-*"
 
 export interface Achievement {
-	id: AchievementId
+	id: string // Изменено с AchievementId на string для поддержки пользовательских достижений
 	title: string
 	description: string
 	icon: string

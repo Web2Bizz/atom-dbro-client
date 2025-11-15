@@ -22,6 +22,23 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 		[userAchievements]
 	)
 
+	// Разделяем на системные и пользовательские достижения
+	const { systemAchievements, customAchievements } = useMemo(() => {
+		const system: typeof unlockedAchievements = []
+		const custom: typeof unlockedAchievements = []
+
+		unlockedAchievements.forEach(achievement => {
+			// Пользовательские достижения имеют ID вида "custom-*"
+			if (achievement.id.startsWith('custom-')) {
+				custom.push(achievement)
+			} else {
+				system.push(achievement)
+			}
+		})
+
+		return { systemAchievements: system, customAchievements: custom }
+	}, [unlockedAchievements])
+
 	const lockedAchievements = useMemo(
 		() =>
 			Object.values(allAchievements).filter(
@@ -30,12 +47,13 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 		[userAchievements]
 	)
 
+	const totalAchievements = Object.keys(allAchievements).length + customAchievements.length
+
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-8'>
 			<h2 className='text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2'>
 				<Award className='h-6 w-6 text-yellow-600' />
-				Достижения ({unlockedAchievements.length} /{' '}
-				{Object.keys(allAchievements).length})
+				Достижения ({unlockedAchievements.length} / {totalAchievements})
 			</h2>
 
 			{unlockedAchievements.length > 0 && (
@@ -44,8 +62,9 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 						Разблокированные
 					</h3>
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-						{unlockedAchievements.map(achievement => {
-							const achievementData = allAchievements[achievement.id]
+						{/* Системные достижения */}
+						{systemAchievements.map(achievement => {
+							const achievementData = allAchievements[achievement.id as keyof typeof allAchievements]
 							if (!achievementData) return null
 
 							return (
@@ -63,6 +82,38 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 											</h4>
 											<p className='text-sm text-slate-600 mb-2'>
 												{achievementData.description}
+											</p>
+											{achievement.unlockedAt && (
+												<p className='text-xs text-slate-500'>
+													Разблокировано:{' '}
+													{new Date(achievement.unlockedAt).toLocaleDateString(
+														'ru-RU'
+													)}
+												</p>
+											)}
+										</div>
+									</div>
+								</div>
+							)
+						})}
+
+						{/* Пользовательские достижения */}
+						{customAchievements.map(achievement => {
+							return (
+								<div
+									key={achievement.id}
+									className={`p-4 rounded-xl border-2 ${
+										rarityColors[achievement.rarity]
+									}`}
+								>
+									<div className='flex items-start gap-3'>
+										<div className='text-3xl'>{achievement.icon}</div>
+										<div className='flex-1'>
+											<h4 className='font-semibold text-slate-900 mb-1'>
+												{achievement.title}
+											</h4>
+											<p className='text-sm text-slate-600 mb-2'>
+												{achievement.description}
 											</p>
 											{achievement.unlockedAt && (
 												<p className='text-xs text-slate-500'>

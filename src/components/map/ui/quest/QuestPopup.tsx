@@ -9,9 +9,19 @@ export function QuestPopup({ quest, onSelect }: QuestPopupProps) {
 	return (
 		<div className='popup-content grid max-w-[280px] gap-3'>
 			<div>
-				<h3 className='m-0 text-base font-bold text-slate-900 mb-1'>
-					{quest.title}
-				</h3>
+				<div className='flex items-center justify-between gap-2 mb-1'>
+					<h3 className='m-0 text-base font-bold text-slate-900'>
+						{quest.title}
+					</h3>
+					{quest.customAchievement && (
+						<span
+							className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200 shrink-0'
+							title={`Достижение: ${quest.customAchievement.title}`}
+						>
+							<span>Есть достижение</span>
+						</span>
+					)}
+				</div>
 				<p className='m-0 text-xs text-slate-600 mb-2'>{quest.city}</p>
 				<div className='flex items-center gap-2 mb-2'>
 					<span className='text-xs font-medium text-slate-500'>
