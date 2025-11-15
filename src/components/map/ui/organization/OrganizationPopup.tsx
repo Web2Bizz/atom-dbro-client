@@ -1,4 +1,3 @@
-import { ASSISTANCE_OPTIONS } from '@/constants'
 import type { Organization } from '../../types/types'
 
 interface OrganizationPopupProps {
@@ -6,13 +5,6 @@ interface OrganizationPopupProps {
 	readonly onSelect: (organization: Organization) => void
 }
 
-const assistanceLabels = ASSISTANCE_OPTIONS.reduce<Record<string, string>>(
-	(acc, option) => {
-		acc[option.id] = option.label
-		return acc
-	},
-	{}
-)
 
 export function OrganizationPopup({
 	organization,

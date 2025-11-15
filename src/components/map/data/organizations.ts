@@ -81,8 +81,7 @@ function createOrganization(
 	coordinates: [number, number],
 	address: string,
 	contacts: { phone: string; email?: string },
-	gallery: string[],
-	website?: string
+	gallery: string[]
 ): Organization {
 	const city = cityMap[cityName] || {
 		id: 999,
@@ -156,8 +155,7 @@ export const organizations: Organization[] = [
 			'https://images.unsplash.com/photo-1583511655826-05700d52f4d9?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80',
-		],
-		'https://lapki-dobra.ru'
+		]
 	),
 	createOrganization(
 		'zeleny-ozersk',
@@ -219,8 +217,7 @@ export const organizations: Organization[] = [
 			'https://images.unsplash.com/photo-1530023367847-a683933f4177?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1492795472186-9985022f45b3?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
-		],
-		'https://atom-heart.ru'
+		]
 	),
 	createOrganization(
 		'future-atom',
@@ -344,8 +341,7 @@ export const organizations: Organization[] = [
 		[
 			'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?auto=format&fit=crop&w=600&q=80',
-		],
-		'https://krov-dobro.ru'
+		]
 	),
 	createOrganization(
 		'atom-deti',
@@ -406,8 +402,7 @@ export const organizations: Organization[] = [
 		[
 			'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=600&q=80',
-		],
-		'https://kultura-atom.ru'
+		]
 	),
 	createOrganization(
 		'med-pomosh',
@@ -528,8 +523,7 @@ export const organizations: Organization[] = [
 		[
 			'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80',
 			'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=600&q=80',
-		],
-		'https://zashchita-prirody.ru'
+		]
 	),
 	createOrganization(
 		'molodezhnyy-tsentr',

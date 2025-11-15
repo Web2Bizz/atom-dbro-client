@@ -23,8 +23,6 @@ export function ImageGallery({
 
 	// Сброс состояния загрузки при смене изображения
 	useEffect(() => {
-		setImageLoading(true)
-		
 		// Проверяем, загружено ли изображение уже в кеше
 		const img = new Image()
 		let isMounted = true
@@ -45,15 +43,36 @@ export function ImageGallery({
 		img.onerror = handleError
 		img.src = currentImage
 		
-		// Если изображение уже загружено (в кеше), сразу скрываем скелетон
+		// Проверяем, загружено ли изображение уже в кеше
+		// Если да, скрываем скелетон сразу, иначе показываем и ждем загрузки
 		if (img.complete) {
-			setImageLoading(false)
-		}
-		
-		return () => {
-			isMounted = false
-			img.onload = null
-			img.onerror = null
+			// Изображение уже загружено - скрываем скелетон асинхронно
+			const timeoutId = setTimeout(() => {
+				if (isMounted) {
+					setImageLoading(false)
+				}
+			}, 0)
+			
+			return () => {
+				isMounted = false
+				clearTimeout(timeoutId)
+				img.onload = null
+				img.onerror = null
+			}
+		} else {
+			// Изображение нужно загрузить - показываем скелетон асинхронно
+			const timeoutId = setTimeout(() => {
+				if (isMounted) {
+					setImageLoading(true)
+				}
+			}, 0)
+			
+			return () => {
+				isMounted = false
+				clearTimeout(timeoutId)
+				img.onload = null
+				img.onerror = null
+			}
 		}
 	}, [currentIndex, currentImage])
 

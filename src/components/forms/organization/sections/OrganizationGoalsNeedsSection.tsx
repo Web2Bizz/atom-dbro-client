@@ -7,7 +7,7 @@ import {
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useFormContext, useFieldArray } from 'react-hook-form'
+import { useFieldArray, useFormContext } from 'react-hook-form'
 import type { OrganizationFormData } from '../schemas/organization-form.schema'
 
 export function OrganizationGoalsNeedsSection() {
@@ -19,6 +19,7 @@ export function OrganizationGoalsNeedsSection() {
 		remove: removeGoal,
 	} = useFieldArray({
 		control: form.control,
+		// @ts-expect-error - react-hook-form has issues with string array field arrays
 		name: 'goals',
 	})
 
@@ -28,6 +29,7 @@ export function OrganizationGoalsNeedsSection() {
 		remove: removeNeed,
 	} = useFieldArray({
 		control: form.control,
+		// @ts-expect-error - react-hook-form has issues with string array field arrays
 		name: 'needs',
 	})
 
@@ -68,6 +70,7 @@ export function OrganizationGoalsNeedsSection() {
 				<Button
 					type='button'
 					variant='outline'
+					// @ts-expect-error - react-hook-form has issues with string array field arrays
 					onClick={() => appendGoal('')}
 					className='mt-2'
 				>
@@ -110,6 +113,7 @@ export function OrganizationGoalsNeedsSection() {
 				<Button
 					type='button'
 					variant='outline'
+					// @ts-expect-error - react-hook-form has issues with string array field arrays
 					onClick={() => appendNeed('')}
 					className='mt-2'
 				>
@@ -119,4 +123,3 @@ export function OrganizationGoalsNeedsSection() {
 		</div>
 	)
 }
-

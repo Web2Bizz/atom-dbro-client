@@ -62,7 +62,9 @@ export function OrganizationBasicInfo({
 							<FormControl>
 								{isLoadingCities ? (
 									<div className='flex items-center gap-2 h-9'>
-										<Spinner className='h-4 w-4' />
+										<div className='h-4 w-4'>
+											<Spinner />
+										</div>
 										<span className='text-sm text-slate-500'>Загрузка...</span>
 									</div>
 								) : (
@@ -101,7 +103,9 @@ export function OrganizationBasicInfo({
 							<FormControl>
 								{isLoadingTypes ? (
 									<div className='flex items-center gap-2 h-9'>
-										<Spinner className='h-4 w-4' />
+										<div className='h-4 w-4'>
+											<Spinner />
+										</div>
 										<span className='text-sm text-slate-500'>Загрузка...</span>
 									</div>
 								) : (

@@ -1,4 +1,3 @@
-import { ASSISTANCE_OPTIONS } from '@/constants'
 import type { Quest } from '../../types/quest-types'
 import type { Organization } from '../../types/types'
 
@@ -142,12 +141,6 @@ export function UnifiedList({
 									<div className='space-y-3'>
 										{organizations.map(organization => {
 											const isActive = organization.id === activeOrgId
-											const assistanceLabels = ASSISTANCE_OPTIONS.reduce<
-												Record<string, string>
-											>((acc, option) => {
-												acc[option.id] = option.label
-												return acc
-											}, {})
 											return (
 												<article
 													key={organization.id}

@@ -32,7 +32,9 @@ export function OrganizationAssistanceSection() {
 					<FormControl>
 						{isLoadingHelpTypes ? (
 							<div className='flex items-center gap-2 py-4'>
-								<Spinner className='h-4 w-4' />
+								<div className='h-4 w-4'>
+									<Spinner />
+								</div>
 								<span className='text-sm text-slate-500'>Загрузка видов помощи...</span>
 							</div>
 						) : (

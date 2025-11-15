@@ -1,4 +1,3 @@
-import { ASSISTANCE_OPTIONS } from '@/constants'
 import type { Organization } from '../../types/types'
 
 interface OrganizationListProps {
@@ -9,13 +8,6 @@ interface OrganizationListProps {
 	readonly isClosing?: boolean
 }
 
-const assistanceLabels = ASSISTANCE_OPTIONS.reduce<Record<string, string>>(
-	(acc, option) => {
-		acc[option.id] = option.label
-		return acc
-	},
-	{}
-)
 
 export function OrganizationList({
 	organizations,

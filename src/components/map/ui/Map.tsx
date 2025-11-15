@@ -158,7 +158,7 @@ export const MapComponent = () => {
 				quests={filteredQuests}
 				organizations={filteredOrganizations}
 				activeQuestId={selectedQuest?.id}
-				activeOrgId={selectedOrganization?.id}
+				activeOrgId={selectedOrganization?.id ? String(selectedOrganization.id) : undefined}
 				onToggleFilters={handleToggleFilters}
 				onToggleList={handleToggleList}
 				onFiltersChange={setFilters}

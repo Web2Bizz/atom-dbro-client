@@ -1,6 +1,5 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
-import { ASSISTANCE_OPTIONS } from '@/constants'
 import { ImageGallery } from '@/components/ui/ImageGallery'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Organization } from '../../types/types'
@@ -11,13 +10,6 @@ interface OrganizationDetailsProps {
 	readonly isClosing?: boolean
 }
 
-const assistanceLabels = ASSISTANCE_OPTIONS.reduce<Record<string, string>>(
-	(acc, option) => {
-		acc[option.id] = option.label
-		return acc
-	},
-	{}
-)
 
 // Компонент для изображения галереи с скелетоном
 function GalleryImage({
