@@ -34,10 +34,8 @@ export type UserShortData = {
 }
 // Тип пользователя (соответствует API)
 export type UserFullData = UserShortData & {
-	level: {
-		level: number
-		experience: number
-	}
+	level: number
+	experience: number
 	stats: {
 		totalQuests: number
 		completedQuests: number
