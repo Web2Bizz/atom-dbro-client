@@ -1,3 +1,4 @@
+import type { Organization } from '@/components/map/types/types'
 import { useUser } from '@/hooks/useUser'
 import { useUpdateUserMutation } from '@/store/entities'
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/store/entities/organization'
 import { transformUserFromAPI } from '@/utils/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
+import type React from 'react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -41,7 +43,9 @@ export function useOrganizationForm(
 			skip: !existingOrgId,
 		})
 
-	const existingOrg = organizationResponse?.data?.organization || null
+	// RTK Query может возвращать данные напрямую как Organization, а не как OrganizationResponse
+	// Используем type assertion для корректной типизации
+	const existingOrg = (organizationResponse as unknown as Organization) || null
 	const isEditMode = !!existingOrg
 
 	const [createOrgMutation, { isLoading: isCreating }] =
@@ -85,10 +89,16 @@ export function useOrganizationForm(
 			const phoneContact = existingOrg.contacts.find(c => c.name === 'Телефон')
 			const emailContact = existingOrg.contacts.find(c => c.name === 'Email')
 
+			// Получаем organizationTypeId из organizationTypes массива или из type (если есть в ответе API)
+			const organizationTypeId =
+				existingOrg.organizationTypes?.[0]?.id ||
+				(existingOrg as Organization & { type?: { id: number } }).type?.id ||
+				0
+
 			form.reset({
 				name: existingOrg.name || '',
 				cityId: existingOrg.city.id || 0,
-				organizationTypeId: existingOrg.organizationTypes[0]?.id || 0,
+				organizationTypeId: organizationTypeId,
 				helpTypeIds: existingOrg.helpTypes.map(ht => ht.id),
 				summary: existingOrg.summary || '',
 				description: existingOrg.description || '',
@@ -110,14 +120,19 @@ export function useOrganizationForm(
 						? [{ name: 'Email', value: user.email }]
 						: []),
 				],
-				latitude: existingOrg.latitude || '',
-				longitude: existingOrg.longitude || '',
+				latitude: existingOrg.latitude.toString() || '',
+				longitude: existingOrg.longitude.toString() || '',
 				gallery: existingOrg.gallery || [],
 			})
 		}
 	}, [existingOrg, user?.email, form, isLoadingOrganization])
 
 	const onSubmit = async (data: OrganizationFormData) => {
+		console.log('=== onSubmit called ===')
+		console.log('Form data:', data)
+		console.log('Is edit mode:', isEditMode)
+		console.log('Existing org ID:', existingOrgId)
+
 		if (!isEditMode && !canCreateOrganization()) {
 			toast.error(
 				'Вы уже создали организацию. Один пользователь может создать только одну организацию.'
@@ -131,70 +146,167 @@ export function useOrganizationForm(
 		}
 
 		try {
-			// Сначала загружаем изображения, если они есть
+			// Обрабатываем изображения: разделяем на URL (с сервера) и base64 (новые)
 			let imageUrls: string[] = []
+			const newImages: string[] = [] // base64 изображения для загрузки
+
 			if (data.gallery && data.gallery.length > 0) {
-				if (import.meta.env.DEV) {
-					console.log('Uploading images:', data.gallery.length)
+				console.log('Processing images:', {
+					count: data.gallery.length,
+					images: data.gallery.map((img, idx) => ({
+						index: idx + 1,
+						type: typeof img,
+						length: typeof img === 'string' ? img.length : 0,
+						preview:
+							typeof img === 'string' ? img.substring(0, 50) + '...' : img,
+						isUrl:
+							typeof img === 'string' &&
+							(img.startsWith('http://') || img.startsWith('https://')),
+						isDataUrl: typeof img === 'string' && img.startsWith('data:'),
+						isBase64:
+							typeof img === 'string' &&
+							!img.startsWith('http') &&
+							!img.startsWith('data:') &&
+							img.length > 100,
+					})),
+				})
+
+				// Разделяем изображения на URL и base64
+				for (let i = 0; i < data.gallery.length; i++) {
+					const image = data.gallery[i]
+
+					if (typeof image !== 'string') {
+						console.warn(`Image ${i + 1} is not a string:`, typeof image)
+						continue
+					}
+
+					// Проверяем, является ли изображение URL (начинается с http:// или https://)
+					if (image.startsWith('http://') || image.startsWith('https://')) {
+						// Это URL с сервера - просто добавляем в список
+						imageUrls.push(image)
+						console.log(
+							`Image ${i + 1} is URL:`,
+							image.substring(0, 50) + '...'
+						)
+					} else if (image.startsWith('data:')) {
+						// Это base64 изображение с префиксом data: - нужно загрузить
+						newImages.push(image)
+						console.log(
+							`Image ${i + 1} is base64 (data:), will upload, length:`,
+							image.length
+						)
+					} else if (image.length > 100 && /^[A-Za-z0-9+/=]+$/.test(image)) {
+						// Это может быть base64 без префикса data: - добавляем префикс и загружаем
+						// Определяем MIME type по первым символам или используем image/jpeg по умолчанию
+						const base64WithPrefix = `data:image/jpeg;base64,${image}`
+						newImages.push(base64WithPrefix)
+						console.log(
+							`Image ${i + 1} is base64 (without prefix), will upload, length:`,
+							image.length
+						)
+					} else {
+						console.warn(`Image ${i + 1} has unknown format:`, {
+							length: image.length,
+							preview: image.substring(0, 50),
+							isBase64Like: /^[A-Za-z0-9+/=]+$/.test(image),
+						})
+					}
 				}
 
-				try {
-					// Конвертируем base64 строки в Blob и создаем FormData
-					const formData = new FormData()
+				console.log('Images classification:', {
+					urls: imageUrls.length,
+					newImages: newImages.length,
+					total: data.gallery.length,
+				})
 
-					for (let i = 0; i < data.gallery.length; i++) {
-						const base64String = data.gallery[i]
+				// Загружаем только новые base64 изображения
+				if (newImages.length > 0) {
+					console.log(`Uploading ${newImages.length} new images...`)
+					try {
+						// Конвертируем base64 строки в Blob и создаем FormData
+						const formData = new FormData()
 
-						// Извлекаем MIME type и данные из base64 строки
-						const matches = base64String.match(
-							/^data:([A-Za-z-+/]+);base64,(.+)$/
-						)
-						if (!matches || matches.length !== 3) {
-							throw new Error(`Неверный формат base64 изображения ${i + 1}`)
+						for (let i = 0; i < newImages.length; i++) {
+							const base64String = newImages[i]
+
+							// Извлекаем MIME type и данные из base64 строки
+							const matches = base64String.match(
+								/^data:([A-Za-z-+/]+);base64,(.+)$/
+							)
+							if (!matches || matches.length !== 3) {
+								console.error(`Invalid base64 format for image ${i + 1}:`, {
+									preview: base64String.substring(0, 100),
+									hasDataPrefix: base64String.startsWith('data:'),
+								})
+								throw new Error(`Неверный формат base64 изображения ${i + 1}`)
+							}
+
+							const mimeType = matches[1]
+							const base64Data = matches[2]
+
+							console.log(`Processing image ${i + 1}:`, {
+								mimeType,
+								base64Length: base64Data.length,
+							})
+
+							// Конвертируем base64 в бинарные данные
+							const byteCharacters = atob(base64Data)
+							const byteNumbers = new Array(byteCharacters.length)
+							for (let j = 0; j < byteCharacters.length; j++) {
+								byteNumbers[j] = byteCharacters.charCodeAt(j)
+							}
+							const byteArray = new Uint8Array(byteNumbers)
+							const blob = new Blob([byteArray], { type: mimeType })
+
+							// Определяем расширение файла из MIME type
+							const extension = mimeType.split('/')[1] || 'jpg'
+							const fileName = `image-${i + 1}.${extension}`
+
+							// Добавляем файл в FormData
+							formData.append('images', blob, fileName)
+							console.log(
+								`Added image ${i + 1} to FormData:`,
+								fileName,
+								`(${blob.size} bytes)`
+							)
 						}
 
-						const mimeType = matches[1]
-						const base64Data = matches[2]
+						console.log('Uploading FormData with', newImages.length, 'images')
+						const uploadResult = await uploadImagesMutation(formData).unwrap()
+						console.log('Upload result:', uploadResult)
 
-						// Конвертируем base64 в бинарные данные
-						const byteCharacters = atob(base64Data)
-						const byteNumbers = new Array(byteCharacters.length)
-						for (let j = 0; j < byteCharacters.length; j++) {
-							byteNumbers[j] = byteCharacters.charCodeAt(j)
-						}
-						const byteArray = new Uint8Array(byteNumbers)
-						const blob = new Blob([byteArray], { type: mimeType })
+						// Добавляем загруженные URL к существующим
+						const uploadedUrls = uploadResult.map(img => img.url)
+						imageUrls = [...imageUrls, ...uploadedUrls]
 
-						// Определяем расширение файла из MIME type
-						const extension = mimeType.split('/')[1] || 'jpg'
-						const fileName = `image-${i + 1}.${extension}`
-
-						// Добавляем файл в FormData
-						formData.append('images', blob, fileName)
-					}
-
-					const uploadResult = await uploadImagesMutation(formData).unwrap()
-
-					imageUrls = uploadResult.map(img => img.url)
-
-					if (import.meta.env.DEV) {
-						console.log('Images uploaded, URLs:', imageUrls)
-					}
-				} catch (uploadError) {
-					if (import.meta.env.DEV) {
+						console.log('New images uploaded, URLs:', uploadedUrls)
+						console.log('All image URLs:', imageUrls)
+					} catch (uploadError) {
 						console.error('Error uploading images:', uploadError)
+						if (
+							uploadError &&
+							typeof uploadError === 'object' &&
+							'data' in uploadError
+						) {
+							console.error('Upload error details:', uploadError.data)
+						}
+
+						const errorMessage =
+							uploadError &&
+							typeof uploadError === 'object' &&
+							'data' in uploadError
+								? (uploadError.data as { message?: string })?.message ||
+								  'Не удалось загрузить изображения'
+								: 'Не удалось загрузить изображения. Попробуйте еще раз.'
+
+						toast.error(errorMessage)
+						return
 					}
-
-					const errorMessage =
-						uploadError &&
-						typeof uploadError === 'object' &&
-						'data' in uploadError
-							? (uploadError.data as { message?: string })?.message ||
-							  'Не удалось загрузить изображения'
-							: 'Не удалось загрузить изображения. Попробуйте еще раз.'
-
-					toast.error(errorMessage)
-					return
+				} else {
+					console.log(
+						'No new images to upload, using existing URLs:',
+						imageUrls
+					)
 				}
 			}
 
@@ -220,16 +332,57 @@ export function useOrganizationForm(
 			if (import.meta.env.DEV) {
 				console.log('Request data:', requestData)
 				console.log('Request data gallery:', requestData.gallery)
+				console.log('Is edit mode:', isEditMode)
 			}
+
 			if (isEditMode && existingOrgId) {
 				// Обновление существующей организации
+				console.log('=== Updating organization ===')
+				console.log('Organization ID:', existingOrgId)
+				console.log('Request data:', requestData)
+
 				const result = await updateOrgMutation({
 					organizationId: String(existingOrgId),
 					data: requestData,
 				}).unwrap()
 
+				console.log('=== Update result from server ===')
+				console.log('Full result:', result)
+				console.log('Result type:', typeof result)
+				console.log('Result keys:', result ? Object.keys(result) : 'null')
+
 				// Проверяем успешность запроса - если нет ошибки, значит успешно
 				if (result && !('error' in result)) {
+					// Извлекаем организацию из результата
+					const updatedOrganization =
+						(result as { data?: { organization?: unknown } })?.data
+							?.organization ||
+						(result as { organization?: unknown })?.organization ||
+						result
+
+					console.log('=== Updated organization from server ===')
+					console.log('Updated organization:', updatedOrganization)
+					console.log('Organization type:', typeof updatedOrganization)
+					if (updatedOrganization && typeof updatedOrganization === 'object') {
+						console.log('Organization keys:', Object.keys(updatedOrganization))
+						console.log(
+							'Organization ID:',
+							(updatedOrganization as { id?: unknown })?.id
+						)
+						console.log(
+							'Organization name:',
+							(updatedOrganization as { name?: unknown })?.name
+						)
+						console.log(
+							'Organization helpTypes:',
+							(updatedOrganization as { helpTypes?: unknown })?.helpTypes
+						)
+						console.log(
+							'Organization gallery:',
+							(updatedOrganization as { gallery?: unknown })?.gallery
+						)
+					}
+
 					toast.success('Организация успешно обновлена!')
 
 					// Сохраняем координаты для зума на карте
@@ -391,7 +544,34 @@ export function useOrganizationForm(
 		}
 	}
 
-	const handleSubmit = form.handleSubmit(onSubmit)
+	const handleSubmit = (e?: React.BaseSyntheticEvent) => {
+		console.log('=== handleSubmit called ===')
+		console.log('Event:', e)
+		console.log('Form state before submit:', {
+			isDirty: form.formState.isDirty,
+			isValid: form.formState.isValid,
+			errors: form.formState.errors,
+			values: form.getValues(),
+		})
+
+		return form.handleSubmit(onSubmit, errors => {
+			console.log('=== Form validation errors ===')
+			console.log('Errors:', errors)
+			console.log('Form values:', form.getValues())
+			console.log('Form state:', {
+				isDirty: form.formState.isDirty,
+				isValid: form.formState.isValid,
+				errors: form.formState.errors,
+			})
+			// Показываем первую ошибку валидации
+			const firstError = Object.values(errors)[0]
+			if (firstError && 'message' in firstError) {
+				toast.error(String(firstError.message))
+			} else {
+				toast.error('Пожалуйста, заполните все обязательные поля')
+			}
+		})(e)
+	}
 
 	const isSubmitting =
 		isCreating ||
