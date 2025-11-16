@@ -104,20 +104,26 @@ export const MapComponent = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
-	// Объединяем данные для поиска
+	// Объединяем данные для поиска с учетом фильтра по типу меток
 	const searchItems = useMemo(() => {
-		const questItems = filteredQuests.map(q => ({
-			...q,
-			isQuest: true as const,
-		}))
+		const questItems = 
+			(filters.markerType === 'all' || filters.markerType === 'quests')
+				? filteredQuests.map(q => ({
+						...q,
+						isQuest: true as const,
+				  }))
+				: []
 
-		const orgItems = filteredOrganizations.map(o => ({
-			...o,
-			isQuest: false as const,
-		}))
+		const orgItems = 
+			(filters.markerType === 'all' || filters.markerType === 'organizations')
+				? filteredOrganizations.map(o => ({
+						...o,
+						isQuest: false as const,
+				  }))
+				: []
 
 		return [...questItems, ...orgItems]
-	}, [filteredQuests, filteredOrganizations])
+	}, [filteredQuests, filteredOrganizations, filters.markerType])
 
 	const handleParticipate = () => {
 		// Здесь будет логика участия в квесте
@@ -127,8 +133,8 @@ export const MapComponent = () => {
 	return (
 		<div className='relative w-full h-full'>
 			<UnifiedMapView
-				quests={filteredQuests}
-				organizations={filteredOrganizations}
+				quests={filters.markerType === 'all' || filters.markerType === 'quests' ? filteredQuests : []}
+				organizations={filters.markerType === 'all' || filters.markerType === 'organizations' ? filteredOrganizations : []}
 				onSelectQuest={handleSelectQuest}
 				onSelectOrganization={handleSelectOrganization}
 				onMarkerClick={handleMarkerClick}
@@ -157,8 +163,8 @@ export const MapComponent = () => {
 				cities={allCities}
 				types={allTypes}
 				helpTypes={helpTypes}
-				quests={filteredQuests}
-				organizations={filteredOrganizations}
+				quests={filters.markerType === 'all' || filters.markerType === 'quests' ? filteredQuests : []}
+				organizations={filters.markerType === 'all' || filters.markerType === 'organizations' ? filteredOrganizations : []}
 				activeQuestId={selectedQuest?.id}
 				activeOrgId={selectedOrganization?.id ? String(selectedOrganization.id) : undefined}
 				onToggleFilters={handleToggleFilters}

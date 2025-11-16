@@ -24,7 +24,7 @@ export function FiltersPanel({
 	isOrganizationView = false,
 }: FiltersPanelProps) {
 	const handleSelectChange =
-		(field: 'city' | 'type') =>
+		(field: 'city' | 'type' | 'markerType') =>
 		(event: React.ChangeEvent<HTMLSelectElement>) => {
 			onFiltersChange({
 				...filters,
@@ -58,6 +58,7 @@ export function FiltersPanel({
 				return acc
 			}, {} as FiltersState['assistance']),
 			search: '',
+			markerType: 'all',
 		})
 	}
 
@@ -65,6 +66,7 @@ export function FiltersPanel({
 		filters.city !== '' ||
 		filters.type !== '' ||
 		filters.search !== '' ||
+		filters.markerType !== 'all' ||
 		Object.values(filters.assistance).some(Boolean)
 
 	return (
@@ -103,6 +105,25 @@ export function FiltersPanel({
 			</header>
 
 			<div className='p-6 space-y-5'>
+				<div className='space-y-2'>
+					<label
+						htmlFor='filter-marker-type'
+						className='block text-sm font-medium text-slate-700'
+					>
+						Тип меток
+					</label>
+					<select
+						id='filter-marker-type'
+						value={filters.markerType}
+						onChange={handleSelectChange('markerType')}
+						className='w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+					>
+						<option value='all'>Все метки</option>
+						<option value='organizations'>Только организации</option>
+						<option value='quests'>Только квесты</option>
+					</select>
+				</div>
+
 				<div className='space-y-2'>
 					<label
 						htmlFor='filter-city'

@@ -26,6 +26,7 @@ const createInitialFilters = (helpTypes: { name: string }[]): FiltersState => ({
 		return acc
 	}, {} as FiltersState['assistance']),
 	search: '',
+	markerType: 'all', // По умолчанию показываем все метки
 })
 
 export function useMapState() {
