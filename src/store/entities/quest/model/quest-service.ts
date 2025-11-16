@@ -1,20 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type {
-	ContributeRequest,
-	ContributeResponse,
+	CategoryResponse,
 	CreateQuestRequest,
 	CreateQuestResponse,
-	CreateUpdateRequest,
-	CreateUpdateResponse,
 	DeleteQuestResponse,
 	GetQuestsParams,
-	ParticipateRequest,
-	ParticipateResponse,
+	JoinQuestResponse,
 	QuestResponse,
 	QuestsListResponse,
 	UpdateQuestRequest,
-	VolunteerRegistrationRequest,
-	VolunteerRegistrationResponse,
+	UpdateQuestResponse,
 } from './type'
 
 // Функция для получения токена из localStorage
@@ -44,18 +39,34 @@ export const questService = createApi({
 			query: params => {
 				if (!params) return '/quests'
 				const searchParams = new URLSearchParams()
-				if (params.city) searchParams.append('city', params.city)
-				if (params.type) searchParams.append('type', params.type)
-				if (params.category) searchParams.append('category', params.category)
-				if (params.status) searchParams.append('status', params.status)
-				if (params.search) searchParams.append('search', params.search)
-				if (params.page) searchParams.append('page', params.page.toString())
-				if (params.limit) searchParams.append('limit', params.limit.toString())
-				if (params.sort) searchParams.append('sort', params.sort)
-				if (params.assistance && params.assistance.length > 0) {
-					for (const id of params.assistance) {
-						searchParams.append('assistance', id)
+				if (params.cityId) {
+					searchParams.append('cityId', params.cityId.toString())
+				}
+				if (params.organizationTypeId) {
+					searchParams.append(
+						'organizationTypeId',
+						params.organizationTypeId.toString()
+					)
+				}
+				if (params.categoryIds && params.categoryIds.length > 0) {
+					for (const id of params.categoryIds) {
+						searchParams.append('categoryIds', id.toString())
 					}
+				}
+				if (params.status) {
+					searchParams.append('status', params.status)
+				}
+				if (params.search) {
+					searchParams.append('search', params.search)
+				}
+				if (params.page) {
+					searchParams.append('page', params.page.toString())
+				}
+				if (params.limit) {
+					searchParams.append('limit', params.limit.toString())
+				}
+				if (params.sort) {
+					searchParams.append('sort', params.sort)
 				}
 				const queryString = searchParams.toString()
 				return queryString ? `/quests?${queryString}` : '/quests'
@@ -63,12 +74,10 @@ export const questService = createApi({
 			providesTags: ['QuestList'],
 		}),
 
-		// GET /quests/:questId - Получить детальную информацию о квесте
-		getQuest: builder.query<QuestResponse, string>({
-			query: questId => `/quests/${questId}`,
-			providesTags: (_result, _error, questId) => [
-				{ type: 'Quest', id: questId },
-			],
+		// GET /quests/:id - Получить детальную информацию о квесте
+		getQuest: builder.query<QuestResponse, number | string>({
+			query: id => `/quests/${id}`,
+			providesTags: (_result, _error, id) => [{ type: 'Quest', id: String(id) }],
 		}),
 
 		// POST /quests - Создать новый квест
@@ -81,93 +90,52 @@ export const questService = createApi({
 			invalidatesTags: ['QuestList'],
 		}),
 
-		// PATCH /quests/:questId - Обновить квест
+		// PATCH /quests/:id - Обновить квест
 		updateQuest: builder.mutation<
-			QuestResponse,
-			{ questId: string; data: UpdateQuestRequest }
+			UpdateQuestResponse,
+			{ id: number | string; data: UpdateQuestRequest }
 		>({
-			query: ({ questId, data }) => ({
-				url: `/quests/${questId}`,
+			query: ({ id, data }) => ({
+				url: `/quests/${id}`,
 				method: 'PATCH',
 				body: data,
 			}),
-			invalidatesTags: (_result, _error, { questId }) => [
+			invalidatesTags: (_result, _error, { id }) => [
 				'QuestList',
-				{ type: 'Quest', id: questId },
+				{ type: 'Quest', id: String(id) },
 			],
 		}),
 
-		// DELETE /quests/:questId - Удалить квест
-		deleteQuest: builder.mutation<DeleteQuestResponse, string>({
-			query: questId => ({
-				url: `/quests/${questId}`,
+		// DELETE /quests/:id - Удалить квест
+		deleteQuest: builder.mutation<DeleteQuestResponse, number | string>({
+			query: id => ({
+				url: `/quests/${id}`,
 				method: 'DELETE',
 			}),
-			invalidatesTags: ['QuestList'],
-		}),
-
-		// POST /quests/:questId/participate - Присоединиться к квесту
-		participate: builder.mutation<
-			ParticipateResponse,
-			{ questId: string; role: ParticipateRequest['role'] }
-		>({
-			query: ({ questId, role }) => ({
-				url: `/quests/${questId}/participate`,
-				method: 'POST',
-				body: { role },
-			}),
-			invalidatesTags: (_result, _error, { questId }) => [
+			invalidatesTags: (_result, _error, id) => [
 				'QuestList',
-				{ type: 'Quest', id: questId },
+				{ type: 'Quest', id: String(id) },
 			],
 		}),
 
-		// POST /quests/:questId/contribute - Внести вклад в квест
-		contribute: builder.mutation<
-			ContributeResponse,
-			{ questId: string; data: ContributeRequest }
+		// POST /quests/:id/join/:userId - Присоединиться к квесту
+		joinQuest: builder.mutation<
+			JoinQuestResponse,
+			{ id: number | string; userId: number | string }
 		>({
-			query: ({ questId, data }) => ({
-				url: `/quests/${questId}/contribute`,
+			query: ({ id, userId }) => ({
+				url: `/quests/${id}/join/${userId}`,
 				method: 'POST',
-				body: data,
 			}),
-			invalidatesTags: (_result, _error, { questId }) => [
+			invalidatesTags: (_result, _error, { id }) => [
 				'QuestList',
-				{ type: 'Quest', id: questId },
+				{ type: 'Quest', id: String(id) },
 			],
 		}),
 
-		// POST /quests/:questId/stages/:stageId/volunteers - Зарегистрироваться на волонтерское событие
-		registerVolunteer: builder.mutation<
-			VolunteerRegistrationResponse,
-			{ questId: string; stageId: string; data: VolunteerRegistrationRequest }
-		>({
-			query: ({ questId, stageId, data }) => ({
-				url: `/quests/${questId}/stages/${stageId}/volunteers`,
-				method: 'POST',
-				body: data,
-			}),
-			invalidatesTags: (_result, _error, { questId }) => [
-				'QuestList',
-				{ type: 'Quest', id: questId },
-			],
-		}),
-
-		// POST /quests/:questId/updates - Добавить обновление к квесту
-		createUpdate: builder.mutation<
-			CreateUpdateResponse,
-			{ questId: string; data: CreateUpdateRequest }
-		>({
-			query: ({ questId, data }) => ({
-				url: `/quests/${questId}/updates`,
-				method: 'POST',
-				body: data,
-			}),
-			invalidatesTags: (_result, _error, { questId }) => [
-				'QuestList',
-				{ type: 'Quest', id: questId },
-			],
+		// GET /categories - Получить список категорий квестов
+		getCategories: builder.query<CategoryResponse[], void>({
+			query: () => '/categories',
 		}),
 	}),
 })
@@ -180,8 +148,6 @@ export const {
 	useCreateQuestMutation,
 	useUpdateQuestMutation,
 	useDeleteQuestMutation,
-	useParticipateMutation,
-	useContributeMutation,
-	useRegisterVolunteerMutation,
-	useCreateUpdateMutation,
+	useJoinQuestMutation,
+	useGetCategoriesQuery,
 } = questService

@@ -13,19 +13,32 @@ export { experienceService, useAddExperienceMutation } from './experience'
 export type { AddExperienceRequest, AddExperienceResponse } from './experience'
 
 export {
-	useContributeMutation,
 	useCreateQuestMutation,
-	useCreateUpdateMutation,
 	useDeleteQuestMutation,
+	useGetCategoriesQuery,
 	useGetQuestQuery,
 	useGetQuestsQuery,
+	useJoinQuestMutation,
 	useLazyGetQuestQuery,
 	useLazyGetQuestsQuery,
-	useParticipateMutation,
-	useRegisterVolunteerMutation,
 	useUpdateQuestMutation,
-} from './quest/model/quest-service'
-export type { QuestResponse } from './quest/model/type'
+} from './quest'
+export type {
+	CategoryResponse,
+	CreateQuestRequest,
+	CreateQuestResponse,
+	DeleteQuestResponse,
+	GetQuestsParams,
+	JoinQuestResponse,
+	Quest,
+	QuestAchievement,
+	QuestContact,
+	QuestResponse,
+	QuestStep,
+	QuestsListResponse,
+	UpdateQuestRequest,
+	UpdateQuestResponse,
+} from './quest'
 
 export {
 	organizationService,

@@ -1,109 +1,110 @@
 // Типы для работы с квестами через API
 
-import type {
-	Quest,
-	QuestStage,
-	QuestUpdate,
-} from '@/components/map/types/quest-types'
-
 // Типы для запросов
 export interface GetQuestsParams {
-	city?: string
-	type?: string
-	category?: 'environment' | 'animals' | 'people' | 'education' | 'other'
+	cityId?: number
+	organizationTypeId?: number
+	categoryIds?: number[]
 	status?: 'active' | 'completed' | 'archived'
-	assistance?: string[]
 	search?: string
 	page?: number
 	limit?: number
 	sort?: 'newest' | 'oldest' | 'progress' | 'popular'
 }
 
+// Контакт для квеста
+export interface QuestContact {
+	name: string
+	value: string
+}
+
+// Достижение для квеста
+export interface QuestAchievement {
+	title: string
+	description: string
+	icon: string
+}
+
+// Требование для шага квеста
+export interface QuestStepRequirement {
+	value: number
+}
+
+// Шаг квеста
+export interface QuestStep {
+	title: string
+	description: string
+	status: 'pending' | 'in_progress' | 'completed'
+	progress: number // 0-100
+	requirement?: QuestStepRequirement
+	deadline?: string // ISO date string
+}
+
+// Запрос на создание квеста
 export interface CreateQuestRequest {
 	title: string
-	city: string
-	type: string
-	category: 'environment' | 'animals' | 'people' | 'education' | 'other'
-	story: string
-	storyMedia?: {
-		image?: string
-		video?: string
-	}
-	stages: Array<{
-		title: string
-		description: string
-		requirements?: {
-			financial?: {
-				needed: number
-				currency: string
-			}
-			volunteers?: {
-				needed: number
-			}
-			items?: {
-				needed: number
-				itemName: string
-			}
-		}
-		deadline?: string
-	}>
-	coordinates: [number, number] // [lat, lng]
+	description: string
+	status: 'active' | 'completed' | 'archived'
+	experienceReward: number
+	achievement: QuestAchievement
+	cityId: number
+	organizationTypeId: number
+	latitude: number
+	longitude: number
 	address: string
-	curator: {
-		name: string
-		phone: string
-		email?: string
-		organization?: string
-	}
-	socials?: Array<{
-		name: string
-		url: string
-	}>
-	// Пользовательское достижение (опционально)
-	// Выдается участникам при завершении квеста на 100%
-	customAchievement?: {
-		icon: string // Эмодзи
-		title: string
-		description: string
-	}
+	contacts: QuestContact[]
+	coverImage?: string
+	gallery?: string[]
+	steps: QuestStep[]
+	categoryIds: number[]
 }
 
+// Запрос на обновление квеста
 export interface UpdateQuestRequest {
 	title?: string
-	story?: string
-	stages?: QuestStage[]
+	description?: string
+	status?: 'active' | 'completed' | 'archived'
+	experienceReward?: number
+	achievement?: QuestAchievement
+	cityId?: number
+	organizationTypeId?: number
+	latitude?: number
+	longitude?: number
+	address?: string
+	contacts?: QuestContact[]
+	coverImage?: string
+	gallery?: string[]
+	steps?: QuestStep[]
+	categoryIds?: number[]
 }
 
-export interface ParticipateRequest {
-	role: 'financial' | 'volunteer' | 'ambassador'
-}
-
-export interface ContributeRequest {
-	stageId: string
-	role: 'financial' | 'volunteer'
-	amount?: number // для financial
-	action?: string // для volunteer
-}
-
-export interface VolunteerRegistrationRequest {
-	name: string
-	phone: string
-	email: string
-}
-
-export interface CreateUpdateRequest {
+// Тип квеста (ответ от API)
+export interface Quest {
+	id: number
 	title: string
-	content: string
-	images?: string[]
-	video?: string
-	stageId?: string
+	description: string
+	status: 'active' | 'completed' | 'archived'
+	experienceReward: number
+	achievement: QuestAchievement
+	cityId: number
+	organizationTypeId: number
+	latitude: number
+	longitude: number
+	address: string
+	contacts: QuestContact[]
+	coverImage?: string
+	gallery?: string[]
+	steps: QuestStep[]
+	categoryIds: number[]
+	createdAt?: string
+	updatedAt?: string
 }
 
 // Типы для ответов API
 export interface QuestsListResponse {
 	data: {
 		quests: Quest[]
-		pagination: {
+		pagination?: {
 			page: number
 			limit: number
 			total: number
@@ -121,71 +122,32 @@ export interface QuestResponse {
 export interface CreateQuestResponse {
 	data: {
 		quest: Quest
-		message: string
+		message?: string
 	}
 }
 
-export interface ParticipateResponse {
+export interface UpdateQuestResponse {
 	data: {
-		participation: {
-			userId: string
-			questId: string
-			role: string
-			joinedAt: string
-		}
-		user: unknown // UserFullData
-		message: string
-	}
-}
-
-export interface ContributeResponse {
-	data: {
-		contribution: {
-			id: string
-			questId: string
-			stageId: string
-			userId: string
-			role: string
-			amount?: number
-			contributedAt: string
-			impact: string
-		}
-		user: unknown // UserFullData
 		quest: Quest
-		achievements?: unknown[]
-		levelUp?: {
-			newLevel: number
-			title: string
-			experienceGain: number
-		}
-	}
-}
-
-export interface VolunteerRegistrationResponse {
-	data: {
-		registration: {
-			id: string
-			userId: string
-			questId: string
-			stageId: string
-			name: string
-			phone: string
-			email: string
-			registeredAt: string
-		}
-		quest: Quest
-		message: string
-	}
-}
-
-export interface CreateUpdateResponse {
-	data: {
-		update: QuestUpdate
-		quest: Quest
-		message: string
+		message?: string
 	}
 }
 
 export interface DeleteQuestResponse {
 	message: string
+}
+
+export interface JoinQuestResponse {
+	data: {
+		message: string
+		quest: Quest
+	}
+}
+
+// Тип для категории квеста
+export interface CategoryResponse {
+	id: number
+	name: string
+	createdAt: string
+	updatedAt: string
 }

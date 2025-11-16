@@ -1,18 +1,18 @@
 import { Button } from '@/components/ui/button'
+import { Form } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/spinner'
 import { LocationPicker } from '../shared/LocationPicker'
-import { QuestBasicInfo } from './QuestBasicInfo'
-import { QuestStagesSection } from './QuestStagesSection'
-import { QuestLocationSection } from './QuestLocationSection'
-import { QuestCuratorSection } from './QuestCuratorSection'
-import { QuestSocialsSection } from './QuestSocialsSection'
-import { QuestAchievementSection } from './QuestAchievementSection'
-import { QuestUpdatesSection } from './QuestUpdatesSection'
 import { DangerZone } from '../shared/DangerZone'
 import { useQuestForm } from './hooks/useQuestForm'
 import { useState } from 'react'
-import type { StageFormData } from './QuestStageForm'
-import type { UpdateFormData } from './QuestUpdatesSection'
+import { useGetCitiesQuery } from '@/store/entities/organization'
+import { QuestBasicInfo } from './sections/QuestBasicInfo'
+import { QuestStagesSection } from './sections/QuestStagesSection'
+import { QuestLocationSection } from './sections/QuestLocationSection'
+import { QuestCuratorSection } from './sections/QuestCuratorSection'
+import { QuestSocialsSection } from './sections/QuestSocialsSection'
+import { QuestAchievementSection } from './sections/QuestAchievementSection'
+import { QuestUpdatesSection } from './sections/QuestUpdatesSection'
 
 interface AddQuestFormProps {
 	onSuccess?: (questId: string) => void
@@ -22,11 +22,11 @@ type FormStep = 'basic' | 'stages' | 'updates'
 
 export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 	const {
-		formData,
-		setFormData,
+		form,
 		isSubmitting,
 		isEditMode,
-		handleSubmit,
+		isLoadingQuest,
+		onSubmit,
 		handleCityChange,
 		handleDelete,
 	} = useQuestForm(onSuccess)
@@ -40,274 +40,138 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 		{ id: 'updates', label: 'Обновления' },
 	]
 
-
-	const addStage = () => {
-		setFormData(prev => ({
-			...prev,
-			stages: [
-				...prev.stages,
-				{
-					title: '',
-					description: '',
-					status: 'pending' as const,
-					progress: 0,
-				},
-			],
-		}))
-	}
-
-	const removeStage = (index: number) => {
-		setFormData(prev => ({
-			...prev,
-			stages: prev.stages.filter((_, i) => i !== index),
-		}))
-	}
-
-	const updateStage = (
-		index: number,
-		field: keyof StageFormData,
-		value: unknown
-	) => {
-		setFormData(prev => ({
-			...prev,
-			stages: prev.stages.map((stage, i) =>
-				i === index ? { ...stage, [field]: value } : stage
-			),
-		}))
-	}
-
-	const addSocial = () => {
-		setFormData(prev => ({
-			...prev,
-			socials: [...prev.socials, { name: 'VK' as const, url: '' }],
-		}))
-	}
-
-	const removeSocial = (index: number) => {
-		setFormData(prev => ({
-			...prev,
-			socials: prev.socials.filter((_, i) => i !== index),
-		}))
-	}
-
-	const updateSocial = (
-		index: number,
-		field: 'name' | 'url',
-		value: string
-	) => {
-		setFormData(prev => ({
-			...prev,
-			socials: prev.socials.map((social, i) =>
-				i === index
-					? {
-							...social,
-							[field]:
-								field === 'name'
-									? (value as 'VK' | 'Telegram' | 'Website')
-									: value,
-					  }
-					: social
-			),
-		}))
-	}
-
-	const addUpdate = () => {
-		setFormData(prev => ({
-			...prev,
-			updates: [
-				...prev.updates,
-				{
-					id: `update-${Date.now()}-${Math.random()}`,
-					title: '',
-					content: '',
-					images: [],
-				},
-			],
-		}))
-	}
-
-	const removeUpdate = (id: string) => {
-		setFormData(prev => ({
-			...prev,
-			updates: prev.updates.filter(update => update.id !== id),
-		}))
-	}
-
-	const updateUpdate = (
-		id: string,
-		field: keyof UpdateFormData,
-		value: unknown
-	) => {
-		setFormData(prev => ({
-			...prev,
-			updates: prev.updates.map(update =>
-				update.id === id ? { ...update, [field]: value } : update
-			),
-		}))
-	}
-
 	const handleLocationSelect = (coordinates: { lat: number; lng: number }) => {
-		setFormData(prev => ({ ...prev, coordinates }))
+		form.setValue('latitude', coordinates.lat.toString())
+		form.setValue('longitude', coordinates.lng.toString())
 		setShowLocationPicker(false)
 	}
 
+	const { data: cities = [] } = useGetCitiesQuery()
+	const cityId = form.watch('cityId')
+	const latitude = form.watch('latitude')
+	const longitude = form.watch('longitude')
+	const city = cities.find(c => c.id === cityId)
+
+	if (isLoadingQuest) {
+		return (
+			<div className='flex items-center justify-center py-12'>
+				<div className='flex flex-col items-center gap-4'>
+					<Spinner />
+					<p className='text-sm text-slate-600'>Загрузка данных квеста...</p>
+				</div>
+			</div>
+		)
+	}
+
 	return (
-		<form onSubmit={handleSubmit} className='space-y-6'>
-			{isEditMode && (
-				<div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
-					<p className='text-sm text-blue-800'>
-						<strong>Режим редактирования:</strong> Вы редактируете свой созданный
-						квест. Изменения будут сохранены при нажатии "Сохранить изменения".
-					</p>
+		<Form {...form}>
+			<form onSubmit={onSubmit} className='space-y-6'>
+				{isEditMode && (
+					<div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
+						<p className='text-sm text-blue-800'>
+							<strong>Режим редактирования:</strong> Вы редактируете свой созданный
+							квест. Изменения будут сохранены при нажатии "Сохранить изменения".
+						</p>
+					</div>
+				)}
+
+				{/* Навигация по вкладкам */}
+				<div className='mb-6'>
+					<div className='flex items-center justify-between border-b border-slate-200'>
+						{steps.map(step => {
+							const isActive = step.id === currentStep
+
+							return (
+								<button
+									key={step.id}
+									type='button'
+									onClick={() => setCurrentStep(step.id)}
+									className={`flex-1 py-4 px-4 text-sm font-medium transition-all relative ${
+										isActive
+											? 'text-blue-600 border-b-2 border-blue-600'
+											: 'text-slate-500 hover:text-slate-700'
+									}`}
+								>
+									{step.label}
+								</button>
+							)
+						})}
+					</div>
 				</div>
-			)}
 
-			{/* Навигация по вкладкам */}
-			<div className='mb-6'>
-				<div className='flex items-center justify-between border-b border-slate-200'>
-					{steps.map((step) => {
-						const isActive = step.id === currentStep
+				{/* Вкладка 1: Основная информация */}
+				{currentStep === 'basic' && (
+					<div className='space-y-6'>
+						<QuestBasicInfo onCityChange={handleCityChange} />
 
-						return (
-							<button
-								key={step.id}
-								type='button'
-								onClick={() => setCurrentStep(step.id)}
-								className={`flex-1 py-4 px-4 text-sm font-medium transition-all relative ${
-									isActive
-										? 'text-blue-600 border-b-2 border-blue-600'
-										: 'text-slate-500 hover:text-slate-700'
-								}`}
-							>
-								{step.label}
-							</button>
-						)
-					})}
+						<QuestLocationSection
+							onOpenMap={() => setShowLocationPicker(true)}
+						/>
+
+						<QuestCuratorSection />
+
+						<QuestSocialsSection />
+
+						<QuestAchievementSection />
+					</div>
+				)}
+
+				{/* Вкладка 2: Настройка этапов */}
+				{currentStep === 'stages' && (
+					<div className='space-y-6'>
+						<QuestStagesSection />
+					</div>
+				)}
+
+				{/* Вкладка 3: Обновления */}
+				{currentStep === 'updates' && (
+					<div className='space-y-6'>
+						<QuestUpdatesSection />
+					</div>
+				)}
+
+				{/* Общая кнопка сохранения */}
+				<div className='flex justify-end pt-6 border-t border-slate-200 mt-6'>
+					<Button type='submit' disabled={isSubmitting} className='min-w-[200px]'>
+						{isSubmitting ? (
+							<div className='flex items-center gap-2'>
+								<Spinner />
+								<span>{isEditMode ? 'Сохранение...' : 'Создание...'}</span>
+							</div>
+						) : (
+							<span>{isEditMode ? 'Сохранить изменения' : 'Создать квест'}</span>
+						)}
+					</Button>
 				</div>
-			</div>
 
-			{/* Вкладка 1: Основная информация */}
-			{currentStep === 'basic' && (
-				<div className='space-y-6'>
-					<QuestBasicInfo
-						formData={{
-							title: formData.title,
-							city: formData.city,
-							type: formData.type,
-							category: formData.category,
-							story: formData.story,
-							storyImage: formData.storyImage,
-							gallery: formData.gallery,
-						}}
-						onChange={(field, value) =>
-							setFormData(prev => ({ ...prev, [field]: value }))
+				{isEditMode && currentStep === 'updates' && (
+					<div className='mt-6'>
+						<DangerZone
+							title='Опасная зона'
+							description='Удаление квеста необратимо. Все данные будут потеряны.'
+							confirmMessage='Вы уверены, что хотите удалить этот квест?'
+							onDelete={handleDelete}
+							deleteButtonText='Удалить квест'
+						/>
+					</div>
+				)}
+
+				{showLocationPicker && (
+					<LocationPicker
+						city={city?.name || ''}
+						initialCoordinates={
+							latitude && longitude
+								? {
+										lat: parseFloat(latitude),
+										lng: parseFloat(longitude),
+								  }
+								: undefined
 						}
-						onCityChange={handleCityChange}
-						onStoryImageChange={image =>
-							setFormData(prev => ({ ...prev, storyImage: image }))
-						}
-						onGalleryChange={gallery =>
-							setFormData(prev => ({ ...prev, gallery }))
-						}
+						onSelect={handleLocationSelect}
+						onClose={() => setShowLocationPicker(false)}
 					/>
-
-					<QuestLocationSection
-						address={formData.address}
-						onAddressChange={address =>
-							setFormData(prev => ({ ...prev, address }))
-						}
-						onOpenMap={() => setShowLocationPicker(true)}
-						city={formData.city}
-					/>
-
-					<QuestCuratorSection
-						curatorName={formData.curatorName}
-						curatorPhone={formData.curatorPhone}
-						curatorEmail={formData.curatorEmail}
-						onChange={(field, value) =>
-							setFormData(prev => ({ ...prev, [field]: value }))
-						}
-					/>
-
-					<QuestSocialsSection
-						socials={formData.socials}
-						onAdd={addSocial}
-						onRemove={removeSocial}
-						onUpdate={updateSocial}
-					/>
-
-					<QuestAchievementSection
-						customAchievement={formData.customAchievement}
-						onChange={achievement =>
-							setFormData(prev => ({ ...prev, customAchievement: achievement }))
-						}
-					/>
-				</div>
-			)}
-
-			{/* Вкладка 2: Настройка этапов */}
-			{currentStep === 'stages' && (
-				<div className='space-y-6'>
-					<QuestStagesSection
-						stages={formData.stages}
-						onAdd={addStage}
-						onRemove={removeStage}
-						onUpdate={updateStage}
-					/>
-				</div>
-			)}
-
-			{/* Вкладка 3: Обновления */}
-			{currentStep === 'updates' && (
-				<div className='space-y-6'>
-					<QuestUpdatesSection
-						updates={formData.updates}
-						onAdd={addUpdate}
-						onRemove={removeUpdate}
-						onUpdate={updateUpdate}
-					/>
-				</div>
-			)}
-
-			{/* Общая кнопка сохранения */}
-			<div className='flex justify-end pt-6 border-t border-slate-200 mt-6'>
-				<Button type='submit' disabled={isSubmitting} className='min-w-[200px]'>
-					{isSubmitting ? (
-						<div className='flex items-center gap-2'>
-							<Spinner />
-							<span>{isEditMode ? 'Сохранение...' : 'Создание...'}</span>
-						</div>
-					) : (
-						<span>{isEditMode ? 'Сохранить изменения' : 'Создать квест'}</span>
-					)}
-				</Button>
-			</div>
-
-			{isEditMode && currentStep === 'updates' && (
-				<div className='mt-6'>
-					<DangerZone
-						title='Опасная зона'
-						description='Удаление квеста необратимо. Все данные будут потеряны.'
-						confirmMessage='Вы уверены, что хотите удалить этот квест?'
-						onDelete={handleDelete}
-						deleteButtonText='Удалить квест'
-					/>
-				</div>
-			)}
-
-			{showLocationPicker && (
-				<LocationPicker
-					city={formData.city}
-					initialCoordinates={
-						formData.coordinates.lat && formData.coordinates.lng
-							? formData.coordinates
-							: undefined
-					}
-					onSelect={handleLocationSelect}
-					onClose={() => setShowLocationPicker(false)}
-				/>
-			)}
-		</form>
+				)}
+			</form>
+		</Form>
 	)
 }
-
