@@ -36,7 +36,7 @@ export function OrganizationGoalsNeedsSection() {
 	return (
 		<div className='space-y-4'>
 			<div>
-				<FormLabel>Цели</FormLabel>
+				<FormLabel className='mb-2'>Цели</FormLabel>
 				{goalFields.map((field, index) => (
 					<FormField
 						key={field.id}
@@ -79,7 +79,7 @@ export function OrganizationGoalsNeedsSection() {
 			</div>
 
 			<div>
-				<FormLabel>Актуальные нужды</FormLabel>
+				<FormLabel className='mb-2'>Актуальные нужды</FormLabel>
 				{needFields.map((field, index) => (
 					<FormField
 						key={field.id}
