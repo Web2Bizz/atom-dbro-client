@@ -40,9 +40,9 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 		{ id: 'updates', label: 'Обновления' },
 	]
 
-	const handleLocationSelect = (coordinates: { lat: number; lng: number }) => {
-		form.setValue('latitude', coordinates.lat.toString())
-		form.setValue('longitude', coordinates.lng.toString())
+	const handleLocationSelect = (coordinates: [number, number]) => {
+		form.setValue('latitude', coordinates[0].toString())
+		form.setValue('longitude', coordinates[1].toString())
 		setShowLocationPicker(false)
 	}
 
@@ -161,10 +161,7 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 						city={city?.name || ''}
 						initialCoordinates={
 							latitude && longitude
-								? {
-										lat: parseFloat(latitude),
-										lng: parseFloat(longitude),
-								  }
+								? [parseFloat(latitude), parseFloat(longitude)]
 								: undefined
 						}
 						onSelect={handleLocationSelect}

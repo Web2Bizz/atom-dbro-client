@@ -23,19 +23,19 @@ const selectedMarkerIcon = L.divIcon({
 
 interface LocationPickerProps {
 	readonly city?: string
-	readonly initialCoordinates?: { lat: number; lng: number }
-	readonly onSelect: (coordinates: { lat: number; lng: number }) => void
+	readonly initialCoordinates?: [number, number]
+	readonly onSelect: (coordinates: [number, number]) => void
 	readonly onClose: () => void
 }
 
 function MapClickHandler({
 	onSelect,
 }: {
-	onSelect: (coordinates: { lat: number; lng: number }) => void
+	onSelect: (coordinates: [number, number]) => void
 }) {
 	useMapEvents({
 		click: e => {
-			onSelect({ lat: e.latlng.lat, lng: e.latlng.lng })
+			onSelect([e.latlng.lat, e.latlng.lng])
 		},
 	})
 	return null
@@ -47,10 +47,9 @@ export function LocationPicker({
 	onSelect,
 	onClose,
 }: LocationPickerProps) {
-	const [selectedCoords, setSelectedCoords] = useState<{
-		lat: number
-		lng: number
-	} | null>(initialCoordinates || null)
+	const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(
+		initialCoordinates || null
+	)
 
 	// Устанавливаем начальные координаты на основе города
 	useEffect(() => {
@@ -66,7 +65,7 @@ export function LocationPicker({
 		}
 	}, [city, selectedCoords])
 
-	const handleMapClick = (coords: { lat: number; lng: number }) => {
+	const handleMapClick = (coords: [number, number]) => {
 		setSelectedCoords(coords)
 	}
 
@@ -80,13 +79,11 @@ export function LocationPicker({
 	// Определяем центр карты
 	const getMapCenter = (): [number, number] => {
 		if (selectedCoords) {
-			return [selectedCoords.lat, selectedCoords.lng]
+			return selectedCoords
 		}
 		if (city) {
 			const cityCoords = getCityCoordinates(city)
-			return cityCoords
-				? [cityCoords.lat, cityCoords.lng]
-				: [55.751244, 37.618423] // Москва по умолчанию
+			return cityCoords || [55.751244, 37.618423] // Москва по умолчанию
 		}
 		return [55.751244, 37.618423] // Москва по умолчанию
 	}
@@ -122,10 +119,7 @@ export function LocationPicker({
 						/>
 						<MapClickHandler onSelect={handleMapClick} />
 						{selectedCoords && (
-							<Marker
-								position={[selectedCoords.lat, selectedCoords.lng]}
-								icon={selectedMarkerIcon}
-							/>
+							<Marker position={selectedCoords} icon={selectedMarkerIcon} />
 						)}
 					</MapContainer>
 				</div>
@@ -134,8 +128,8 @@ export function LocationPicker({
 					<div className='flex-1'>
 						{selectedCoords ? (
 							<p className='text-sm text-slate-600'>
-								Координаты: {selectedCoords.lat.toFixed(6)},{' '}
-								{selectedCoords.lng.toFixed(6)}
+								Координаты: {selectedCoords[0].toFixed(6)},{' '}
+								{selectedCoords[1].toFixed(6)}
 							</p>
 						) : (
 							<p className='text-sm text-slate-500'>

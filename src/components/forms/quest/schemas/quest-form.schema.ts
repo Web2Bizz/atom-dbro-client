@@ -59,30 +59,26 @@ export const questFormSchema = z.object({
 	address: z.string().min(1, 'Адрес обязателен'),
 	curatorName: z.string().min(1, 'Имя куратора обязательно'),
 	curatorPhone: z.string().min(1, 'Телефон куратора обязателен'),
-	curatorEmail: z.string().email('Некорректный email').optional().or(z.literal('')),
+	curatorEmail: z
+		.string()
+		.email('Некорректный email')
+		.optional()
+		.or(z.literal('')),
 	latitude: z
 		.string()
 		.min(1, 'Выберите местоположение на карте')
-		.refine(
-			val => {
-				const num = parseFloat(val)
-				return !isNaN(num) && num >= -90 && num <= 90
-			},
-			'Некорректная широта'
-		),
+		.refine(val => {
+			const num = parseFloat(val)
+			return !isNaN(num) && num >= -90 && num <= 90
+		}, 'Некорректная широта'),
 	longitude: z
 		.string()
 		.min(1, 'Выберите местоположение на карте')
-		.refine(
-			val => {
-				const num = parseFloat(val)
-				return !isNaN(num) && num >= -180 && num <= 180
-			},
-			'Некорректная долгота'
-		),
-	stages: z
-		.array(stageFormSchema)
-		.min(1, 'Добавьте хотя бы один этап квеста'),
+		.refine(val => {
+			const num = parseFloat(val)
+			return !isNaN(num) && num >= -180 && num <= 180
+		}, 'Некорректная долгота'),
+	stages: z.array(stageFormSchema).min(1, 'Добавьте хотя бы один этап квеста'),
 	socials: z.array(socialFormSchema).default([{ name: 'VK', url: '' }]),
 	updates: z.array(updateFormSchema).default([]),
 	customAchievement: customAchievementSchema,
@@ -92,4 +88,3 @@ export type QuestFormData = z.infer<typeof questFormSchema>
 export type StageFormData = z.infer<typeof stageFormSchema>
 export type SocialFormData = z.infer<typeof socialFormSchema>
 export type UpdateFormData = z.infer<typeof updateFormSchema>
-

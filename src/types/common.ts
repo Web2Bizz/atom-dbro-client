@@ -1,13 +1,5 @@
 // Общие типы для всего приложения
 
-export type AssistanceTypeId =
-	| 'volunteers'
-	| 'donations'
-	| 'things'
-	| 'mentors'
-	| 'blood'
-	| 'experts'
-
 export type SocialLink = {
 	name: 'VK' | 'Telegram' | 'Website'
 	url: string
@@ -30,4 +22,3 @@ export interface BaseEntity {
 	contacts: ContactInfo
 	socials?: SocialLink[]
 }
-

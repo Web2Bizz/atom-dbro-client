@@ -6,7 +6,7 @@ import {
 	TileLayer,
 	ZoomControl,
 } from 'react-leaflet'
-import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
+import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import { useMapCenter } from '../hooks/useMapCenter'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'

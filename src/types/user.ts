@@ -2,14 +2,11 @@
 
 export type AchievementId =
 	| 'first_quest'
-	| 'lake_saver'
 	| 'volunteer_month'
-	| 'crowdfunding_master'
 	| 'tree_planter'
 	| 'wildlife_protector'
 	| 'eco_warrior'
 	| 'community_hero'
-	| 'donation_champion'
 	| 'quest_completer'
 	| 'social_ambassador'
 	| string // Позволяет использовать пользовательские достижения с ID вида "custom-*"
@@ -65,4 +62,3 @@ export interface QuestContribution {
 	contributedAt: string
 	impact?: string // описание вклада
 }
-

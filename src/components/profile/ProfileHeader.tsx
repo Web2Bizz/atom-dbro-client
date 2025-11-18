@@ -9,7 +9,7 @@ import {
 } from '@/store/entities'
 import type { User } from '@/types/user'
 import { transformUserFromAPI } from '@/utils/auth'
-import { compressImage } from '@/utils/storage'
+import { compressImage } from '@/utils/image'
 import { Award, Camera, LogOut, Mail, Trophy } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'

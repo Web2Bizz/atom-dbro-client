@@ -1,5 +1,5 @@
 import { ANIMATION_DURATION, SEARCH_MAP_ZOOM } from '@/constants'
-import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
+import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import { useCallback } from 'react'
 import type { GeocodeResult } from '../../hooks/useGeocode'
 import type { Quest } from '../../types/quest-types'

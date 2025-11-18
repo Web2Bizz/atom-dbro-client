@@ -8,7 +8,7 @@ import {
 	ZoomControl,
 } from 'react-leaflet'
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/constants'
-import { getOrganizationCoordinates } from '@/utils/organizationCoordinates'
+import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
 import type { Quest } from '../types/quest-types'

@@ -31,9 +31,9 @@ export function AddOrganizationForm({
 
 	const [showLocationPicker, setShowLocationPicker] = useState(false)
 
-	const handleLocationSelect = (coordinates: { lat: number; lng: number }) => {
-		form.setValue('latitude', coordinates.lat.toString())
-		form.setValue('longitude', coordinates.lng.toString())
+	const handleLocationSelect = (coordinates: [number, number]) => {
+		form.setValue('latitude', coordinates[0].toString())
+		form.setValue('longitude', coordinates[1].toString())
 		setShowLocationPicker(false)
 	}
 
@@ -107,10 +107,10 @@ export function AddOrganizationForm({
 						city={cityName || ''}
 						initialCoordinates={
 							form.watch('latitude') && form.watch('longitude')
-								? {
-										lat: parseFloat(form.watch('latitude')),
-										lng: parseFloat(form.watch('longitude')),
-								  }
+								? [
+										parseFloat(form.watch('latitude')),
+										parseFloat(form.watch('longitude')),
+								  ]
 								: undefined
 						}
 						onSelect={handleLocationSelect}
