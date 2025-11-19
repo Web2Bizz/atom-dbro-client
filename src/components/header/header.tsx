@@ -43,6 +43,7 @@ export const Header = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentPath])
 
+	// Если пользователь авторизован, то добавляем ссылки на страницы для него, иначе только на главную и карту
 	const navLinks = user
 		? [
 				{ href: '/', label: 'Главная' },
@@ -50,7 +51,10 @@ export const Header = () => {
 				{ href: '/add-organization', label: 'Добавить точку' },
 				{ href: '/profile', label: 'Профиль' },
 		  ]
-		: [{ href: '/', label: 'Главная' }]
+		: [
+				{ href: '/', label: 'Главная' },
+				{ href: '/map', label: 'Карта' },
+		  ]
 
 	const isActive = (href: string) => {
 		if (href === '/') {
