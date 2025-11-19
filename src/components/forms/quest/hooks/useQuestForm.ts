@@ -103,6 +103,10 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			],
 			updates: [],
 			customAchievement: undefined,
+			curatorName: user?.name || '',
+			curatorPhone: '',
+			curatorEmail: '',
+			socials: [],
 		},
 		mode: 'onChange',
 	})

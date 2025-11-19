@@ -42,7 +42,7 @@ export function QuestSocialsSection() {
 								<FormItem>
 									<FormControl>
 										<select
-											value={nameField.value}
+											value={nameField.value ?? 'VK'}
 											onChange={e =>
 												nameField.onChange(
 													e.target.value as 'VK' | 'Telegram' | 'Website'
@@ -68,6 +68,7 @@ export function QuestSocialsSection() {
 										<Input
 											type='url'
 											{...urlField}
+											value={urlField.value ?? ''}
 											placeholder='https://...'
 											className='flex-1'
 										/>

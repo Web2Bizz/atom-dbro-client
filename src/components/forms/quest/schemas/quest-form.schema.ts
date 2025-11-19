@@ -5,6 +5,11 @@ export const contactSchema = z.object({
 	value: z.string().min(1, 'Значение контакта обязательно'),
 })
 
+export const socialLinkSchema = z.object({
+	name: z.enum(['VK', 'Telegram', 'Website']),
+	url: z.string().default(''),
+})
+
 export const stageFormSchema = z.object({
 	title: z.string().min(1, 'Название этапа обязательно'),
 	description: z.string().min(1, 'Описание этапа обязательно'),
@@ -63,9 +68,7 @@ export const questFormSchema = z.object({
 		.transform(val => (val === null ? undefined : val)),
 	gallery: z.array(z.string()).default([]),
 	address: z.string().min(1, 'Адрес обязателен'),
-	contacts: z
-		.array(contactSchema)
-		.min(1, 'Добавьте хотя бы один контакт'),
+	contacts: z.array(contactSchema).min(1, 'Добавьте хотя бы один контакт'),
 	latitude: z
 		.string()
 		.min(1, 'Выберите местоположение на карте')
@@ -83,6 +86,14 @@ export const questFormSchema = z.object({
 	stages: z.array(stageFormSchema).min(1, 'Добавьте хотя бы один этап квеста'),
 	updates: z.array(updateFormSchema).default([]),
 	customAchievement: customAchievementSchema,
+	curatorName: z.string().min(1, 'Имя куратора обязательно'),
+	curatorPhone: z.string().min(1, 'Телефон куратора обязателен'),
+	curatorEmail: z
+		.string()
+		.email('Некорректный email')
+		.optional()
+		.or(z.literal('')),
+	socials: z.array(socialLinkSchema).default([]),
 })
 
 export type QuestFormData = z.infer<typeof questFormSchema>

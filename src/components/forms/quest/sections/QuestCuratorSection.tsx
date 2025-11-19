@@ -21,7 +21,7 @@ export function QuestCuratorSection() {
 					<FormItem>
 						<FormLabel>Имя куратора *</FormLabel>
 						<FormControl>
-							<Input {...field} />
+							<Input {...field} value={field.value ?? ''} />
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -39,6 +39,7 @@ export function QuestCuratorSection() {
 								type='tel'
 								placeholder='+7 (XXX) XXX-XX-XX'
 								{...field}
+								value={field.value ?? ''}
 							/>
 						</FormControl>
 						<FormMessage />
@@ -53,7 +54,12 @@ export function QuestCuratorSection() {
 					<FormItem>
 						<FormLabel>Email</FormLabel>
 						<FormControl>
-							<Input type='email' placeholder='email@example.com' {...field} />
+							<Input
+								type='email'
+								placeholder='email@example.com'
+								{...field}
+								value={field.value ?? ''}
+							/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>

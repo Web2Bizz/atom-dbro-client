@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { QuestStageForm } from './QuestStageForm'
 import type { QuestFormData } from '../schemas/quest-form.schema'
+import { QuestStageForm } from './QuestStageForm'
 
 export function QuestStagesSection() {
 	const form = useFormContext<QuestFormData>()
@@ -24,8 +24,12 @@ export function QuestStagesSection() {
 						append({
 							title: '',
 							description: '',
-							status: 'pending',
+							status: 'pending' as const,
 							progress: 0,
+							itemName: undefined,
+							deadline: undefined,
+							hasFinancial: false,
+							itemsNeeded: undefined,
 						})
 					}
 					size='sm'
@@ -47,4 +51,3 @@ export function QuestStagesSection() {
 		</div>
 	)
 }
-
