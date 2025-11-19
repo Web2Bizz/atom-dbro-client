@@ -1,22 +1,17 @@
 import { Button } from '@/components/ui/button'
 import { ImageGallery } from '@/components/ui/ImageGallery'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
 import { formatCurrency, formatDate } from '@/utils/format'
-import {
-	CheckCircle2,
-	Circle,
-	Clock,
-	Share2,
-	Users,
-	X,
-} from 'lucide-react'
+import { CheckCircle2, Circle, Clock, Share2, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Quest, QuestStage } from '../../types/quest-types'
 import { AmbassadorShare } from './AmbassadorShare'
+import { AuthRequiredDialog } from './AuthRequiredDialog'
 import { VolunteerRegistration } from './VolunteerRegistration'
 
 // Компонент для изображения истории с скелетоном
@@ -121,6 +116,7 @@ export function QuestDetails({
 		contributeToQuest,
 		checkAndUnlockAchievements,
 	} = useUser()
+	const { isAuthenticated } = useAuth()
 	const { checkQuestCompletion } = useQuestActions()
 	const { addNotification } = useNotifications()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
@@ -129,6 +125,7 @@ export function QuestDetails({
 	} | null>(null)
 	const [showAmbassadorShare, setShowAmbassadorShare] = useState(false)
 	const [galleryIndex, setGalleryIndex] = useState<number | null>(null)
+	const [showAuthDialog, setShowAuthDialog] = useState(false)
 
 	const isParticipating =
 		user?.participatingQuests.includes(quest?.id ?? '') ?? false
@@ -218,23 +215,29 @@ export function QuestDetails({
 	}
 
 	const handleParticipate = async () => {
-		if (quest) {
-			// Автоматически добавляем пользователя в квест
-			await participateInQuest(quest.id)
-			checkAndUnlockAchievements(quest.id)
+		if (!quest) return
 
-			// Добавляем уведомление об успешном участии
-			addNotification({
-				type: 'quest_update',
-				title: 'Добро пожаловать в квест!',
-				message: `Вы успешно присоединились к квесту "${quest.title}"`,
-				questId: quest.id,
-				icon: '🎯',
-			})
+		// Проверяем авторизацию перед участием в квесте
+		if (!isAuthenticated) {
+			setShowAuthDialog(true)
+			return
+		}
 
-			if (onParticipate) {
-				onParticipate(quest.id)
-			}
+		// Автоматически добавляем пользователя в квест
+		await participateInQuest(quest.id)
+		checkAndUnlockAchievements(quest.id)
+
+		// Добавляем уведомление об успешном участии
+		addNotification({
+			type: 'quest_update',
+			title: 'Добро пожаловать в квест!',
+			message: `Вы успешно присоединились к квесту "${quest.title}"`,
+			questId: quest.id,
+			icon: '🎯',
+		})
+
+		if (onParticipate) {
+			onParticipate(quest.id)
 		}
 	}
 
@@ -325,6 +328,12 @@ export function QuestDetails({
 
 	return (
 		<>
+			<AuthRequiredDialog
+				open={showAuthDialog}
+				onOpenChange={setShowAuthDialog}
+				questTitle={quest?.title}
+			/>
+
 			{showVolunteerRegistration && quest && (
 				<VolunteerRegistration
 					stage={showVolunteerRegistration.stage}

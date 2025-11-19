@@ -4,4 +4,5 @@ export { QuestPopup } from './QuestPopup'
 export { DonationPanel } from './DonationPanel'
 export { VolunteerRegistration } from './VolunteerRegistration'
 export { AmbassadorShare } from './AmbassadorShare'
+export { AuthRequiredDialog } from './AuthRequiredDialog'
 
