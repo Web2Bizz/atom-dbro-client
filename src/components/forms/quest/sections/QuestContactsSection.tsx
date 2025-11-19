@@ -36,7 +36,7 @@ export function QuestContactsSection() {
 											{...nameField}
 											className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 										>
-											<option value='Имя'>Имя</option>
+											<option value='Куратор'>Куратор</option>
 											<option value='Телефон'>Телефон</option>
 											<option value='Email'>Email</option>
 											<option value='WhatsApp'>WhatsApp</option>
@@ -106,4 +106,3 @@ export function QuestContactsSection() {
 		</div>
 	)
 }
-

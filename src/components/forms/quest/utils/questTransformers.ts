@@ -218,7 +218,7 @@ export function transformApiResponseToFormData(
 		storyImage: quest.coverImage || undefined,
 		gallery: quest.gallery || [],
 		address: quest.address,
-		contacts: contacts.length > 0 ? contacts : [{ name: 'Имя', value: '' }],
+		contacts: contacts.length > 0 ? contacts : [{ name: 'Куратор', value: '' }],
 		latitude: quest.latitude.toString(),
 		longitude: quest.longitude.toString(),
 		stages,

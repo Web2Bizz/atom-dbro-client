@@ -88,7 +88,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			gallery: [],
 			address: '',
 			contacts: [
-				{ name: 'Имя', value: user?.name || '' },
+				{ name: 'Куратор', value: user?.name || '' },
 				{ name: 'Телефон', value: '' },
 			],
 			latitude: '',
@@ -378,7 +378,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 				gallery: [],
 				address: '',
 				contacts: [
-					{ name: 'Имя', value: user?.name || '' },
+					{ name: 'Куратор', value: user?.name || '' },
 					{ name: 'Телефон', value: '' },
 				],
 				latitude: '',

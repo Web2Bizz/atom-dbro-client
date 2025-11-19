@@ -677,7 +677,7 @@ export function QuestDetails({
 									Куратор проекта
 								</h3>
 								<div className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm'>
-									<span className='font-medium text-slate-500'>Имя</span>
+									<span className='font-medium text-slate-500'>Куратор</span>
 									<p className='text-slate-700 m-0'>{quest.curator.name}</p>
 
 									{quest.curator.organization && (
