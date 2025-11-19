@@ -7,9 +7,9 @@ import {
 	TileLayer,
 	ZoomControl,
 } from 'react-leaflet'
-// @ts-expect-error - react-leaflet-cluster может иметь несовместимость версий, но работает
-import MarkerClusterGroup from 'react-leaflet-cluster'
+
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/constants'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Quest } from '../types/quest-types'
 import { MapController } from './MapController'
@@ -50,7 +50,11 @@ export function QuestMapView({
 	// Вычисляем центр карты для квестов
 	const mapCenter = useMemo(() => {
 		if (quests.length === 0) {
-			return { lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1], zoom: DEFAULT_MAP_ZOOM }
+			return {
+				lat: DEFAULT_MAP_CENTER[0],
+				lng: DEFAULT_MAP_CENTER[1],
+				zoom: DEFAULT_MAP_ZOOM,
+			}
 		}
 
 		const latSum = quests.reduce((acc, q) => acc + q.coordinates[0], 0)
@@ -118,4 +122,3 @@ export function QuestMapView({
 		</div>
 	)
 }
-

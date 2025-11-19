@@ -6,18 +6,18 @@ import {
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
 import {
 	useGetCitiesQuery,
 	useGetOrganizationTypesQuery,
 } from '@/store/entities/organization'
 import { useGetCategoriesQuery } from '@/store/entities/quest'
-import { Spinner } from '@/components/ui/spinner'
-import { MediaUpload } from '../../shared/MediaUpload'
 import { compressImage } from '@/utils/image'
 import { X } from 'lucide-react'
 import { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
+import { MediaUpload } from '../../shared/MediaUpload'
 import type { QuestFormData } from '../schemas/quest-form.schema'
 
 const MAX_IMAGE_SIZE_MB = 10
@@ -176,11 +176,14 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 									onChange={e => {
 										const categoryId = Number(e.target.value)
 										// Преобразуем ID в строку для схемы
-										const categoryName = sortedCategories.find(
-											c => c.id === categoryId
-										)?.name.toLowerCase()
+										const categoryName = sortedCategories
+											.find(c => c.id === categoryId)
+											?.name.toLowerCase()
 										// Маппинг имени категории в enum значение
-										const categoryMap: Record<string, string> = {
+										const categoryMap: Record<
+											string,
+											QuestFormData['category']
+										> = {
 											экология: 'environment',
 											животные: 'animals',
 											люди: 'people',
@@ -189,7 +192,7 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 										}
 										const categoryValue =
 											categoryMap[categoryName || ''] || 'other'
-										field.onChange(categoryValue as any)
+										field.onChange(categoryValue)
 									}}
 									className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
 								>
@@ -271,7 +274,9 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 											const fileSizeMB = file.size / BYTES_PER_MB
 											if (fileSizeMB > MAX_IMAGE_SIZE_MB) {
 												toast.error(
-													`Размер файла превышает ${MAX_IMAGE_SIZE_MB} МБ (${formatFileSize(file.size)})`
+													`Размер файла превышает ${MAX_IMAGE_SIZE_MB} МБ (${formatFileSize(
+														file.size
+													)})`
 												)
 												e.target.value = ''
 												return
@@ -331,4 +336,3 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 		</div>
 	)
 }
-

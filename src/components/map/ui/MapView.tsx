@@ -6,9 +6,9 @@ import {
 	TileLayer,
 	ZoomControl,
 } from 'react-leaflet'
-// @ts-expect-error - react-leaflet-cluster может иметь несовместимость версий, но работает
-import MarkerClusterGroup from 'react-leaflet-cluster'
+
 import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import { useMapCenter } from '../hooks/useMapCenter'
 import { getMarkerIcon } from '../lib/markerIcon'
 import type { Organization } from '../types/types'
@@ -98,7 +98,9 @@ export function MapView({
 							<Marker
 								key={organization.id}
 								position={getOrganizationCoordinates(organization)}
-								icon={getMarkerIcon(organization.organizationTypes?.[0]?.name || '')}
+								icon={getMarkerIcon(
+									organization.organizationTypes?.[0]?.name || ''
+								)}
 								eventHandlers={{
 									click: () => {
 										if (onMarkerClick) {

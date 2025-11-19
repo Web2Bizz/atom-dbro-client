@@ -110,11 +110,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 	// Загружаем данные существующего квеста для редактирования
 	useEffect(() => {
 		if (questResponse && !form.formState.isDirty && !isLoadingQuest) {
-			const formData = transformApiResponseToFormData(
-				questResponse,
-				cities,
-				organizationTypes
-			)
+			const formData = transformApiResponseToFormData(questResponse)
 			form.reset(formData as QuestFormData)
 		}
 	}, [questResponse, cities, organizationTypes, form, isLoadingQuest])

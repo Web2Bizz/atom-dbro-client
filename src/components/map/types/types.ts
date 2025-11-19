@@ -43,4 +43,4 @@ export interface Organization {
 }
 
 // Re-export для обратной совместимости (старые типы)
-export type { AssistanceTypeId, SocialLink } from '@/types/common'
+export type { SocialLink } from '@/types/common'

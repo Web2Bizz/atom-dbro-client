@@ -1,12 +1,12 @@
-import type { QuestFormData } from '../schemas/quest-form.schema'
 import type {
 	CreateQuestRequest,
-	UpdateQuestRequest,
-	QuestStep,
-	QuestContact,
 	QuestAchievement,
+	QuestContact,
+	QuestResponse,
+	QuestStep,
+	UpdateQuestRequest,
 } from '@/store/entities/quest/model/type'
-import type { QuestResponse } from '@/store/entities/quest/model/type'
+import type { QuestFormData } from '../schemas/quest-form.schema'
 
 // Маппинг категорий в ID на основе API
 // Эти значения должны соответствовать ID категорий из API
@@ -169,9 +169,7 @@ export function transformFormDataToUpdateRequest(
  * Преобразует данные из API в формат формы
  */
 export function transformApiResponseToFormData(
-	questResponse: QuestResponse,
-	_cities: Array<{ id: number; name: string }>,
-	_organizationTypes: Array<{ id: number; name: string }>
+	questResponse: QuestResponse
 ): Partial<QuestFormData> {
 	const quest = questResponse.data.quest
 
@@ -212,7 +210,12 @@ export function transformApiResponseToFormData(
 		title: quest.title,
 		cityId: quest.cityId,
 		organizationTypeId: quest.organizationTypeId,
-		category: category as 'environment' | 'animals' | 'people' | 'education' | 'other',
+		category: category as
+			| 'environment'
+			| 'animals'
+			| 'people'
+			| 'education'
+			| 'other',
 		story: quest.description,
 		storyImage: quest.coverImage,
 		gallery: quest.gallery || [],
@@ -228,4 +231,3 @@ export function transformApiResponseToFormData(
 		customAchievement,
 	}
 }
-

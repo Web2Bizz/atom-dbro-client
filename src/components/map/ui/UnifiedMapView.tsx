@@ -1,3 +1,5 @@
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/constants'
+import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import L from 'leaflet'
 import { useMemo } from 'react'
 import {
@@ -7,13 +9,10 @@ import {
 	TileLayer,
 	ZoomControl,
 } from 'react-leaflet'
-// @ts-expect-error - react-leaflet-cluster может иметь несовместимость версий, но работает
 import MarkerClusterGroup from 'react-leaflet-cluster'
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/constants'
-import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import { getMarkerIcon } from '../lib/markerIcon'
-import type { Organization } from '../types/types'
 import type { Quest } from '../types/quest-types'
+import type { Organization } from '../types/types'
 import { MapController } from './MapController'
 import { OrganizationPopup } from './organization/OrganizationPopup'
 import { QuestPopup } from './quest/QuestPopup'
@@ -63,7 +62,11 @@ export function UnifiedMapView({
 		const allItems = [...questCoords, ...orgCoords]
 
 		if (allItems.length === 0) {
-			return { lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1], zoom: DEFAULT_MAP_ZOOM }
+			return {
+				lat: DEFAULT_MAP_CENTER[0],
+				lng: DEFAULT_MAP_CENTER[1],
+				zoom: DEFAULT_MAP_ZOOM,
+			}
 		}
 
 		const latSum = allItems.reduce((acc, [lat]) => acc + lat, 0)
@@ -167,4 +170,3 @@ export function UnifiedMapView({
 		</div>
 	)
 }
-
