@@ -25,4 +25,39 @@ export default defineConfig({
 			'@': path.resolve(__dirname, './src'),
 		},
 	},
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					// React и React DOM
+					'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+					// Redux и связанные библиотеки
+					'redux-vendor': ['react-redux', '@reduxjs/toolkit', 'redux-persist'],
+					// Leaflet и карты (большая библиотека)
+					'leaflet-vendor': [
+						'leaflet',
+						'react-leaflet',
+						'leaflet.markercluster',
+						'react-leaflet-cluster',
+						'leaflet-defaulticon-compatibility',
+					],
+					// Формы и валидация
+					'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+					// UI библиотеки
+					'ui-vendor': [
+						'@radix-ui/react-alert-dialog',
+						'@radix-ui/react-label',
+						'@radix-ui/react-slot',
+						'sonner',
+						'class-variance-authority',
+						'clsx',
+						'tailwind-merge',
+					],
+					// Иконки (lucide-react может быть большим)
+					'icons-vendor': ['lucide-react'],
+				},
+			},
+		},
+		chunkSizeWarningLimit: 600,
+	},
 })

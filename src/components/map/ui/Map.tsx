@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { loadLeafletStyles } from '../lib/loadLeafletStyles'
 import { MapControls } from './MapControls'
 import { MapDetails } from './MapDetails'
 import { MapSearch } from './MapSearch'
@@ -8,6 +9,10 @@ import { useMapHandlers } from './hooks/useMapHandlers'
 import { useMapState } from './hooks/useMapState'
 
 export const MapComponent = () => {
+	// Загружаем стили Leaflet только когда компонент монтируется
+	useEffect(() => {
+		loadLeafletStyles()
+	}, [])
 	const {
 		searchCenter,
 		setSearchCenter,
