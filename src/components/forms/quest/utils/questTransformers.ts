@@ -57,14 +57,10 @@ export function transformFormDataToCreateRequest(
 			return step
 		})
 
-	// Преобразуем curator в contacts
-	const contacts: QuestContact[] = [
-		{ name: 'Имя', value: data.curatorName },
-		{ name: 'Телефон', value: data.curatorPhone },
-	]
-	if (data.curatorEmail) {
-		contacts.push({ name: 'Email', value: data.curatorEmail })
-	}
+	// Преобразуем contacts из формы в формат API
+	const contacts: QuestContact[] = data.contacts
+		.filter(c => c.value.trim() !== '')
+		.map(c => ({ name: c.name, value: c.value.trim() }))
 
 	// Преобразуем customAchievement в achievement
 	const achievement: QuestAchievement = data.customAchievement
@@ -130,13 +126,10 @@ export function transformFormDataToUpdateRequest(
 			return step
 		})
 
-	const contacts: QuestContact[] = [
-		{ name: 'Имя', value: data.curatorName },
-		{ name: 'Телефон', value: data.curatorPhone },
-	]
-	if (data.curatorEmail) {
-		contacts.push({ name: 'Email', value: data.curatorEmail })
-	}
+	// Преобразуем contacts из формы в формат API
+	const contacts: QuestContact[] = data.contacts
+		.filter(c => c.value.trim() !== '')
+		.map(c => ({ name: c.name, value: c.value.trim() }))
 
 	const achievement: QuestAchievement | undefined = data.customAchievement
 		? {
@@ -179,10 +172,14 @@ export function transformApiResponseToFormData(
 	const categoryId = quest.categories[0].id || 5
 	const category = ID_TO_CATEGORY_MAP[categoryId] || 'other'
 
-	// Преобразуем contacts в curator
-	const nameContact = quest.contacts.find(c => c.name === 'Имя')
-	const phoneContact = quest.contacts.find(c => c.name === 'Телефон')
-	const emailContact = quest.contacts.find(c => c.name === 'Email')
+	// Преобразуем contacts из API в формат формы
+	const contacts =
+		quest.contacts
+			?.filter(c => c.value && c.value.trim() !== '')
+			.map(c => ({
+				name: c.name,
+				value: c.value.trim(),
+			})) || []
 
 	// Преобразуем steps в stages
 	const stages = quest.steps.map(step => ({
@@ -194,7 +191,8 @@ export function transformApiResponseToFormData(
 		financialNeeded: step.requirement?.value,
 		hasVolunteers: false,
 		hasItems: false,
-		deadline: step.deadline,
+		itemName: undefined,
+		deadline: step.deadline || undefined,
 	}))
 
 	// Преобразуем achievement в customAchievement
@@ -217,16 +215,13 @@ export function transformApiResponseToFormData(
 			| 'education'
 			| 'other',
 		story: quest.description,
-		storyImage: quest.coverImage,
+		storyImage: quest.coverImage || undefined,
 		gallery: quest.gallery || [],
 		address: quest.address,
-		curatorName: nameContact?.value || '',
-		curatorPhone: phoneContact?.value || '',
-		curatorEmail: emailContact?.value || '',
+		contacts: contacts.length > 0 ? contacts : [{ name: 'Имя', value: '' }],
 		latitude: quest.latitude.toString(),
 		longitude: quest.longitude.toString(),
 		stages,
-		socials: [], // API не возвращает socials
 		updates: [], // API не возвращает updates
 		customAchievement,
 	}

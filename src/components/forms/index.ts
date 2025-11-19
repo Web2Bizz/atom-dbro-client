@@ -20,11 +20,10 @@ export {
 	QuestStageForm,
 	QuestStagesSection,
 	QuestLocationSection,
-	QuestCuratorSection,
-	QuestSocialsSection,
+	QuestContactsSection,
 	useQuestForm,
 	type StageFormData,
-	type SocialFormData,
+	type ContactFormData,
 	type QuestFormData,
 } from './quest'
 

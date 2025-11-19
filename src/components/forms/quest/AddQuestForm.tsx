@@ -9,8 +9,7 @@ import { useGetCitiesQuery } from '@/store/entities/organization'
 import { QuestBasicInfo } from './sections/QuestBasicInfo'
 import { QuestStagesSection } from './sections/QuestStagesSection'
 import { QuestLocationSection } from './sections/QuestLocationSection'
-import { QuestCuratorSection } from './sections/QuestCuratorSection'
-import { QuestSocialsSection } from './sections/QuestSocialsSection'
+import { QuestContactsSection } from './sections/QuestContactsSection'
 import { QuestAchievementSection } from './sections/QuestAchievementSection'
 import { QuestUpdatesSection } from './sections/QuestUpdatesSection'
 
@@ -108,9 +107,7 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 							onOpenMap={() => setShowLocationPicker(true)}
 						/>
 
-						<QuestCuratorSection />
-
-						<QuestSocialsSection />
+						<QuestContactsSection />
 
 						<QuestAchievementSection />
 					</div>

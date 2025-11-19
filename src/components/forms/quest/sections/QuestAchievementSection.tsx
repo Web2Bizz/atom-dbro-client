@@ -120,7 +120,7 @@ export function QuestAchievementSection() {
 										Описание достижения <span className='text-red-500'>*</span>
 									</FormLabel>
 									<FormControl>
-										<>
+										<div>
 											<textarea
 												{...field}
 												placeholder='Завершил квест по очистке парка от мусора'
@@ -131,7 +131,7 @@ export function QuestAchievementSection() {
 											<div className='text-xs text-slate-500 mt-1'>
 												{field.value?.length || 0}/200 символов
 											</div>
-										</>
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -172,4 +172,3 @@ export function QuestAchievementSection() {
 		</div>
 	)
 }
-

@@ -87,9 +87,10 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			storyImage: undefined,
 			gallery: [],
 			address: '',
-			curatorName: user?.name || '',
-			curatorPhone: '',
-			curatorEmail: user?.email || '',
+			contacts: [
+				{ name: 'Имя', value: user?.name || '' },
+				{ name: 'Телефон', value: '' },
+			],
 			latitude: '',
 			longitude: '',
 			stages: [
@@ -100,7 +101,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 					progress: 0,
 				},
 			],
-			socials: [{ name: 'VK', url: '' }],
 			updates: [],
 			customAchievement: undefined,
 		},
@@ -377,9 +377,10 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 				storyImage: undefined,
 				gallery: [],
 				address: '',
-				curatorName: user?.name || '',
-				curatorPhone: '',
-				curatorEmail: user?.email || '',
+				contacts: [
+					{ name: 'Имя', value: user?.name || '' },
+					{ name: 'Телефон', value: '' },
+				],
 				latitude: '',
 				longitude: '',
 				stages: [
@@ -390,7 +391,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 						progress: 0,
 					},
 				],
-				socials: [{ name: 'VK', url: '' }],
 				customAchievement: undefined,
 				updates: [],
 			})

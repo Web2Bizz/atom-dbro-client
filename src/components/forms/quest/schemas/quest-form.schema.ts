@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+export const contactSchema = z.object({
+	name: z.string().min(1, 'Название контакта обязательно'),
+	value: z.string().min(1, 'Значение контакта обязательно'),
+})
+
 export const stageFormSchema = z.object({
 	title: z.string().min(1, 'Название этапа обязательно'),
 	description: z.string().min(1, 'Описание этапа обязательно'),
@@ -11,19 +16,16 @@ export const stageFormSchema = z.object({
 	volunteersNeeded: z.number().min(0).optional(),
 	hasItems: z.boolean().optional(),
 	itemsNeeded: z.number().min(0).optional(),
-	itemName: z.string().optional(),
-	deadline: z.string().optional(),
-})
-
-export const socialFormSchema = z.object({
-	name: z.enum(['VK', 'Telegram', 'Website']),
-	url: z
+	itemName: z
 		.string()
 		.optional()
-		.refine(
-			val => !val || val === '' || z.string().url().safeParse(val).success,
-			'Некорректный URL'
-		),
+		.nullable()
+		.transform(val => (val === null ? undefined : val)),
+	deadline: z
+		.string()
+		.optional()
+		.nullable()
+		.transform(val => (val === null ? undefined : val)),
 })
 
 export const updateFormSchema = z.object({
@@ -54,16 +56,16 @@ export const questFormSchema = z.object({
 		.string()
 		.min(1, 'Описание квеста обязательно')
 		.min(20, 'Описание должно содержать минимум 20 символов'),
-	storyImage: z.string().optional(),
+	storyImage: z
+		.string()
+		.optional()
+		.nullable()
+		.transform(val => (val === null ? undefined : val)),
 	gallery: z.array(z.string()).default([]),
 	address: z.string().min(1, 'Адрес обязателен'),
-	curatorName: z.string().min(1, 'Имя куратора обязательно'),
-	curatorPhone: z.string().min(1, 'Телефон куратора обязателен'),
-	curatorEmail: z
-		.string()
-		.email('Некорректный email')
-		.optional()
-		.or(z.literal('')),
+	contacts: z
+		.array(contactSchema)
+		.min(1, 'Добавьте хотя бы один контакт'),
 	latitude: z
 		.string()
 		.min(1, 'Выберите местоположение на карте')
@@ -79,12 +81,11 @@ export const questFormSchema = z.object({
 			return !isNaN(num) && num >= -180 && num <= 180
 		}, 'Некорректная долгота'),
 	stages: z.array(stageFormSchema).min(1, 'Добавьте хотя бы один этап квеста'),
-	socials: z.array(socialFormSchema).default([{ name: 'VK', url: '' }]),
 	updates: z.array(updateFormSchema).default([]),
 	customAchievement: customAchievementSchema,
 })
 
 export type QuestFormData = z.infer<typeof questFormSchema>
 export type StageFormData = z.infer<typeof stageFormSchema>
-export type SocialFormData = z.infer<typeof socialFormSchema>
+export type ContactFormData = z.infer<typeof contactSchema>
 export type UpdateFormData = z.infer<typeof updateFormSchema>
