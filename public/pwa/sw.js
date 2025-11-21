@@ -89,6 +89,12 @@ self.addEventListener('fetch', event => {
 		return
 	}
 
+	// Пропускаем Swagger UI и все API пути (включая /api#/)
+	// Swagger находится по пути /api#/, поэтому исключаем все пути начинающиеся с /api
+	if (url.pathname.startsWith('/api')) {
+		return // Пропускаем обработку, используем только сеть
+	}
+
 	// Для GET запросов используем стратегию NetworkFirst
 	if (request.method === 'GET') {
 		event.respondWith(networkFirst(request))
