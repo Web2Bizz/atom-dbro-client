@@ -86,13 +86,12 @@ export const questFormSchema = z.object({
 	stages: z.array(stageFormSchema).min(1, 'Добавьте хотя бы один этап квеста'),
 	updates: z.array(updateFormSchema).default([]),
 	customAchievement: customAchievementSchema,
-	curatorName: z.string().min(1, 'Имя куратора обязательно'),
-	curatorPhone: z.string().min(1, 'Телефон куратора обязателен'),
-	curatorEmail: z
-		.string()
-		.email('Некорректный email')
-		.optional()
-		.or(z.literal('')),
+	curatorName: z.string().optional(),
+	curatorPhone: z.string().optional(),
+	curatorEmail: z.preprocess(
+		val => (val === '' || val === null ? undefined : val),
+		z.string().email('Некорректный email').optional()
+	),
 	socials: z.array(socialLinkSchema).default([]),
 })
 

@@ -1,16 +1,16 @@
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/spinner'
-import { LocationPicker } from '../shared/LocationPicker'
-import { DangerZone } from '../shared/DangerZone'
-import { useQuestForm } from './hooks/useQuestForm'
-import { useState } from 'react'
 import { useGetCitiesQuery } from '@/store/entities/organization'
-import { QuestBasicInfo } from './sections/QuestBasicInfo'
-import { QuestStagesSection } from './sections/QuestStagesSection'
-import { QuestLocationSection } from './sections/QuestLocationSection'
-import { QuestContactsSection } from './sections/QuestContactsSection'
+import { useState } from 'react'
+import { DangerZone } from '../shared/DangerZone'
+import { LocationPicker } from '../shared/LocationPicker'
+import { useQuestForm } from './hooks/useQuestForm'
 import { QuestAchievementSection } from './sections/QuestAchievementSection'
+import { QuestBasicInfo } from './sections/QuestBasicInfo'
+import { QuestContactsSection } from './sections/QuestContactsSection'
+import { QuestLocationSection } from './sections/QuestLocationSection'
+import { QuestStagesSection } from './sections/QuestStagesSection'
 import { QuestUpdatesSection } from './sections/QuestUpdatesSection'
 
 interface AddQuestFormProps {
@@ -68,8 +68,9 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 				{isEditMode && (
 					<div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
 						<p className='text-sm text-blue-800'>
-							<strong>Режим редактирования:</strong> Вы редактируете свой созданный
-							квест. Изменения будут сохранены при нажатии "Сохранить изменения".
+							<strong>Режим редактирования:</strong> Вы редактируете свой
+							созданный квест. Изменения будут сохранены при нажатии "Сохранить
+							изменения".
 						</p>
 					</div>
 				)}
@@ -129,14 +130,20 @@ export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
 
 				{/* Общая кнопка сохранения */}
 				<div className='flex justify-end pt-6 border-t border-slate-200 mt-6'>
-					<Button type='submit' disabled={isSubmitting} className='min-w-[200px]'>
+					<Button
+						type='submit'
+						disabled={isSubmitting}
+						className='min-w-[200px]'
+					>
 						{isSubmitting ? (
 							<div className='flex items-center gap-2'>
 								<Spinner />
 								<span>{isEditMode ? 'Сохранение...' : 'Создание...'}</span>
 							</div>
 						) : (
-							<span>{isEditMode ? 'Сохранить изменения' : 'Создать квест'}</span>
+							<span>
+								{isEditMode ? 'Сохранить изменения' : 'Создать квест'}
+							</span>
 						)}
 					</Button>
 				</div>

@@ -78,16 +78,38 @@ export function transformFormDataToCreateRequest(
 	// Преобразуем category в categoryIds
 	const categoryId = CATEGORY_TO_ID_MAP[data.category] || 5
 
-	return {
+	// Убеждаемся, что latitude и longitude - числа
+	const latitude = Number.parseFloat(data.latitude)
+	const longitude = Number.parseFloat(data.longitude)
+
+	// Убеждаемся, что cityId и organizationTypeId - числа
+	// Если это объект, извлекаем ID
+	const cityId =
+		typeof data.cityId === 'object' &&
+		data.cityId !== null &&
+		'id' in data.cityId &&
+		typeof (data.cityId as { id: unknown }).id === 'number'
+			? Number((data.cityId as { id: number }).id)
+			: Number(data.cityId)
+	const organizationTypeId =
+		typeof data.organizationTypeId === 'object' &&
+		data.organizationTypeId !== null &&
+		'id' in data.organizationTypeId &&
+		typeof (data.organizationTypeId as { id: unknown }).id === 'number'
+			? Number((data.organizationTypeId as { id: number }).id)
+			: Number(data.organizationTypeId)
+
+	// Создаем чистый объект только с нужными полями
+	const request: CreateQuestRequest = {
 		title: data.title,
 		description: data.story,
 		status: 'active',
 		experienceReward: 100, // Можно сделать настраиваемым
 		achievement,
-		cityId: data.cityId,
-		organizationTypeId: data.organizationTypeId,
-		latitude: parseFloat(data.latitude),
-		longitude: parseFloat(data.longitude),
+		cityId,
+		organizationTypeId,
+		latitude,
+		longitude,
 		address: data.address,
 		contacts,
 		coverImage: data.storyImage,
@@ -95,6 +117,8 @@ export function transformFormDataToCreateRequest(
 		steps,
 		categoryIds: [categoryId],
 	}
+
+	return request
 }
 
 /**
@@ -141,13 +165,35 @@ export function transformFormDataToUpdateRequest(
 
 	const categoryId = CATEGORY_TO_ID_MAP[data.category] || 5
 
-	return {
+	// Убеждаемся, что latitude и longitude - числа
+	const latitude = Number.parseFloat(data.latitude)
+	const longitude = Number.parseFloat(data.longitude)
+
+	// Убеждаемся, что cityId и organizationTypeId - числа
+	// Если это объект, извлекаем ID
+	const cityId =
+		typeof data.cityId === 'object' &&
+		data.cityId !== null &&
+		'id' in data.cityId &&
+		typeof (data.cityId as { id: unknown }).id === 'number'
+			? Number((data.cityId as { id: number }).id)
+			: Number(data.cityId)
+	const organizationTypeId =
+		typeof data.organizationTypeId === 'object' &&
+		data.organizationTypeId !== null &&
+		'id' in data.organizationTypeId &&
+		typeof (data.organizationTypeId as { id: unknown }).id === 'number'
+			? Number((data.organizationTypeId as { id: number }).id)
+			: Number(data.organizationTypeId)
+
+	// Создаем чистый объект только с нужными полями
+	const request: UpdateQuestRequest = {
 		title: data.title,
 		description: data.story,
-		cityId: data.cityId,
-		organizationTypeId: data.organizationTypeId,
-		latitude: parseFloat(data.latitude),
-		longitude: parseFloat(data.longitude),
+		cityId,
+		organizationTypeId,
+		latitude,
+		longitude,
 		address: data.address,
 		contacts,
 		coverImage: data.storyImage,
@@ -156,6 +202,8 @@ export function transformFormDataToUpdateRequest(
 		categoryIds: [categoryId],
 		achievement,
 	}
+
+	return request
 }
 
 /**
@@ -180,6 +228,17 @@ export function transformApiResponseToFormData(
 				name: c.name,
 				value: c.value.trim(),
 			})) || []
+
+	// Извлекаем данные куратора из contacts
+	const curatorContact = contacts.find(
+		c => c.name === 'Куратор' || c.name.toLowerCase() === 'куратор'
+	)
+	const phoneContact = contacts.find(
+		c => c.name === 'Телефон' || c.name.toLowerCase() === 'телефон'
+	)
+	const emailContact = contacts.find(
+		c => c.name === 'Email' || c.name.toLowerCase() === 'email'
+	)
 
 	// Преобразуем steps в stages
 	const stages = quest.steps.map(step => ({
@@ -224,5 +283,9 @@ export function transformApiResponseToFormData(
 		stages,
 		updates: [], // API не возвращает updates
 		customAchievement,
+		curatorName: curatorContact?.value || '',
+		curatorPhone: phoneContact?.value || '',
+		curatorEmail: emailContact?.value || '',
+		socials: [], // API не возвращает socials
 	}
 }

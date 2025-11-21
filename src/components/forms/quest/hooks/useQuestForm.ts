@@ -116,8 +116,123 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 		if (questResponse && !form.formState.isDirty && !isLoadingQuest) {
 			const formData = transformApiResponseToFormData(questResponse)
 			form.reset(formData as QuestFormData)
+
+			// Синхронизируем поля куратора после загрузки данных
+			const contacts = formData.contacts || []
+			const curatorContact = contacts.find(
+				c => c && (c.name === 'Куратор' || c.name?.toLowerCase() === 'куратор')
+			)
+			const phoneContact = contacts.find(
+				c => c && (c.name === 'Телефон' || c.name?.toLowerCase() === 'телефон')
+			)
+			const emailContact = contacts.find(
+				c => c && (c.name === 'Email' || c.name?.toLowerCase() === 'email')
+			)
+
+			if (curatorContact?.value) {
+				form.setValue('curatorName', curatorContact.value, {
+					shouldValidate: false,
+				})
+			}
+			if (phoneContact?.value) {
+				form.setValue('curatorPhone', phoneContact.value, {
+					shouldValidate: false,
+				})
+			}
+			if (emailContact?.value) {
+				form.setValue('curatorEmail', emailContact.value, {
+					shouldValidate: false,
+				})
+			}
 		}
 	}, [questResponse, cities, organizationTypes, form, isLoadingQuest])
+
+	// Синхронизация между контактами и полями куратора
+	useEffect(() => {
+		const subscription = form.watch((value, { name }) => {
+			const contacts = value.contacts || []
+
+			// Синхронизация из контактов в поля куратора
+			if (name?.startsWith('contacts.')) {
+				const curatorContact = contacts.find(
+					c =>
+						c && (c.name === 'Куратор' || c.name?.toLowerCase() === 'куратор')
+				)
+				const phoneContact = contacts.find(
+					c =>
+						c && (c.name === 'Телефон' || c.name?.toLowerCase() === 'телефон')
+				)
+				const emailContact = contacts.find(
+					c => c && (c.name === 'Email' || c.name?.toLowerCase() === 'email')
+				)
+
+				if (curatorContact && curatorContact.value !== value.curatorName) {
+					form.setValue('curatorName', curatorContact.value || '', {
+						shouldValidate: false,
+					})
+				}
+				if (phoneContact && phoneContact.value !== value.curatorPhone) {
+					form.setValue('curatorPhone', phoneContact.value || '', {
+						shouldValidate: false,
+					})
+				}
+				if (emailContact && emailContact.value !== value.curatorEmail) {
+					form.setValue('curatorEmail', emailContact.value || '', {
+						shouldValidate: false,
+					})
+				}
+			}
+
+			// Синхронизация из полей куратора в контакты
+			if (
+				name === 'curatorName' ||
+				name === 'curatorPhone' ||
+				name === 'curatorEmail'
+			) {
+				const curatorIndex = contacts.findIndex(
+					c =>
+						c && (c.name === 'Куратор' || c.name?.toLowerCase() === 'куратор')
+				)
+				const phoneIndex = contacts.findIndex(
+					c =>
+						c && (c.name === 'Телефон' || c.name?.toLowerCase() === 'телефон')
+				)
+				const emailIndex = contacts.findIndex(
+					c => c && (c.name === 'Email' || c.name?.toLowerCase() === 'email')
+				)
+
+				if (name === 'curatorName' && curatorIndex >= 0) {
+					form.setValue(
+						`contacts.${curatorIndex}.value`,
+						value.curatorName || '',
+						{
+							shouldValidate: false,
+						}
+					)
+				}
+				if (name === 'curatorPhone' && phoneIndex >= 0) {
+					form.setValue(
+						`contacts.${phoneIndex}.value`,
+						value.curatorPhone || '',
+						{
+							shouldValidate: false,
+						}
+					)
+				}
+				if (name === 'curatorEmail' && emailIndex >= 0) {
+					form.setValue(
+						`contacts.${emailIndex}.value`,
+						value.curatorEmail || '',
+						{
+							shouldValidate: false,
+						}
+					)
+				}
+			}
+		})
+
+		return () => subscription.unsubscribe()
+	}, [form])
 
 	const onSubmit = async (data: QuestFormData) => {
 		if (!isEditMode && !canCreateQuest()) {
@@ -252,6 +367,7 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 
 			if (isEditMode && existingQuestId) {
 				const requestData = transformFormDataToUpdateRequest(updatedData)
+				console.log(requestData)
 
 				const result = await updateQuestMutation({
 					id: String(existingQuestId),
@@ -341,7 +457,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 			if (import.meta.env.DEV) {
 				console.error('Error saving quest:', error)
 			}
-
 			const errorMessage =
 				error && typeof error === 'object' && 'data' in error
 					? (error.data as { message?: string })?.message ||
@@ -397,6 +512,10 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 				],
 				customAchievement: undefined,
 				updates: [],
+				curatorName: user?.name || '',
+				curatorPhone: '',
+				curatorEmail: '',
+				socials: [],
 			})
 
 			if (user?.id) {
@@ -438,6 +557,9 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 
 	const handleSubmit = (e?: React.BaseSyntheticEvent) => {
 		return form.handleSubmit(onSubmit, errors => {
+			if (import.meta.env.DEV) {
+				console.error('Form validation errors:', errors)
+			}
 			const firstError = Object.values(errors)[0]
 			if (firstError && 'message' in firstError) {
 				toast.error(String(firstError.message))
