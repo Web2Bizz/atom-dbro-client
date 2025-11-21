@@ -42,38 +42,118 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
 	const [installPrompt, setInstallPrompt] = useState<InstallPrompt>(null)
 	const prevIsOfflineRef = useRef<boolean>(!navigator.onLine)
 
-	// Регистрация Service Worker
+	// Регистрация Service Worker и проверка обновлений
 	useEffect(() => {
+		let updateInterval: NodeJS.Timeout | null = null
+		let registration: ServiceWorkerRegistration | null = null
+		let handleUpdateFound: (() => void) | null = null
+		let handleFocus: (() => void) | null = null
+		let handleOnlineForUpdate: (() => void) | null = null
+
 		const registerSW = async (): Promise<void> => {
 			if ('serviceWorker' in navigator) {
 				try {
-					const reg = await navigator.serviceWorker.register('/pwa/sw.js')
-					setRegistration(reg)
+					// Регистрация с обновлением кэша
+					registration = await navigator.serviceWorker.register('/pwa/sw.js', {
+						updateViaCache: 'none', // Всегда проверяем обновления
+					})
+					setRegistration(registration)
 					if (import.meta.env.DEV) {
-						console.log('Service Worker registered: ', reg)
+						console.log('[PWA] Service Worker registered: ', registration)
 					}
 
-					// Проверка обновлений
-					reg.addEventListener('updatefound', () => {
-						const newWorker = reg.installing
+					// Функция для проверки обновлений
+					const checkForUpdates = async () => {
+						if (registration) {
+							try {
+								await registration.update()
+							} catch (error) {
+								if (import.meta.env.DEV) {
+									console.error('[PWA] Update check failed:', error)
+								}
+							}
+						}
+					}
+
+					// Обработчик обновления Service Worker
+					handleUpdateFound = () => {
+						const newWorker = registration?.installing
 						if (newWorker) {
-							newWorker.addEventListener('statechange', () => {
+							const handleStateChange = () => {
 								if (
 									newWorker.state === 'installed' &&
 									navigator.serviceWorker.controller
 								) {
+									// Новый Service Worker установлен, но старый еще активен
 									setIsUpdateAvailable(true)
+									toast.info('Доступно обновление', {
+										description: 'Нажмите для перезагрузки страницы',
+										action: {
+											label: 'Обновить',
+											onClick: () => {
+												// Отправляем сообщение новому Service Worker для активации
+												newWorker.postMessage({ type: 'SKIP_WAITING' })
+												// Перезагружаем страницу
+												window.location.reload()
+											},
+										},
+										duration: 10000,
+									})
+								} else if (
+									newWorker.state === 'activated' &&
+									!navigator.serviceWorker.controller
+								) {
+									// Первая установка - перезагружаем страницу
+									window.location.reload()
 								}
-							})
+							}
+							newWorker.addEventListener('statechange', handleStateChange)
 						}
-					})
+					}
+
+					// Проверка обновлений при установке
+					registration.addEventListener('updatefound', handleUpdateFound)
+
+					// Периодическая проверка обновлений (каждые 5 минут)
+					updateInterval = setInterval(checkForUpdates, 5 * 60 * 1000)
+
+					// Проверка обновлений при фокусе на окне
+					handleFocus = () => {
+						checkForUpdates()
+					}
+					window.addEventListener('focus', handleFocus)
+
+					// Проверка обновлений при возвращении в онлайн
+					handleOnlineForUpdate = () => {
+						checkForUpdates()
+					}
+					window.addEventListener('online', handleOnlineForUpdate)
+
+					// Первоначальная проверка
+					checkForUpdates()
 				} catch (error) {
-					console.log('SW registration failed: ', error)
+					console.error('[PWA] SW registration failed: ', error)
 				}
 			}
 		}
 
 		registerSW()
+
+		// Очистка при размонтировании
+		return () => {
+			if (updateInterval) {
+				clearInterval(updateInterval)
+			}
+			if (registration && handleUpdateFound) {
+				registration.removeEventListener('updatefound', handleUpdateFound)
+			}
+			if (handleFocus) {
+				window.removeEventListener('focus', handleFocus)
+			}
+			if (handleOnlineForUpdate) {
+				window.removeEventListener('online', handleOnlineForUpdate)
+			}
+		}
 	}, [])
 
 	// Отслеживание установки приложения

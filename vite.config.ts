@@ -5,14 +5,16 @@ import path from 'node:path'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { w2bViteFileBasedRouting } from 'w2b-vite-filebased-routing/core'
+import { swVersionPlugin } from './src/pwa/swVersionPlugin'
 
 export default defineConfig({
 	plugins: [
 		react(),
 		w2bViteFileBasedRouting(),
 		tailwindcss(),
+		swVersionPlugin(), // Плагин для автоматического обновления версии
 		VitePWA({
-			registerType: 'autoUpdate',
+			registerType: 'prompt', // Используем prompt вместо autoUpdate, так как у нас кастомный SW
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
 			},
