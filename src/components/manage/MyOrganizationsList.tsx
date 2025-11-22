@@ -1,13 +1,15 @@
+import type { Organization } from '@/components/map/types/types'
+import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { useGetOrganizationsQuery } from '@/store/entities/organization'
-import { useMemo } from 'react'
-import { Spinner } from '@/components/ui/spinner'
-import type { Organization } from '@/components/map/types/types'
-import { Building2, MapPin, Heart, ArrowRight, Map } from 'lucide-react'
 import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
+import { ArrowRight, Building2, Heart, Map, MapPin } from 'lucide-react'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export function MyOrganizationsList() {
 	const { user } = useUser()
+	const navigate = useNavigate()
 	const { data: organizations = [], isLoading } = useGetOrganizationsQuery()
 
 	// Фильтруем только мои организации (созданные пользователем)
@@ -15,7 +17,10 @@ export function MyOrganizationsList() {
 		if (!user?.createdOrganizationId) return []
 		return organizations.filter(org => {
 			const orgId = typeof org.id === 'string' ? org.id : String(org.id)
-			return orgId === user.createdOrganizationId || org.id === user.createdOrganizationId
+			return (
+				orgId === user.createdOrganizationId ||
+				org.id === user.createdOrganizationId
+			)
 		})
 	}, [organizations, user?.createdOrganizationId])
 
@@ -41,7 +46,8 @@ export function MyOrganizationsList() {
 						Пока нет организаций
 					</h3>
 					<p className='text-slate-600 mb-6'>
-						Создайте свою организацию, чтобы начать помогать другим и привлекать волонтеров
+						Создайте свою организацию, чтобы начать помогать другим и привлекать
+						волонтеров
 					</p>
 				</div>
 			</div>
@@ -50,24 +56,41 @@ export function MyOrganizationsList() {
 
 	return (
 		<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-			{myOrganizations.map(organization => (
-				<OrganizationCard key={organization.id} organization={organization} />
-			))}
+			{myOrganizations.map(organization => {
+				const orgId =
+					typeof organization.id === 'string'
+						? organization.id
+						: String(organization.id)
+				return (
+					<OrganizationCard
+						key={organization.id}
+						organization={organization}
+						onClick={() => {
+							navigate(`/organizations/${orgId}/manage`)
+						}}
+					/>
+				)
+			})}
 		</div>
 	)
 }
 
 interface OrganizationCardProps {
-	organization: Organization
+	readonly organization: Organization
+	readonly onClick?: () => void
 }
 
-function OrganizationCard({ organization }: OrganizationCardProps) {
+function OrganizationCard({ organization, onClick }: OrganizationCardProps) {
 	return (
-		<article className='group relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1'>
+		<button
+			type='button'
+			onClick={onClick}
+			className='group relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 text-left w-full flex flex-col h-full'
+		>
 			{/* Градиентная полоса сверху */}
 			<div className='h-1.5 bg-gradient-to-r from-blue-500 to-cyan-600' />
 
-			<div className='p-6'>
+			<div className='p-6 flex flex-col flex-1'>
 				{/* Header */}
 				<div className='flex items-start justify-between gap-3 mb-4'>
 					<div className='flex-1 min-w-0'>
@@ -88,26 +111,30 @@ function OrganizationCard({ organization }: OrganizationCardProps) {
 					</div>
 				</div>
 
-				{/* Описание */}
-				<p className='text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed'>
-					{organization.summary}
-				</p>
+				{/* Контент с растягиванием */}
+				<div className='flex flex-col flex-1 justify-between'>
+					{/* Описание */}
+					<p className='text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed'>
+						{organization.summary}
+					</p>
 
-				{/* Тип организации */}
-				{organization.organizationTypes?.[0] && (
-					<div className='mb-4'>
-						<span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200'>
-							{organization.organizationTypes[0].name}
-						</span>
-					</div>
-				)}
+					{/* Тип организации */}
+					{organization.organizationTypes?.[0] && (
+						<div className='mb-4'>
+							<span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200'>
+								{organization.organizationTypes[0].name}
+							</span>
+						</div>
+					)}
 
-				{/* Виды помощи */}
-				{organization.helpTypes && organization.helpTypes.length > 0 && (
-					<div className='mb-4'>
+					{/* Виды помощи */}
+					{organization.helpTypes && organization.helpTypes.length > 0 && (
+						<div className='mb-4'>
 						<div className='flex items-center gap-1.5 mb-2'>
 							<Heart className='h-3.5 w-3.5 text-blue-500' />
-							<span className='text-xs font-medium text-slate-600'>Виды помощи</span>
+							<span className='text-xs font-medium text-slate-600'>
+								Виды помощи
+							</span>
 						</div>
 						<div className='flex flex-wrap gap-1.5'>
 							{organization.helpTypes.slice(0, 3).map((helpType, index) => (
@@ -126,6 +153,7 @@ function OrganizationCard({ organization }: OrganizationCardProps) {
 						</div>
 					</div>
 				)}
+				</div>
 
 				{/* Footer */}
 				<div className='pt-4 border-t border-slate-100'>
@@ -139,14 +167,15 @@ function OrganizationCard({ organization }: OrganizationCardProps) {
 						type='button'
 						onClick={e => {
 							e.stopPropagation()
-							const orgId = typeof organization.id === 'string' 
-								? organization.id 
-								: String(organization.id)
-							
+							const orgId =
+								typeof organization.id === 'string'
+									? organization.id
+									: String(organization.id)
+
 							// Сохраняем координаты для зума на карте
 							try {
 								const coordinates = getOrganizationCoordinates(organization)
-								if (coordinates && coordinates.length === 2) {
+								if (coordinates?.length === 2) {
 									localStorage.setItem(
 										'zoomToCoordinates',
 										JSON.stringify({
@@ -158,11 +187,14 @@ function OrganizationCard({ organization }: OrganizationCardProps) {
 								}
 							} catch (error) {
 								if (import.meta.env.DEV) {
-									console.error('Error getting organization coordinates:', error)
+									console.error(
+										'Error getting organization coordinates:',
+										error
+									)
 								}
 							}
-							
-							window.location.href = `/map?organization=${orgId}`
+
+							globalThis.location.href = `/map?organization=${orgId}`
 						}}
 						className='w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors'
 					>
@@ -174,7 +206,6 @@ function OrganizationCard({ organization }: OrganizationCardProps) {
 
 			{/* Hover эффект */}
 			<div className='absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none' />
-		</article>
+		</button>
 	)
 }
-

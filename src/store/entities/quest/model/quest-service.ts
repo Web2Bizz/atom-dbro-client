@@ -131,6 +131,21 @@ export const questService = createApi({
 
 							const quest: Quest = { ...item.quest }
 
+							// Сохраняем статус участия пользователя в квесте
+							// Если status === 'completed', то квест завершен для этого пользователя
+							// Поле status из объекта участия имеет приоритет над статусом самого квеста
+							if (item.status === 'completed') {
+								quest.status = 'completed'
+							} else if (item.status === 'in_progress') {
+								// Если квест не завершен пользователем, но он в процессе выполнения
+								// оставляем статус квеста как есть (active или другой)
+								// Не переопределяем, если квест уже archived
+								if (quest.status !== 'archived') {
+									quest.status = 'active'
+								}
+							}
+							// Если item.status === 'pending' или другой, оставляем исходный статус квеста
+
 							// Объединяем данные из achievement, если они есть и отсутствуют в quest
 							if (item.achievement && !quest.achievement) {
 								quest.achievement = {

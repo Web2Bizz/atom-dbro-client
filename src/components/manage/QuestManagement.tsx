@@ -41,17 +41,17 @@ export function QuestManagement({
 	const [isCompleting, setIsCompleting] = useState(false)
 
 	// Используем актуальные данные квеста или начальные
+	// Приоритет отдаем актуальным данным из запроса
 	const currentQuest = quest || initialQuest
+	const questStatus = quest?.status || initialQuest?.status
+	console.log(quest)
 
-	// Проверяем, можно ли архивировать квест (должен быть завершен на 100%)
+	// Проверяем, можно ли архивировать квест (должен быть завершен)
 	const canArchive = useMemo(() => {
+		console.log(currentQuest)
 		if (!currentQuest) return false
-		if (currentQuest.status !== 'completed') return false
-		// Проверяем, что все этапы завершены
-		if (!currentQuest.steps || currentQuest.steps.length === 0) return false
-		return currentQuest.steps.every(
-			step => step.progress === 100 && step.status === 'completed'
-		)
+		// Квест можно архивировать, если он завершен
+		return currentQuest.status === 'completed'
 	}, [currentQuest])
 
 	if (isLoading) {
@@ -460,7 +460,7 @@ export function QuestManagement({
 			)}
 
 			{/* Кнопка завершения квеста (только для активных квестов) */}
-			{currentQuest.status === 'active' && (
+			{questStatus === 'active' && (
 				<div className='mt-8 border-t border-slate-200 pt-6'>
 					<div className='bg-green-50 border border-green-200 rounded-lg p-6'>
 						<div className='flex items-start gap-3 mb-4'>
@@ -498,7 +498,7 @@ export function QuestManagement({
 			)}
 
 			{/* Кнопка архивации (только для завершенных квестов) */}
-			{currentQuest.status === 'completed' && canArchive && (
+			{currentQuest.status === 'completed' && (
 				<div className='mt-8 border-t border-slate-200 pt-6'>
 					<div className='bg-slate-50 border border-slate-200 rounded-lg p-6'>
 						<div className='flex items-start gap-3 mb-4'>

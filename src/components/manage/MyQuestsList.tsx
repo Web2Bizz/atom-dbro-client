@@ -39,22 +39,13 @@ export function MyQuestsList() {
 	const myQuests = useMemo(() => {
 		if (filter === 'all') return allQuests
 		return allQuests.filter(quest => {
-			// Получаем статус из исходных данных API
-			const apiQuest = questsResponse?.data?.quests?.find(
-				q =>
-					(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id) ===
-					(typeof quest.id === 'string'
-						? Number.parseInt(quest.id, 10)
-						: quest.id)
-			)
-			if (!apiQuest) return false
-
-			if (filter === 'active') return apiQuest.status === 'active'
-			if (filter === 'completed') return apiQuest.status === 'completed'
-			if (filter === 'archived') return apiQuest.status === 'archived'
+			// Используем статус из преобразованного квеста, который уже учитывает статус участия пользователя
+			if (filter === 'active') return quest.status === 'active'
+			if (filter === 'completed') return quest.status === 'completed'
+			if (filter === 'archived') return quest.status === 'archived'
 			return true
 		})
-	}, [allQuests, filter, questsResponse])
+	}, [allQuests, filter])
 
 	if (isLoading) {
 		return (
@@ -91,20 +82,7 @@ export function MyQuestsList() {
 							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
 					}`}
 				>
-					Активные (
-					{
-						allQuests.filter(q => {
-							const apiQuest = questsResponse?.data?.quests?.find(
-								aq =>
-									(typeof aq.id === 'string'
-										? Number.parseInt(aq.id, 10)
-										: aq.id) ===
-									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
-							)
-							return apiQuest?.status === 'active'
-						}).length
-					}
-					)
+					Активные ({allQuests.filter(q => q.status === 'active').length})
 				</button>
 				<button
 					type='button'
@@ -115,20 +93,7 @@ export function MyQuestsList() {
 							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
 					}`}
 				>
-					Завершенные (
-					{
-						allQuests.filter(q => {
-							const apiQuest = questsResponse?.data?.quests?.find(
-								aq =>
-									(typeof aq.id === 'string'
-										? Number.parseInt(aq.id, 10)
-										: aq.id) ===
-									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
-							)
-							return apiQuest?.status === 'completed'
-						}).length
-					}
-					)
+					Завершенные ({allQuests.filter(q => q.status === 'completed').length})
 				</button>
 				<button
 					type='button'
@@ -140,20 +105,7 @@ export function MyQuestsList() {
 					}`}
 				>
 					<Archive className='h-4 w-4' />
-					Архив (
-					{
-						allQuests.filter(q => {
-							const apiQuest = questsResponse?.data?.quests?.find(
-								aq =>
-									(typeof aq.id === 'string'
-										? Number.parseInt(aq.id, 10)
-										: aq.id) ===
-									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
-							)
-							return apiQuest?.status === 'archived'
-						}).length
-					}
-					)
+					Архив ({allQuests.filter(q => q.status === 'archived').length})
 				</button>
 			</div>
 
@@ -211,12 +163,32 @@ interface QuestCardProps {
 }
 
 function QuestCard({ quest, onClick }: QuestCardProps) {
-	const progressColor =
-		quest.overallProgress === 100
-			? 'from-green-500 to-emerald-600'
-			: quest.overallProgress >= 50
-			? 'from-orange-500 to-amber-600'
-			: 'from-orange-400 to-orange-500'
+	// Определяем цвета в зависимости от статуса квеста
+	const isCompleted = quest.status === 'completed'
+
+	const progressColor = isCompleted
+		? 'from-green-500 to-emerald-600'
+		: quest.overallProgress === 100
+		? 'from-green-500 to-emerald-600'
+		: quest.overallProgress >= 50
+		? 'from-orange-500 to-amber-600'
+		: 'from-orange-400 to-orange-500'
+
+	const headerIconBg = isCompleted
+		? 'from-green-500 to-emerald-600'
+		: 'from-orange-500 to-amber-600'
+
+	const cityColor = isCompleted ? 'text-green-600' : 'text-orange-600'
+
+	const titleHoverColor = isCompleted
+		? 'group-hover:text-green-600'
+		: 'group-hover:text-orange-600'
+
+	const manageTextColor = isCompleted ? 'text-green-600' : 'text-orange-600'
+
+	const mapButtonBg = isCompleted
+		? 'bg-green-50 border-green-200 hover:bg-green-100 text-green-600'
+		: 'bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-600'
 
 	return (
 		<article
@@ -229,65 +201,82 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 			}}
 			role='button'
 			tabIndex={0}
-			className='group relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1'
+			className='group relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 flex flex-col h-full'
 		>
 			{/* Градиентная полоса сверху */}
 			<div className={`h-1.5 bg-gradient-to-r ${progressColor}`} />
 
-			<div className='p-6'>
+			<div className='p-6 flex flex-col h-full'>
 				{/* Header */}
-				<div className='flex items-start justify-between gap-3 mb-4'>
-					<div className='flex-1 min-w-0'>
-						<div className='flex items-center gap-2 mb-2'>
-							<MapPin className='h-4 w-4 text-orange-600 flex-shrink-0' />
-							<span className='text-xs font-semibold text-orange-600 uppercase tracking-wider truncate'>
-								{quest.city}
-							</span>
+				<div className='flex  flex-1'>
+					<div className='flex  items-start justify-between gap-3 mb-4'>
+						<div className='flex-1 min-w-0'>
+							<div className='flex items-center gap-2 mb-2'>
+								<MapPin className={`h-4 w-4 ${cityColor} flex-shrink-0`} />
+								<span
+									className={`text-xs font-semibold ${cityColor} uppercase tracking-wider truncate`}
+								>
+									{quest.city}
+								</span>
+							</div>
+							<h3
+								className={`text-lg font-bold text-slate-900 mb-2 line-clamp-2 break-words ${titleHoverColor} transition-colors`}
+							>
+								{quest.title}
+							</h3>
 						</div>
-						<h3 className='text-lg font-bold text-slate-900 mb-2 line-clamp-2 break-words group-hover:text-orange-600 transition-colors'>
-							{quest.title}
-						</h3>
-					</div>
-					<div className='flex-shrink-0'>
-						<div className='w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30'>
-							<Target className='h-6 w-6 text-white' />
+						<div className='flex-shrink-0'>
+							<div
+								className={`w-12 h-12 rounded-xl bg-gradient-to-br ${headerIconBg} flex items-center justify-center shadow-lg ${
+									isCompleted ? 'shadow-green-500/30' : 'shadow-orange-500/30'
+								}`}
+							>
+								<Target className='h-6 w-6 text-white' />
+							</div>
 						</div>
 					</div>
 				</div>
+				{/* Контент с растягиванием */}
+				<div className='flex flex-col flex-1'>
+					{/* Описание */}
+					<p className='text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed'>
+						{quest.story}
+					</p>
 
-				{/* Описание */}
-				<p className='text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed'>
-					{quest.story}
-				</p>
-
-				{/* Прогресс */}
-				<div className='mb-4'>
-					<div className='flex items-center justify-between mb-2'>
-						<div className='flex items-center gap-2'>
-							<TrendingUp className='h-4 w-4 text-slate-500' />
-							<span className='text-xs font-medium text-slate-600'>
-								Прогресс
+					{/* Прогресс */}
+					<div className='mb-4'>
+						<div className='flex items-center justify-between mb-2'>
+							<div className='flex items-center gap-2'>
+								<TrendingUp className='h-4 w-4 text-slate-500' />
+								<span className='text-xs font-medium text-slate-600'>
+									Прогресс
+								</span>
+							</div>
+							<span className='text-sm font-bold text-slate-900'>
+								{quest.overallProgress}%
 							</span>
 						</div>
-						<span className='text-sm font-bold text-slate-900'>
-							{quest.overallProgress}%
-						</span>
-					</div>
-					<div className='h-2 bg-slate-200 rounded-full overflow-hidden'>
-						<div
-							className={`h-full bg-gradient-to-r ${progressColor} rounded-full transition-all duration-500`}
-							style={{ width: `${quest.overallProgress}%` }}
-						/>
+						<div className='h-2 bg-slate-200 rounded-full overflow-hidden'>
+							<div
+								className={`h-full bg-gradient-to-r ${progressColor} rounded-full transition-all duration-500`}
+								style={{ width: `${quest.overallProgress}%` }}
+							/>
+						</div>
 					</div>
 				</div>
 
 				{/* Footer */}
 				<div className='pt-4 border-t border-slate-100'>
 					<div className='flex items-center justify-between mb-3'>
-						<span className='text-xs font-medium text-slate-500 px-2.5 py-1 bg-slate-100 rounded-full'>
-							{quest.type}
-						</span>
-						<div className='flex items-center gap-1 text-orange-600 font-semibold text-sm group-hover:gap-2 transition-all'>
+						{quest.type && quest.type !== 'Не указан' && (
+							<span className='text-xs font-medium text-slate-500 px-2.5 py-1 bg-slate-100 rounded-full'>
+								{quest.type}
+							</span>
+						)}
+						{(!quest.type || quest.type === 'Не указан') && <div />}
+						<div
+							className={`flex items-center gap-1 ${manageTextColor} font-semibold text-sm group-hover:gap-2 transition-all`}
+						>
 							<span>Управлять</span>
 							<ArrowRight className='h-4 w-4' />
 						</div>
@@ -313,7 +302,7 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 
 							window.location.href = `/map?quest=${questId}`
 						}}
-						className='w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors'
+						className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${mapButtonBg}`}
 					>
 						<Map className='h-4 w-4' />
 						Показать на карте
@@ -322,7 +311,13 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 			</div>
 
 			{/* Hover эффект */}
-			<div className='absolute inset-0 bg-gradient-to-br from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none' />
+			<div
+				className={`absolute inset-0 bg-gradient-to-br ${
+					isCompleted
+						? 'from-green-500/5 to-emerald-500/5'
+						: 'from-orange-500/5 to-amber-500/5'
+				} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
+			/>
 		</article>
 	)
 }
