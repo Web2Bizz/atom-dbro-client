@@ -1,26 +1,58 @@
-import { useGetQuestQuery, useUpdateQuestMutation } from '@/store/entities/quest'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { QrCode, Plus } from 'lucide-react'
+import {
+	useCompleteQuestMutation,
+	useGetQuestQuery,
+	useUpdateQuestMutation,
+} from '@/store/entities/quest'
 import type { Quest } from '@/store/entities/quest/model/type'
 import { formatCurrency } from '@/utils/format'
+import { Archive, CheckCircle, Plus, QrCode } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 interface QuestManagementProps {
 	questId: number
 	quest: Quest
 }
 
-export function QuestManagement({ questId, quest: initialQuest }: QuestManagementProps) {
+export function QuestManagement({
+	questId,
+	quest: initialQuest,
+}: QuestManagementProps) {
 	const { data: quest, isLoading, refetch } = useGetQuestQuery(questId)
 	const [updateQuest, { isLoading: isUpdating }] = useUpdateQuestMutation()
+	const [completeQuest] = useCompleteQuestMutation()
 	const [showQRCode, setShowQRCode] = useState(false)
 	const [qrCodeData, setQrCodeData] = useState<string>('')
+	const [showArchiveDialog, setShowArchiveDialog] = useState(false)
+	const [isArchiving, setIsArchiving] = useState(false)
+	const [isCompleting, setIsCompleting] = useState(false)
 
 	// Используем актуальные данные квеста или начальные
 	const currentQuest = quest || initialQuest
+
+	// Проверяем, можно ли архивировать квест (должен быть завершен на 100%)
+	const canArchive = useMemo(() => {
+		if (!currentQuest) return false
+		if (currentQuest.status !== 'completed') return false
+		// Проверяем, что все этапы завершены
+		if (!currentQuest.steps || currentQuest.steps.length === 0) return false
+		return currentQuest.steps.every(
+			step => step.progress === 100 && step.status === 'completed'
+		)
+	}, [currentQuest])
 
 	if (isLoading) {
 		return (
@@ -93,6 +125,61 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 		handleUpdateRequirement(stepIndex, newValue)
 	}
 
+	// Функция завершения квеста
+	const handleComplete = async () => {
+		setIsCompleting(true)
+		try {
+			await completeQuest(questId).unwrap()
+			toast.success('Квест успешно завершен!')
+			refetch()
+		} catch (error) {
+			if (import.meta.env.DEV) {
+				console.error('Error completing quest:', error)
+			}
+			const errorMessage =
+				error && typeof error === 'object' && 'data' in error
+					? (error.data as { message?: string })?.message ||
+					  'Не удалось завершить квест'
+					: 'Не удалось завершить квест. Попробуйте еще раз.'
+			toast.error(errorMessage)
+		} finally {
+			setIsCompleting(false)
+		}
+	}
+
+	// Функция архивации квеста
+	const handleArchive = async () => {
+		if (!canArchive) {
+			toast.error('Квест можно архивировать только если он завершен на 100%')
+			return
+		}
+
+		setIsArchiving(true)
+		try {
+			await updateQuest({
+				id: questId,
+				data: {
+					status: 'archived',
+				},
+			}).unwrap()
+			toast.success('Квест успешно архивирован')
+			setShowArchiveDialog(false)
+			refetch()
+		} catch (error) {
+			if (import.meta.env.DEV) {
+				console.error('Error archiving quest:', error)
+			}
+			const errorMessage =
+				error && typeof error === 'object' && 'data' in error
+					? (error.data as { message?: string })?.message ||
+					  'Не удалось архивировать квест'
+					: 'Не удалось архивировать квест. Попробуйте еще раз.'
+			toast.error(errorMessage)
+		} finally {
+			setIsArchiving(false)
+		}
+	}
+
 	const generateQRCode = (stepIndex: number) => {
 		const step = currentQuest.steps?.[stepIndex]
 		if (!step) return
@@ -143,7 +230,8 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 						// Определяем тип требования на основе targetValue
 						// >= 1000 = финансовые средства, < 1000 = волонтеры или материалы
 						const isFinancial = step.requirement.targetValue >= 1000
-						const isVolunteers = !isFinancial && step.requirement.targetValue < 1000
+						const isVolunteers =
+							!isFinancial && step.requirement.targetValue < 1000
 						// Для материалов можно использовать описание этапа или отдельное поле
 						// Пока используем ту же логику, что и для волонтеров
 						const isItems = false // Можно добавить логику определения материалов
@@ -158,7 +246,9 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 										<h4 className='font-semibold text-slate-900 mb-1'>
 											{step.title}
 										</h4>
-										<p className='text-sm text-slate-600 mb-3'>{step.description}</p>
+										<p className='text-sm text-slate-600 mb-3'>
+											{step.description}
+										</p>
 										<div className='flex items-center gap-4 text-sm'>
 											<span className='text-slate-600'>
 												Статус:{' '}
@@ -167,15 +257,15 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 														step.status === 'completed'
 															? 'text-green-600'
 															: step.status === 'in_progress'
-																? 'text-blue-600'
-																: 'text-slate-500'
+															? 'text-blue-600'
+															: 'text-slate-500'
 													}`}
 												>
 													{step.status === 'completed'
 														? 'Завершен'
 														: step.status === 'in_progress'
-															? 'В процессе'
-															: 'Ожидает'}
+														? 'В процессе'
+														: 'Ожидает'}
 												</span>
 											</span>
 											<span className='text-slate-600'>
@@ -237,7 +327,9 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 														const input = document.getElementById(
 															`financial-input-${stepIndex}`
 														) as HTMLInputElement
-														const amount = Number.parseFloat(input?.value || '0')
+														const amount = Number.parseFloat(
+															input?.value || '0'
+														)
 														if (amount > 0) {
 															handleAddAmount(stepIndex, amount)
 															if (input) input.value = ''
@@ -338,7 +430,9 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 														const input = document.getElementById(
 															`items-input-${stepIndex}`
 														) as HTMLInputElement
-														const amount = Number.parseFloat(input?.value || '0')
+														const amount = Number.parseFloat(
+															input?.value || '0'
+														)
 														if (amount > 0) {
 															handleAddAmount(stepIndex, amount)
 															if (input) input.value = ''
@@ -364,6 +458,107 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 					</p>
 				</div>
 			)}
+
+			{/* Кнопка завершения квеста (только для активных квестов) */}
+			{currentQuest.status === 'active' && (
+				<div className='mt-8 border-t border-slate-200 pt-6'>
+					<div className='bg-green-50 border border-green-200 rounded-lg p-6'>
+						<div className='flex items-start gap-3 mb-4'>
+							<CheckCircle className='h-5 w-5 text-green-600 mt-0.5' />
+							<div className='flex-1'>
+								<h3 className='text-lg font-semibold text-slate-900 mb-1'>
+									Завершение квеста
+								</h3>
+								<p className='text-sm text-slate-600'>
+									Завершите квест, когда все этапы выполнены. После завершения
+									квест можно будет архивировать.
+								</p>
+							</div>
+						</div>
+						<Button
+							type='button'
+							onClick={handleComplete}
+							disabled={isCompleting || isUpdating}
+							className='bg-green-600 hover:bg-green-700 text-white'
+						>
+							{isCompleting ? (
+								<div className='flex items-center gap-2'>
+									<Spinner />
+									<span>Завершение...</span>
+								</div>
+							) : (
+								<>
+									<CheckCircle className='h-4 w-4 mr-2' />
+									Завершить квест
+								</>
+							)}
+						</Button>
+					</div>
+				</div>
+			)}
+
+			{/* Кнопка архивации (только для завершенных квестов) */}
+			{currentQuest.status === 'completed' && canArchive && (
+				<div className='mt-8 border-t border-slate-200 pt-6'>
+					<div className='bg-slate-50 border border-slate-200 rounded-lg p-6'>
+						<div className='flex items-start gap-3 mb-4'>
+							<Archive className='h-5 w-5 text-slate-600 mt-0.5' />
+							<div className='flex-1'>
+								<h3 className='text-lg font-semibold text-slate-900 mb-1'>
+									Архивация квеста
+								</h3>
+								<p className='text-sm text-slate-600'>
+									Квест завершен на 100%. Вы можете архивировать его, чтобы
+									скрыть из активных квестов.
+								</p>
+							</div>
+						</div>
+						<Button
+							type='button'
+							variant='outline'
+							onClick={() => setShowArchiveDialog(true)}
+							className='text-slate-700 border-slate-300 hover:bg-slate-100'
+						>
+							<Archive className='h-4 w-4 mr-2' />
+							Архивировать квест
+						</Button>
+					</div>
+				</div>
+			)}
+
+			{/* Диалог подтверждения архивации */}
+			<AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Подтверждение архивации</AlertDialogTitle>
+						<AlertDialogDescription>
+							Вы уверены, что хотите архивировать квест "{currentQuest.title}"?
+							Архивированный квест будет скрыт из активных квестов, но его можно
+							будет найти в архиве.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isArchiving}>Отмена</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleArchive}
+							disabled={isArchiving}
+							className='bg-slate-600 hover:bg-slate-700 focus:ring-slate-600'
+						>
+							{isArchiving ? (
+								<div className='flex items-center gap-2'>
+									<Spinner />
+									<span>Архивация...</span>
+								</div>
+							) : (
+								<>
+									<Archive className='h-4 w-4 mr-2' />
+									Архивировать
+								</>
+							)}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			{/* Модальное окно с QR кодом */}
 			{showQRCode && (
@@ -407,7 +602,9 @@ export function QuestManagement({ questId, quest: initialQuest }: QuestManagemen
 // В реальном приложении можно использовать библиотеку qrcode.react
 function QRCodeDisplay({ data }: { data: string }) {
 	// Используем внешний сервис для генерации QR кода
-	const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`
+	const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+		data
+	)}`
 
 	return (
 		<div className='flex items-center justify-center'>
@@ -415,4 +612,3 @@ function QRCodeDisplay({ data }: { data: string }) {
 		</div>
 	)
 }
-

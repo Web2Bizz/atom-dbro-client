@@ -120,9 +120,7 @@ export const questService = createApi({
 		// GET /quests/user/:userId - Получить квесты пользователя
 		getUserQuests: builder.query<QuestsListResponse, number | string>({
 			query: userId => `/quests/user/${userId}`,
-			transformResponse: (
-				response: any
-			): QuestsListResponse => {
+			transformResponse: (response: any): QuestsListResponse => {
 				// Новый endpoint возвращает массив объектов с полем quest
 				// Структура: [{ id, questId, userId, status, quest: {...}, achievement: {...}, city: {...} }, ...]
 				if (Array.isArray(response)) {
@@ -130,9 +128,9 @@ export const questService = createApi({
 					const quests: Quest[] = response
 						.map((item: any) => {
 							if (!item.quest) return null
-							
+
 							const quest: Quest = { ...item.quest }
-							
+
 							// Объединяем данные из achievement, если они есть и отсутствуют в quest
 							if (item.achievement && !quest.achievement) {
 								quest.achievement = {
@@ -142,7 +140,7 @@ export const questService = createApi({
 									icon: item.achievement.icon,
 								}
 							}
-							
+
 							// Объединяем данные из city, если они есть и отсутствуют в quest
 							if (item.city && !quest.city) {
 								quest.city = {
@@ -150,23 +148,23 @@ export const questService = createApi({
 									name: item.city.name,
 								}
 							}
-							
+
 							return quest
 						})
 						.filter((quest: Quest | null) => quest !== null) as Quest[]
-					
+
 					return {
 						data: {
 							quests,
 						},
 					}
 				}
-				
+
 				// Если ответ уже в формате QuestsListResponse
 				if (response.data && Array.isArray(response.data.quests)) {
 					return response
 				}
-				
+
 				// Если ответ в формате { data: Quest[] }
 				if (response.data && Array.isArray(response.data)) {
 					return {
@@ -175,7 +173,7 @@ export const questService = createApi({
 						},
 					}
 				}
-				
+
 				// Возвращаем пустой массив по умолчанию
 				return {
 					data: {
@@ -217,6 +215,18 @@ export const questService = createApi({
 			query: id => ({
 				url: `/quests/${id}`,
 				method: 'DELETE',
+			}),
+			invalidatesTags: (_result, _error, id) => [
+				'QuestList',
+				{ type: 'Quest', id: String(id) },
+			],
+		}),
+
+		// POST /quests/:id/complete - Завершить квест
+		completeQuest: builder.mutation<UpdateQuestResponse, number | string>({
+			query: id => ({
+				url: `/quests/${id}/complete`,
+				method: 'POST',
 			}),
 			invalidatesTags: (_result, _error, id) => [
 				'QuestList',
@@ -328,6 +338,7 @@ export const {
 	useCreateQuestMutation,
 	useUpdateQuestMutation,
 	useDeleteQuestMutation,
+	useCompleteQuestMutation,
 	useJoinQuestMutation,
 	useCreateQuestUpdateMutation,
 	useGetQuestUpdateQuery,

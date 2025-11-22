@@ -1,16 +1,26 @@
+import type { Quest } from '@/components/map/types/quest-types'
+import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { useGetUserQuestsQuery } from '@/store/entities/quest'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
-import { useMemo } from 'react'
+import {
+	Archive,
+	ArrowRight,
+	Map,
+	MapPin,
+	Target,
+	TrendingUp,
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Spinner } from '@/components/ui/spinner'
-import type { Quest } from '@/components/map/types/quest-types'
-import { Target, MapPin, TrendingUp, ArrowRight, Map } from 'lucide-react'
+
+type QuestFilter = 'all' | 'active' | 'completed' | 'archived'
 
 export function MyQuestsList() {
 	const { user } = useUser()
 	const navigate = useNavigate()
-	
+	const [filter, setFilter] = useState<QuestFilter>('all')
+
 	// Получаем квесты пользователя через новый endpoint
 	const { data: questsResponse, isLoading } = useGetUserQuestsQuery(
 		user?.id || '',
@@ -20,10 +30,31 @@ export function MyQuestsList() {
 	)
 
 	// Преобразуем квесты с сервера в формат компонентов
-	const myQuests = useMemo(() => {
+	const allQuests = useMemo(() => {
 		if (!questsResponse?.data?.quests) return []
 		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
 	}, [questsResponse])
+
+	// Фильтруем квесты по выбранному фильтру
+	const myQuests = useMemo(() => {
+		if (filter === 'all') return allQuests
+		return allQuests.filter(quest => {
+			// Получаем статус из исходных данных API
+			const apiQuest = questsResponse?.data?.quests?.find(
+				q =>
+					(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id) ===
+					(typeof quest.id === 'string'
+						? Number.parseInt(quest.id, 10)
+						: quest.id)
+			)
+			if (!apiQuest) return false
+
+			if (filter === 'active') return apiQuest.status === 'active'
+			if (filter === 'completed') return apiQuest.status === 'completed'
+			if (filter === 'archived') return apiQuest.status === 'archived'
+			return true
+		})
+	}, [allQuests, filter, questsResponse])
 
 	if (isLoading) {
 		return (
@@ -36,38 +67,140 @@ export function MyQuestsList() {
 		)
 	}
 
-	if (myQuests.length === 0) {
-		return (
-			<div className='bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center'>
-				<div className='max-w-md mx-auto'>
-					<div className='inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-200 mb-4'>
-						<Target className='h-8 w-8 text-slate-400' />
-					</div>
-					<h3 className='text-xl font-semibold text-slate-700 mb-2'>
-						Пока нет квестов
-					</h3>
-					<p className='text-slate-600 mb-6'>
-						Создайте свой первый квест, чтобы начать управлять им и отслеживать прогресс
-					</p>
-				</div>
-			</div>
-		)
-	}
-
 	return (
-		<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-			{myQuests.map(quest => (
-				<QuestCard
-					key={quest.id}
-					quest={quest}
-					onClick={() => {
-						const questId = typeof quest.id === 'string' 
-							? Number.parseInt(quest.id, 10) 
-							: quest.id
-						navigate(`/quests/${questId}/manage`)
-					}}
-				/>
-			))}
+		<div className='space-y-6'>
+			{/* Фильтры */}
+			<div className='flex flex-wrap gap-2'>
+				<button
+					type='button'
+					onClick={() => setFilter('all')}
+					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+						filter === 'all'
+							? 'bg-orange-500 text-white shadow-md'
+							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+					}`}
+				>
+					Все ({allQuests.length})
+				</button>
+				<button
+					type='button'
+					onClick={() => setFilter('active')}
+					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+						filter === 'active'
+							? 'bg-orange-500 text-white shadow-md'
+							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+					}`}
+				>
+					Активные (
+					{
+						allQuests.filter(q => {
+							const apiQuest = questsResponse?.data?.quests?.find(
+								aq =>
+									(typeof aq.id === 'string'
+										? Number.parseInt(aq.id, 10)
+										: aq.id) ===
+									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
+							)
+							return apiQuest?.status === 'active'
+						}).length
+					}
+					)
+				</button>
+				<button
+					type='button'
+					onClick={() => setFilter('completed')}
+					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+						filter === 'completed'
+							? 'bg-green-500 text-white shadow-md'
+							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+					}`}
+				>
+					Завершенные (
+					{
+						allQuests.filter(q => {
+							const apiQuest = questsResponse?.data?.quests?.find(
+								aq =>
+									(typeof aq.id === 'string'
+										? Number.parseInt(aq.id, 10)
+										: aq.id) ===
+									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
+							)
+							return apiQuest?.status === 'completed'
+						}).length
+					}
+					)
+				</button>
+				<button
+					type='button'
+					onClick={() => setFilter('archived')}
+					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+						filter === 'archived'
+							? 'bg-slate-600 text-white shadow-md'
+							: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+					}`}
+				>
+					<Archive className='h-4 w-4' />
+					Архив (
+					{
+						allQuests.filter(q => {
+							const apiQuest = questsResponse?.data?.quests?.find(
+								aq =>
+									(typeof aq.id === 'string'
+										? Number.parseInt(aq.id, 10)
+										: aq.id) ===
+									(typeof q.id === 'string' ? Number.parseInt(q.id, 10) : q.id)
+							)
+							return apiQuest?.status === 'archived'
+						}).length
+					}
+					)
+				</button>
+			</div>
+
+			{/* Список квестов */}
+			{myQuests.length === 0 ? (
+				<div className='bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center'>
+					<div className='max-w-md mx-auto'>
+						<div className='inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-200 mb-4'>
+							{filter === 'archived' ? (
+								<Archive className='h-8 w-8 text-slate-400' />
+							) : (
+								<Target className='h-8 w-8 text-slate-400' />
+							)}
+						</div>
+						<h3 className='text-xl font-semibold text-slate-700 mb-2'>
+							{filter === 'archived'
+								? 'Архив пуст'
+								: filter === 'completed'
+								? 'Нет завершенных квестов'
+								: filter === 'active'
+								? 'Нет активных квестов'
+								: 'Пока нет квестов'}
+						</h3>
+						<p className='text-slate-600 mb-6'>
+							{filter === 'archived'
+								? 'Здесь будут отображаться архивированные квесты'
+								: 'Создайте свой первый квест, чтобы начать управлять им и отслеживать прогресс'}
+						</p>
+					</div>
+				</div>
+			) : (
+				<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+					{myQuests.map(quest => (
+						<QuestCard
+							key={quest.id}
+							quest={quest}
+							onClick={() => {
+								const questId =
+									typeof quest.id === 'string'
+										? Number.parseInt(quest.id, 10)
+										: quest.id
+								navigate(`/quests/${questId}/manage`)
+							}}
+						/>
+					))}
+				</div>
+			)}
 		</div>
 	)
 }
@@ -78,11 +211,12 @@ interface QuestCardProps {
 }
 
 function QuestCard({ quest, onClick }: QuestCardProps) {
-	const progressColor = quest.overallProgress === 100 
-		? 'from-green-500 to-emerald-600'
-		: quest.overallProgress >= 50
-		? 'from-orange-500 to-amber-600'
-		: 'from-orange-400 to-orange-500'
+	const progressColor =
+		quest.overallProgress === 100
+			? 'from-green-500 to-emerald-600'
+			: quest.overallProgress >= 50
+			? 'from-orange-500 to-amber-600'
+			: 'from-orange-400 to-orange-500'
 
 	return (
 		<article
@@ -131,9 +265,13 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 					<div className='flex items-center justify-between mb-2'>
 						<div className='flex items-center gap-2'>
 							<TrendingUp className='h-4 w-4 text-slate-500' />
-							<span className='text-xs font-medium text-slate-600'>Прогресс</span>
+							<span className='text-xs font-medium text-slate-600'>
+								Прогресс
+							</span>
 						</div>
-						<span className='text-sm font-bold text-slate-900'>{quest.overallProgress}%</span>
+						<span className='text-sm font-bold text-slate-900'>
+							{quest.overallProgress}%
+						</span>
 					</div>
 					<div className='h-2 bg-slate-200 rounded-full overflow-hidden'>
 						<div
@@ -158,10 +296,9 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 						type='button'
 						onClick={e => {
 							e.stopPropagation()
-							const questId = typeof quest.id === 'string' 
-								? quest.id 
-								: String(quest.id)
-							
+							const questId =
+								typeof quest.id === 'string' ? quest.id : String(quest.id)
+
 							// Сохраняем координаты для зума на карте
 							if (quest.coordinates && quest.coordinates.length === 2) {
 								localStorage.setItem(
@@ -173,7 +310,7 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 									})
 								)
 							}
-							
+
 							window.location.href = `/map?quest=${questId}`
 						}}
 						className='w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors'
@@ -182,11 +319,10 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 						Показать на карте
 					</button>
 				</div>
-				</div>
+			</div>
 
-				{/* Hover эффект */}
-				<div className='absolute inset-0 bg-gradient-to-br from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none' />
+			{/* Hover эффект */}
+			<div className='absolute inset-0 bg-gradient-to-br from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none' />
 		</article>
 	)
 }
-
