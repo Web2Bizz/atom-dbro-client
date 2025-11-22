@@ -8,6 +8,11 @@ export function useFilteredQuests(
 ): Quest[] {
 	return useMemo(() => {
 		return quests.filter(quest => {
+			// Исключаем архивированные квесты из списка на карте
+			if (quest.status === 'archived') {
+				return false
+			}
+
 			// Фильтр по городу
 			if (filters.city && quest.city !== filters.city) {
 				return false
@@ -39,4 +44,3 @@ export function useFilteredQuests(
 		})
 	}, [quests, filters])
 }
-

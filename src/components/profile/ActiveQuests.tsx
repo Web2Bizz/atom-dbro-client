@@ -27,8 +27,11 @@ export function ActiveQuests() {
 	const allQuests = useMemo(() => getAllQuests(apiQuests), [apiQuests])
 
 	// Фильтруем квесты, в которых участвует пользователь
-	const participatingQuests = allQuests.filter(q =>
-		user?.participatingQuests.includes(q.id) ?? false
+	// Исключаем архивированные квесты
+	const participatingQuests = allQuests.filter(
+		q =>
+			(user?.participatingQuests.includes(q.id) ?? false) &&
+			q.status !== 'archived'
 	)
 
 	// Проверка завершения квестов и отправка уведомлений

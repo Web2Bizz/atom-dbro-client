@@ -21,10 +21,15 @@ export function MyQuests() {
 	)
 
 	// Преобразуем квесты с сервера в формат компонентов
+	// Исключаем архивированные квесты из списка в профиле
 	const myQuests = useMemo(() => {
 		console.log('questsResponse', questsResponse)
 		if (!questsResponse?.data?.quests) return []
-		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
+		const allQuests = transformApiQuestsToComponentQuests(
+			questsResponse.data.quests
+		)
+		// Фильтруем архивированные квесты - они должны быть только во вкладке "Архив"
+		return allQuests.filter(quest => quest.status !== 'archived')
 	}, [questsResponse])
 
 	if (isLoading) {
@@ -110,12 +115,52 @@ interface QuestCardProps {
 }
 
 function QuestCard({ quest, onClick }: QuestCardProps) {
-	const progressColor =
-		quest.overallProgress === 100
-			? 'from-green-500 to-emerald-600'
-			: quest.overallProgress >= 50
-			? 'from-orange-500 to-amber-600'
-			: 'from-orange-400 to-orange-500'
+	const isArchived = quest.status === 'archived'
+	const isCompleted = quest.status === 'completed'
+
+	const progressColor = isArchived
+		? 'from-slate-400 to-slate-500'
+		: quest.overallProgress === 100
+		? 'from-green-500 to-emerald-600'
+		: quest.overallProgress >= 50
+		? 'from-orange-500 to-amber-600'
+		: 'from-orange-400 to-orange-500'
+
+	const iconBg = isArchived
+		? 'from-slate-400 to-slate-500'
+		: isCompleted
+		? 'from-green-500 to-emerald-600'
+		: 'from-orange-500 to-amber-600'
+
+	const cityColor = isArchived
+		? 'text-slate-500'
+		: isCompleted
+		? 'text-green-600'
+		: 'text-orange-600'
+
+	const titleHoverColor = isArchived
+		? 'group-hover:text-slate-600'
+		: isCompleted
+		? 'group-hover:text-green-600'
+		: 'group-hover:text-orange-600'
+
+	const borderHoverColor = isArchived
+		? 'hover:border-slate-300'
+		: isCompleted
+		? 'hover:border-green-300'
+		: 'hover:border-orange-300'
+
+	const bgGradient = isArchived
+		? 'from-white to-slate-50/30'
+		: isCompleted
+		? 'from-white to-green-50/30'
+		: 'from-white to-orange-50/30'
+
+	const buttonColor = isArchived
+		? 'text-slate-600 border-slate-200 hover:bg-slate-50'
+		: isCompleted
+		? 'text-green-600 border-green-200 hover:bg-green-50'
+		: 'text-orange-600 border-orange-200 hover:bg-orange-50'
 
 	return (
 		<article
@@ -128,22 +173,28 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 			}}
 			role='button'
 			tabIndex={0}
-			className='group relative p-4 sm:p-6 rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-white to-orange-50/30'
+			className={`group relative p-4 sm:p-6 rounded-xl border border-slate-200 ${borderHoverColor} hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br ${bgGradient}`}
 		>
 			<div className='flex flex-col sm:flex-row items-start gap-4'>
 				{/* Иконка */}
-				<div className='w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0'>
+				<div
+					className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconBg} flex items-center justify-center shadow-lg flex-shrink-0`}
+				>
 					<Target className='h-8 w-8 text-white' />
 				</div>
 
 				<div className='flex-1 min-w-0 w-full'>
 					<div className='flex items-center gap-2 mb-2'>
-						<MapPin className='h-4 w-4 text-orange-600 flex-shrink-0' />
-						<span className='text-xs font-semibold text-orange-600 uppercase tracking-wider'>
+						<MapPin className={`h-4 w-4 ${cityColor} flex-shrink-0`} />
+						<span
+							className={`text-xs font-semibold ${cityColor} uppercase tracking-wider`}
+						>
 							{quest.city}
 						</span>
 					</div>
-					<h3 className='text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors'>
+					<h3
+						className={`text-lg font-bold text-slate-900 mb-2 line-clamp-2 ${titleHoverColor} transition-colors`}
+					>
 						{quest.title}
 					</h3>
 					<p className='text-sm text-slate-600 mb-4 line-clamp-2'>
@@ -194,7 +245,7 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 
 								window.location.href = `/map?quest=${questId}`
 							}}
-							className='flex-1 sm:flex-none text-orange-600 border-orange-200 hover:bg-orange-50'
+							className={`flex-1 sm:flex-none ${buttonColor}`}
 						>
 							<Map className='h-4 w-4 mr-2' />
 							Показать на карте
@@ -202,7 +253,7 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 						<Button
 							variant='outline'
 							size='sm'
-							className='flex-1 sm:flex-none text-orange-600 border-orange-200 hover:bg-orange-50'
+							className={`flex-1 sm:flex-none ${buttonColor}`}
 						>
 							Управлять
 							<ArrowRight className='h-4 w-4 ml-2' />

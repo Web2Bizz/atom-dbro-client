@@ -32,14 +32,16 @@ export function MyQuestsList() {
 	// Преобразуем квесты с сервера в формат компонентов
 	const allQuests = useMemo(() => {
 		if (!questsResponse?.data?.quests) return []
+		console.log(questsResponse.data.quests)
 		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
 	}, [questsResponse])
 
+	console.log(allQuests)
 	// Фильтруем квесты по выбранному фильтру
 	const myQuests = useMemo(() => {
-		if (filter === 'all') return allQuests
 		return allQuests.filter(quest => {
 			// Используем статус из преобразованного квеста, который уже учитывает статус участия пользователя
+			if (filter === 'all') return true // Показываем все квесты, включая архивированные
 			if (filter === 'active') return quest.status === 'active'
 			if (filter === 'completed') return quest.status === 'completed'
 			if (filter === 'archived') return quest.status === 'archived'
@@ -164,9 +166,13 @@ interface QuestCardProps {
 
 function QuestCard({ quest, onClick }: QuestCardProps) {
 	// Определяем цвета в зависимости от статуса квеста
+	const isArchived = quest.status === 'archived'
 	const isCompleted = quest.status === 'completed'
 
-	const progressColor = isCompleted
+	console.log(quest)
+	const progressColor = isArchived
+		? 'from-slate-400 to-slate-500'
+		: isCompleted
 		? 'from-green-500 to-emerald-600'
 		: quest.overallProgress === 100
 		? 'from-green-500 to-emerald-600'
@@ -174,19 +180,33 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 		? 'from-orange-500 to-amber-600'
 		: 'from-orange-400 to-orange-500'
 
-	const headerIconBg = isCompleted
+	const headerIconBg = isArchived
+		? 'from-slate-400 to-slate-500'
+		: isCompleted
 		? 'from-green-500 to-emerald-600'
 		: 'from-orange-500 to-amber-600'
 
-	const cityColor = isCompleted ? 'text-green-600' : 'text-orange-600'
+	const cityColor = isArchived
+		? 'text-slate-500'
+		: isCompleted
+		? 'text-green-600'
+		: 'text-orange-600'
 
-	const titleHoverColor = isCompleted
+	const titleHoverColor = isArchived
+		? 'group-hover:text-slate-600'
+		: isCompleted
 		? 'group-hover:text-green-600'
 		: 'group-hover:text-orange-600'
 
-	const manageTextColor = isCompleted ? 'text-green-600' : 'text-orange-600'
+	const manageTextColor = isArchived
+		? 'text-slate-600'
+		: isCompleted
+		? 'text-green-600'
+		: 'text-orange-600'
 
-	const mapButtonBg = isCompleted
+	const mapButtonBg = isArchived
+		? 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600'
+		: isCompleted
 		? 'bg-green-50 border-green-200 hover:bg-green-100 text-green-600'
 		: 'bg-orange-50 border-orange-200 hover:bg-orange-100 text-orange-600'
 
@@ -228,7 +248,11 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 						<div className='flex-shrink-0'>
 							<div
 								className={`w-12 h-12 rounded-xl bg-gradient-to-br ${headerIconBg} flex items-center justify-center shadow-lg ${
-									isCompleted ? 'shadow-green-500/30' : 'shadow-orange-500/30'
+									isArchived
+										? 'shadow-slate-400/30'
+										: isCompleted
+										? 'shadow-green-500/30'
+										: 'shadow-orange-500/30'
 								}`}
 							>
 								<Target className='h-6 w-6 text-white' />
@@ -313,7 +337,9 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 			{/* Hover эффект */}
 			<div
 				className={`absolute inset-0 bg-gradient-to-br ${
-					isCompleted
+					isArchived
+						? 'from-slate-400/5 to-slate-500/5'
+						: isCompleted
 						? 'from-green-500/5 to-emerald-500/5'
 						: 'from-orange-500/5 to-amber-500/5'
 				} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
