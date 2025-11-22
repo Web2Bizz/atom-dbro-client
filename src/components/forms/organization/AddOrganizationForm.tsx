@@ -3,7 +3,6 @@ import { Form } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/spinner'
 import { useGetCitiesQuery } from '@/store/entities/organization'
 import { useState } from 'react'
-import { DangerZone } from '../shared/DangerZone'
 import { LocationPicker } from '../shared/LocationPicker'
 import { useOrganizationForm } from './hooks/useOrganizationForm'
 import { OrganizationAssistanceSection } from './sections/OrganizationAssistanceSection'
@@ -14,10 +13,12 @@ import { OrganizationLocationSection } from './sections/OrganizationLocationSect
 
 interface AddOrganizationFormProps {
 	onSuccess?: (organizationId: string) => void
+	disableEditMode?: boolean
 }
 
 export function AddOrganizationForm({
 	onSuccess,
+	disableEditMode = false,
 }: Readonly<AddOrganizationFormProps>) {
 	const {
 		form,
@@ -26,8 +27,7 @@ export function AddOrganizationForm({
 		isLoadingOrganization,
 		onSubmit,
 		handleCityChange,
-		handleDelete,
-	} = useOrganizationForm(onSuccess)
+	} = useOrganizationForm(onSuccess, disableEditMode)
 
 	const [showLocationPicker, setShowLocationPicker] = useState(false)
 
@@ -41,7 +41,7 @@ export function AddOrganizationForm({
 	const cityId = form.watch('cityId')
 	const cityName = cityId ? cities.find(c => c.id === cityId)?.name : undefined
 
-	if (isLoadingOrganization) {
+	if (!disableEditMode && isLoadingOrganization) {
 		return (
 			<div className='flex items-center justify-center py-12'>
 				<div className='flex flex-col items-center gap-4'>
@@ -57,16 +57,6 @@ export function AddOrganizationForm({
 	return (
 		<Form {...form}>
 			<form onSubmit={onSubmit} className='space-y-6'>
-				{isEditMode && (
-					<div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
-						<p className='text-sm text-blue-800'>
-							<strong>Режим редактирования:</strong> Вы редактируете свою
-							созданную организацию. Изменения будут сохранены при нажатии
-							"Сохранить изменения".
-						</p>
-					</div>
-				)}
-
 				<OrganizationBasicInfo onCityChange={handleCityChange} />
 
 				<OrganizationAssistanceSection />
@@ -83,24 +73,12 @@ export function AddOrganizationForm({
 					{isSubmitting ? (
 						<div className='flex items-center gap-2'>
 							<Spinner />
-							<span>{isEditMode ? 'Сохранение...' : 'Создание...'}</span>
+							<span>Создание...</span>
 						</div>
 					) : (
-						<span>
-							{isEditMode ? 'Сохранить изменения' : 'Создать организацию'}
-						</span>
+						<span>Создать организацию</span>
 					)}
 				</Button>
-
-				{isEditMode && (
-					<DangerZone
-						title='Опасная зона'
-						description='Удаление организации необратимо. Все данные будут потеряны.'
-						confirmMessage='Вы уверены, что хотите удалить эту организацию?'
-						onDelete={handleDelete}
-						deleteButtonText='Удалить организацию'
-					/>
-				)}
 
 				{showLocationPicker && (
 					<LocationPicker

@@ -1,9 +1,12 @@
-import { MAX_ORGANIZATIONS_PER_USER, MAX_QUESTS_PER_USER } from '@/constants'
 import { AddOrganizationForm, AddQuestForm } from '@/components/forms'
 import { Spinner } from '@/components/ui/spinner'
+import { MAX_ORGANIZATIONS_PER_USER, MAX_QUESTS_PER_USER } from '@/constants'
 import { useUser } from '@/hooks/useUser'
 import { ProtectedRoute } from '@/provider/ProtectedRoute'
-import { useGetOrganizationQuery, useGetOrganizationsQuery } from '@/store/entities/organization'
+import {
+	useGetOrganizationQuery,
+	useGetOrganizationsQuery,
+} from '@/store/entities/organization'
 import { useGetQuestsQuery } from '@/store/entities/quest'
 import { useMemo, useState } from 'react'
 
@@ -17,7 +20,7 @@ export default function AddOrganizationPage() {
 
 	// Загружаем все квесты для подсчета
 	const { data: questsResponse } = useGetQuestsQuery()
-	
+
 	// Загружаем все организации для подсчета
 	const { data: organizations = [] } = useGetOrganizationsQuery()
 
@@ -25,7 +28,8 @@ export default function AddOrganizationPage() {
 	const createdQuestsCount = useMemo(() => {
 		if (!user?.id || !questsResponse?.data?.quests) return 0
 		const userId = Number.parseInt(user.id, 10)
-		return questsResponse.data.quests.filter(quest => quest.ownerId === userId).length
+		return questsResponse.data.quests.filter(quest => quest.ownerId === userId)
+			.length
 	}, [questsResponse, user?.id])
 
 	// Подсчитываем количество созданных организаций пользователем
@@ -33,11 +37,13 @@ export default function AddOrganizationPage() {
 		if (!user?.createdOrganizationId || !organizations.length) return 0
 		// Используем createdOrganizationId для определения созданной организации
 		// Если MAX_ORGANIZATIONS_PER_USER > 1, потребуется изменить структуру User
-		const orgId = typeof user.createdOrganizationId === 'string' 
-			? Number.parseInt(user.createdOrganizationId, 10) 
-			: Number.parseInt(String(user.createdOrganizationId), 10)
+		const orgId =
+			typeof user.createdOrganizationId === 'string'
+				? Number.parseInt(user.createdOrganizationId, 10)
+				: Number.parseInt(String(user.createdOrganizationId), 10)
 		return organizations.filter(org => {
-			const orgIdNum = typeof org.id === 'string' ? Number.parseInt(org.id, 10) : org.id
+			const orgIdNum =
+				typeof org.id === 'string' ? Number.parseInt(org.id, 10) : org.id
 			return orgIdNum === orgId
 		}).length
 	}, [organizations, user?.createdOrganizationId])
@@ -119,7 +125,8 @@ export default function AddOrganizationPage() {
 							Организация
 							{createdOrganizationsCount > 0 && (
 								<span className='ml-2 text-xs opacity-75'>
-									(создано {createdOrganizationsCount}/{MAX_ORGANIZATIONS_PER_USER})
+									(создано {createdOrganizationsCount}/
+									{MAX_ORGANIZATIONS_PER_USER})
 								</span>
 							)}
 						</button>
@@ -144,7 +151,10 @@ export default function AddOrganizationPage() {
 					{/* Форма */}
 					<div className='bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8'>
 						{formType === 'organization' ? (
-							<AddOrganizationForm onSuccess={handleSuccess} />
+							<AddOrganizationForm
+								onSuccess={handleSuccess}
+								disableEditMode={true}
+							/>
 						) : (
 							<AddQuestForm onSuccess={handleSuccess} disableEditMode={true} />
 						)}

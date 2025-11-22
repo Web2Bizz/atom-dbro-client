@@ -25,7 +25,8 @@ import {
 } from '../schemas/organization-form.schema'
 
 export function useOrganizationForm(
-	onSuccess?: (organizationId: string) => void
+	onSuccess?: (organizationId: string) => void,
+	disableEditMode: boolean = false
 ) {
 	const {
 		user,
@@ -36,27 +37,31 @@ export function useOrganizationForm(
 		getUserOrganization: getUserOrgId,
 	} = useUser()
 
-	const existingOrgId = getUserOrgId()
+	const existingOrgId = disableEditMode ? null : getUserOrgId()
 
 	const [forceEditMode, setForceEditMode] = useState<boolean | null>(null)
 
 	const { data: organizationResponse, isLoading: isLoadingOrganization } =
 		useGetOrganizationQuery(existingOrgId || '', {
-			skip: !existingOrgId,
+			skip: !existingOrgId || disableEditMode,
 		})
 
-	const existingOrg = (organizationResponse as unknown as Organization) || null
+	const existingOrg = disableEditMode ? null : ((organizationResponse as unknown as Organization) || null)
 
-	const isEditMode = forceEditMode ?? !!(existingOrgId && existingOrg)
+	const isEditMode = disableEditMode ? false : (forceEditMode ?? !!(existingOrgId && existingOrg))
 
 	useEffect(() => {
+		if (disableEditMode) {
+			setForceEditMode(false)
+			return
+		}
 		if (forceEditMode === null) {
 			const shouldBeEditMode = !!(existingOrgId && existingOrg)
 			setForceEditMode(shouldBeEditMode)
 		} else if (forceEditMode === false && existingOrgId && existingOrg) {
 			setForceEditMode(null)
 		}
-	}, [existingOrg, existingOrgId, forceEditMode])
+	}, [existingOrg, existingOrgId, forceEditMode, disableEditMode])
 
 	const [createOrgMutation, { isLoading: isCreating }] =
 		useCreateOrganizationMutation()
@@ -94,6 +99,7 @@ export function useOrganizationForm(
 	})
 
 	useEffect(() => {
+		if (disableEditMode) return
 		if (existingOrg && !form.formState.isDirty && !isLoadingOrganization) {
 			const organizationTypeId =
 				existingOrg.organizationTypes?.[0]?.id ||
@@ -137,7 +143,7 @@ export function useOrganizationForm(
 				gallery: existingOrg.gallery || [],
 			})
 		}
-	}, [existingOrg, user?.email, form, isLoadingOrganization])
+	}, [existingOrg, user?.email, form, isLoadingOrganization, disableEditMode])
 
 	const onSubmit = async (data: OrganizationFormData) => {
 		if (!isEditMode && !canCreateOrganization()) {
@@ -467,7 +473,7 @@ export function useOrganizationForm(
 		form,
 		isSubmitting,
 		isEditMode,
-		isLoadingOrganization,
+		isLoadingOrganization: disableEditMode ? false : isLoadingOrganization,
 		onSubmit: handleSubmit,
 		handleCityChange,
 		handleDelete,
