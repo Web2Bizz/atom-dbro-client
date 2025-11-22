@@ -5,36 +5,14 @@ import { usePWAInstall } from '@/pwa/usePWAInstall'
 import { logger } from '@/utils/logger'
 import { Download, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 export const Header = () => {
 	const { user } = useUser()
 	const { canInstall, install } = usePWAInstall()
-	const [currentPath, setCurrentPath] = useState(
-		globalThis.location?.pathname || '/'
-	)
+	const location = useLocation()
+	const currentPath = location.pathname
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-	useEffect(() => {
-		const updatePath = () => {
-			setCurrentPath(globalThis.location?.pathname || '/')
-		}
-
-		globalThis.addEventListener('popstate', updatePath)
-
-		const handleClick = () => {
-			setTimeout(updatePath, 100)
-		}
-
-		globalThis.addEventListener('click', handleClick, true)
-
-		const interval = setInterval(updatePath, 200)
-
-		return () => {
-			globalThis.removeEventListener('popstate', updatePath)
-			globalThis.removeEventListener('click', handleClick, true)
-			clearInterval(interval)
-		}
-	}, [])
 
 	// Закрываем мобильное меню при изменении пути
 	useEffect(() => {
@@ -76,9 +54,9 @@ export const Header = () => {
 			<nav className='fixed top-0 left-0 right-0 h-[72px] border-b border-black/8 bg-white/98 backdrop-blur-xl shadow-sm z-40'>
 				<div className='flex h-full  items-center justify-between gap-4 px-4 sm:px-6 md:px-12'>
 					{/* Логотип */}
-					<a href='/' className='shrink-0'>
+					<Link to='/' className='shrink-0'>
 						<img src='/logo.png' alt='Росатом - добро' className='h-20' />
-					</a>
+					</Link>
 
 					{/* Десктопная навигация */}
 					<div className='hidden lg:flex items-center gap-4'>
@@ -86,9 +64,9 @@ export const Header = () => {
 							{navLinks.map(link => {
 								const active = isActive(link.href)
 								return (
-									<a
+									<Link
 										key={link.href}
-										href={link.href}
+										to={link.href}
 										className={`relative rounded-xl px-4 xl:px-5 py-2.5 text-sm font-medium transition-all ${
 											active
 												? 'bg-sky-500/12 text-sky-600 font-semibold'
@@ -99,7 +77,7 @@ export const Header = () => {
 										{active && (
 											<span className='absolute -bottom-px left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-t-full bg-sky-500' />
 										)}
-									</a>
+									</Link>
 								)
 							})}
 						</div>
@@ -119,7 +97,7 @@ export const Header = () => {
 								<NotificationBell />
 							) : (
 								<Button asChild variant='outline' size='sm'>
-									<a href='/login'>Войти</a>
+									<Link to='/login'>Войти</Link>
 								</Button>
 							)}
 						</div>
@@ -152,9 +130,9 @@ export const Header = () => {
 							{navLinks.map(link => {
 								const active = isActive(link.href)
 								return (
-									<a
+									<Link
 										key={link.href}
-										href={link.href}
+										to={link.href}
 										className={`rounded-xl px-4 py-3 text-base font-medium transition-all ${
 											active
 												? 'bg-sky-500/12 text-sky-600 font-semibold'
@@ -162,7 +140,7 @@ export const Header = () => {
 										}`}
 									>
 										{link.label}
-									</a>
+									</Link>
 								)
 							})}
 							{canInstall && (
@@ -178,7 +156,7 @@ export const Header = () => {
 							{!user && (
 								<div className='pt-2 border-t border-slate-200 mt-2'>
 									<Button asChild variant='outline' className='w-full'>
-										<a href='/login'>Войти</a>
+										<Link to='/login'>Войти</Link>
 									</Button>
 								</div>
 							)}

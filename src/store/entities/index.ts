@@ -59,7 +59,6 @@ export type {
 	CreateOrganizationRequest,
 	CreateOrganizationResponse,
 	DeleteOrganizationResponse,
-	OrganizationResponse,
 	OrganizationsListResponse,
 	UpdateOrganizationRequest,
 	UpdateOrganizationResponse,

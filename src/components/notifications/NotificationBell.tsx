@@ -131,16 +131,24 @@ export function NotificationBell() {
 													{formatShortDate(notification.createdAt)}
 												</p>
 											</div>
-											<button
-												type='button'
+											<div
 												onClick={e => {
 													e.stopPropagation()
 													clearNotification(notification.id)
 												}}
-												className='shrink-0 p-1 rounded hover:bg-slate-200 transition-colors'
+												onKeyDown={e => {
+													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault()
+														e.stopPropagation()
+														clearNotification(notification.id)
+													}
+												}}
+												role='button'
+												tabIndex={0}
+												className='shrink-0 p-1 rounded hover:bg-slate-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1'
 											>
 												<X className='h-3 w-3 text-slate-400' />
-											</button>
+											</div>
 										</div>
 									</button>
 								))}
