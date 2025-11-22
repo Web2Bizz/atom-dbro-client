@@ -3,18 +3,14 @@ import { Spinner } from '@/components/ui/spinner'
 import { MAX_ORGANIZATIONS_PER_USER, MAX_QUESTS_PER_USER } from '@/constants'
 import { useUser } from '@/hooks/useUser'
 import { ProtectedRoute } from '@/provider/ProtectedRoute'
-import {
-	useGetOrganizationQuery,
-	useGetOrganizationsQuery,
-} from '@/store/entities/organization'
+import { useGetOrganizationsQuery } from '@/store/entities/organization'
 import { useGetQuestsQuery } from '@/store/entities/quest'
 import { useMemo, useState } from 'react'
 
 type FormType = 'quest' | 'organization'
 
 export default function AddOrganizationPage() {
-	const { canCreateQuest, canCreateOrganization, getUserOrganization, user } =
-		useUser()
+	const { user } = useUser()
 	const [formType, setFormType] = useState<FormType>('organization')
 	const [isRedirecting, setIsRedirecting] = useState(false)
 
@@ -24,12 +20,13 @@ export default function AddOrganizationPage() {
 	// Загружаем все организации для подсчета
 	const { data: organizations = [] } = useGetOrganizationsQuery()
 
-	// Подсчитываем количество созданных квестов пользователем
+	// Подсчитываем количество созданных квестов пользователем (исключая архивированные)
 	const createdQuestsCount = useMemo(() => {
 		if (!user?.id || !questsResponse?.data?.quests) return 0
 		const userId = Number.parseInt(user.id, 10)
-		return questsResponse.data.quests.filter(quest => quest.ownerId === userId)
-			.length
+		return questsResponse.data.quests.filter(
+			quest => quest.ownerId === userId && quest.status !== 'archived'
+		).length
 	}, [questsResponse, user?.id])
 
 	// Подсчитываем количество созданных организаций пользователем
@@ -47,31 +44,6 @@ export default function AddOrganizationPage() {
 			return orgIdNum === orgId
 		}).length
 	}, [organizations, user?.createdOrganizationId])
-
-	// Получаем ID организации пользователя
-	const userOrgId = getUserOrganization()
-
-	// Проверяем существование организации через API
-	const { data: organizationData } = useGetOrganizationQuery(userOrgId || '', {
-		skip: !userOrgId,
-	})
-
-	// Определяем, действительно ли организация существует
-	const hasOrganization = useMemo(() => {
-		if (!userOrgId) return false
-		// Если организация не найдена в API, значит она была удалена
-		return !!organizationData
-	}, [userOrgId, organizationData])
-
-	// Используем проверку через API, если есть ID, иначе через локальное состояние
-	const canCreateOrg = useMemo(() => {
-		if (!userOrgId) {
-			// Если нет ID, используем стандартную проверку
-			return canCreateOrganization()
-		}
-		// Если есть ID, проверяем через API
-		return !hasOrganization
-	}, [userOrgId, hasOrganization, canCreateOrganization])
 
 	const handleSuccess = () => {
 		// Показываем loader и перенаправляем на карту после успешного создания
@@ -156,7 +128,7 @@ export default function AddOrganizationPage() {
 								disableEditMode={true}
 							/>
 						) : (
-							<AddQuestForm onSuccess={handleSuccess} disableEditMode={true} />
+							<AddQuestForm onSuccess={handleSuccess} />
 						)}
 					</div>
 				</div>

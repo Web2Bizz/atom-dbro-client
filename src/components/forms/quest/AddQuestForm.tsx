@@ -13,17 +13,13 @@ import { QuestStagesSection } from './sections/QuestStagesSection'
 
 interface AddQuestFormProps {
 	onSuccess?: (questId: string) => void
-	disableEditMode?: boolean // Отключает режим редактирования
 }
 
 type FormStep = 'basic' | 'stages' | 'updates'
 
-export function AddQuestForm({
-	onSuccess,
-	disableEditMode = false,
-}: Readonly<AddQuestFormProps>) {
-	const { form, isSubmitting, isLoadingQuest, onSubmit, handleCityChange } =
-		useQuestForm(onSuccess, disableEditMode)
+export function AddQuestForm({ onSuccess }: Readonly<AddQuestFormProps>) {
+	const { form, isSubmitting, onSubmit, handleCityChange } =
+		useQuestForm(onSuccess)
 
 	const [showLocationPicker, setShowLocationPicker] = useState(false)
 	const [currentStep, setCurrentStep] = useState<FormStep>('basic')
@@ -44,18 +40,6 @@ export function AddQuestForm({
 	const latitude = form.watch('latitude')
 	const longitude = form.watch('longitude')
 	const city = cities.find(c => c.id === cityId)
-
-	// Не показываем загрузку, если режим редактирования отключен
-	if (isLoadingQuest && !disableEditMode) {
-		return (
-			<div className='flex items-center justify-center py-12'>
-				<div className='flex flex-col items-center gap-4'>
-					<Spinner />
-					<p className='text-sm text-slate-600'>Загрузка данных квеста...</p>
-				</div>
-			</div>
-		)
-	}
 
 	return (
 		<>
