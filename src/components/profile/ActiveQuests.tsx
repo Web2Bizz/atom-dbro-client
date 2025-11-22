@@ -173,16 +173,16 @@ export function ActiveQuests() {
 													{quest.type}
 												</span>
 											</div>
-											<h3 className='text-base sm:text-lg font-bold text-slate-900 mb-1 line-clamp-2'>
+											<h3 className='text-base sm:text-lg font-bold text-slate-900 mb-1 line-clamp-2 break-words'>
 												{quest.title}
 											</h3>
 											{quest.customAchievement && (
 												<div className='mb-2'>
 													<span
-														className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200'
+														className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200 shrink-0 whitespace-nowrap'
 														title={`Достижение: ${quest.customAchievement.title} - ${quest.customAchievement.description}`}
 													>
-														<span>Есть достижение</span>
+														🏆 Есть достижение
 													</span>
 												</div>
 											)}

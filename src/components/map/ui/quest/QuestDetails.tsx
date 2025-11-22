@@ -377,15 +377,15 @@ export function QuestDetails({
 										{quest.city} • {quest.type}
 									</p>
 									<div className='flex items-start justify-between gap-3 mb-2'>
-										<h2 className='text-2xl font-bold text-slate-900 m-0 flex-1'>
+										<h2 className='text-2xl font-bold text-slate-900 m-0 flex-1 min-w-0 break-words'>
 											{quest.title}
 										</h2>
 										{quest.customAchievement && (
 											<span
-												className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold border border-amber-200 shadow-sm shrink-0'
+												className='inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold border border-amber-200 shadow-sm shrink-0 whitespace-nowrap'
 												title={`Достижение: ${quest.customAchievement.title} - ${quest.customAchievement.description}`}
 											>
-												<span>Есть достижение</span>
+												🏆 Есть достижение
 											</span>
 										)}
 									</div>

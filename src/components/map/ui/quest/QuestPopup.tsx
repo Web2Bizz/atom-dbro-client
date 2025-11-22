@@ -9,16 +9,16 @@ export function QuestPopup({ quest, onSelect }: QuestPopupProps) {
 	return (
 		<div className='popup-content grid max-w-[280px] gap-3'>
 			<div>
-				<div className='flex items-center justify-between gap-2 mb-1'>
-					<h3 className='m-0 text-base font-bold text-slate-900'>
+				<div className='flex items-start gap-2 mb-1'>
+					<h3 className='m-0 text-base font-bold text-slate-900 flex-1 min-w-0 line-clamp-2 break-words'>
 						{quest.title}
 					</h3>
 					{quest.customAchievement && (
 						<span
-							className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200 shrink-0'
+							className='inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium border border-amber-200 shrink-0 whitespace-nowrap'
 							title={`Достижение: ${quest.customAchievement.title}`}
 						>
-							<span>Есть достижение</span>
+							🏆
 						</span>
 					)}
 				</div>
