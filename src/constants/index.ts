@@ -15,5 +15,5 @@ export const NOTIFICATION_MAX_COUNT = 50
 export const QUICK_DONATION_AMOUNTS = [200, 500, 1000, 2000, 5000] as const
 
 // Максимальное количество квестов и организаций, которые может создать пользователь
-export const MAX_QUESTS_PER_USER = 2
+export const MAX_QUESTS_PER_USER = 5
 export const MAX_ORGANIZATIONS_PER_USER = 1

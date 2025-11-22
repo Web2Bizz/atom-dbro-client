@@ -1,9 +1,14 @@
+import {
+	organizationFormSchema,
+	type OrganizationFormData,
+} from '@/components/forms/organization/schemas/organization-form.schema'
+import type { Organization } from '@/components/map/types/types'
 import { useUser } from '@/hooks/useUser'
 import {
 	useDeleteOrganizationMutation,
+	useGetCitiesQuery,
 	useGetOrganizationQuery,
 	useUpdateOrganizationMutation,
-	useGetCitiesQuery,
 	useUploadImagesMutation,
 	type CityResponse,
 } from '@/store/entities/organization'
@@ -11,11 +16,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import {
-	organizationFormSchema,
-	type OrganizationFormData,
-} from '@/components/forms/organization/schemas/organization-form.schema'
-import type { Organization } from '@/components/map/types/types'
 
 export function useOrganizationEditForm(
 	organizationId: string,
@@ -88,7 +88,7 @@ export function useOrganizationEditForm(
 
 			form.reset({
 				name: existingOrg.name || '',
-				cityId: existingOrg.city?.id || existingOrg.cityId || 0,
+				cityId: existingOrg.city?.id || 0,
 				organizationTypeId,
 				helpTypeIds:
 					existingOrg.helpTypes?.map(ht => ht.id) ||
@@ -98,20 +98,18 @@ export function useOrganizationEditForm(
 				summary: existingOrg.summary || '',
 				description: existingOrg.description || '',
 				mission: existingOrg.mission || '',
-				goals: existingOrg.goals && existingOrg.goals.length > 0
-					? existingOrg.goals
-					: [''],
-				needs: existingOrg.needs && existingOrg.needs.length > 0
-					? existingOrg.needs
-					: [''],
+				goals:
+					existingOrg.goals && existingOrg.goals.length > 0
+						? existingOrg.goals
+						: [''],
+				needs:
+					existingOrg.needs && existingOrg.needs.length > 0
+						? existingOrg.needs
+						: [''],
 				address: existingOrg.address || '',
 				contacts: contactsToLoad,
-				latitude:
-					existingOrg.latitude?.toString() ||
-					(existingOrg.coordinates?.[0]?.toString() || ''),
-				longitude:
-					existingOrg.longitude?.toString() ||
-					(existingOrg.coordinates?.[1]?.toString() || ''),
+				latitude: existingOrg.latitude?.toString() || '',
+				longitude: existingOrg.longitude?.toString() || '',
 				gallery: existingOrg.gallery || [],
 			})
 		}
@@ -321,10 +319,7 @@ export function useOrganizationEditForm(
 	}
 
 	const isSubmitting =
-		isUpdating ||
-		isDeleting ||
-		isUploadingImages ||
-		form.formState.isSubmitting
+		isUpdating || isDeleting || isUploadingImages || form.formState.isSubmitting
 
 	return {
 		form,
@@ -335,4 +330,3 @@ export function useOrganizationEditForm(
 		handleDelete,
 	}
 }
-

@@ -1,7 +1,6 @@
 import type {
 	CreateQuestRequest,
 	Quest,
-	QuestAchievement,
 	QuestContact,
 	QuestStep,
 	UpdateQuestRequest,

@@ -112,16 +112,27 @@ export const MapComponent = () => {
 				urlProcessedRef.current = true
 				handleSelectOrganization(org)
 				// Устанавливаем зум на координаты организации
-				if (org.coordinates && org.coordinates.length === 2) {
-					setSearchCenter([org.coordinates[0], org.coordinates[1]])
-					setSearchZoom(15)
+				if (org.latitude && org.longitude) {
+					const lat = Number.parseFloat(org.latitude)
+					const lng = Number.parseFloat(org.longitude)
+					if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+						setSearchCenter([lat, lng])
+						setSearchZoom(15)
+					}
 				}
 			}
 		} else if (!questId && !orgId) {
 			// Если нет параметров в URL, помечаем как обработанное
 			urlProcessedRef.current = true
 		}
-	}, [allQuests, allOrganizations, handleSelectQuest, handleSelectOrganization, setSearchCenter, setSearchZoom])
+	}, [
+		allQuests,
+		allOrganizations,
+		handleSelectQuest,
+		handleSelectOrganization,
+		setSearchCenter,
+		setSearchZoom,
+	])
 
 	// Обработка зума на созданную точку
 	useEffect(() => {
@@ -145,16 +156,16 @@ export const MapComponent = () => {
 
 	// Объединяем данные для поиска с учетом фильтра по типу меток
 	const searchItems = useMemo(() => {
-		const questItems = 
-			(filters.markerType === 'all' || filters.markerType === 'quests')
+		const questItems =
+			filters.markerType === 'all' || filters.markerType === 'quests'
 				? filteredQuests.map(q => ({
 						...q,
 						isQuest: true as const,
 				  }))
 				: []
 
-		const orgItems = 
-			(filters.markerType === 'all' || filters.markerType === 'organizations')
+		const orgItems =
+			filters.markerType === 'all' || filters.markerType === 'organizations'
 				? filteredOrganizations.map(o => ({
 						...o,
 						isQuest: false as const,
@@ -172,8 +183,16 @@ export const MapComponent = () => {
 	return (
 		<div className='relative w-full h-full'>
 			<UnifiedMapView
-				quests={filters.markerType === 'all' || filters.markerType === 'quests' ? filteredQuests : []}
-				organizations={filters.markerType === 'all' || filters.markerType === 'organizations' ? filteredOrganizations : []}
+				quests={
+					filters.markerType === 'all' || filters.markerType === 'quests'
+						? filteredQuests
+						: []
+				}
+				organizations={
+					filters.markerType === 'all' || filters.markerType === 'organizations'
+						? filteredOrganizations
+						: []
+				}
 				onSelectQuest={handleSelectQuest}
 				onSelectOrganization={handleSelectOrganization}
 				onMarkerClick={handleMarkerClick}
@@ -202,10 +221,20 @@ export const MapComponent = () => {
 				cities={allCities}
 				types={allTypes}
 				helpTypes={helpTypes}
-				quests={filters.markerType === 'all' || filters.markerType === 'quests' ? filteredQuests : []}
-				organizations={filters.markerType === 'all' || filters.markerType === 'organizations' ? filteredOrganizations : []}
+				quests={
+					filters.markerType === 'all' || filters.markerType === 'quests'
+						? filteredQuests
+						: []
+				}
+				organizations={
+					filters.markerType === 'all' || filters.markerType === 'organizations'
+						? filteredOrganizations
+						: []
+				}
 				activeQuestId={selectedQuest?.id}
-				activeOrgId={selectedOrganization?.id ? String(selectedOrganization.id) : undefined}
+				activeOrgId={
+					selectedOrganization?.id ? String(selectedOrganization.id) : undefined
+				}
 				onToggleFilters={handleToggleFilters}
 				onToggleList={handleToggleList}
 				onFiltersChange={setFilters}

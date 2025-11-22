@@ -23,7 +23,6 @@ export function AddOrganizationForm({
 	const {
 		form,
 		isSubmitting,
-		isEditMode,
 		isLoadingOrganization,
 		onSubmit,
 		handleCityChange,
