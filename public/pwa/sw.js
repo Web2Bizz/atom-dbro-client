@@ -2,7 +2,7 @@
  * Версия кэша автоматически обновляется при каждой сборке через Vite плагин.
  * Не нужно обновлять вручную - версия генерируется на основе timestamp сборки.
  */
-const CACHE_VERSION = 'v20251122.122901' // Автоматически заменяется при сборке
+const CACHE_VERSION = 'v20251122.134031' // Автоматически заменяется при сборке
 const CACHE_NAME = `atom-dobro-cache-${CACHE_VERSION}`
 const urlsToCache = ['/', '/pwa/manifest.json']
 
@@ -118,9 +118,6 @@ self.addEventListener('message', event => {
 	}
 })
 
-// Периодическая проверка обновлений (каждые 60 секунд)
-setInterval(() => {
-	self.registration.update().catch(error => {
-		console.error('[SW] Update check failed:', error)
-	})
-}, 60000)
+// Периодическая проверка обновлений отключена
+// Проверка обновлений выполняется только по запросу от клиента через PWAContext
+// Это предотвращает превышение лимита самообновления Service Worker

@@ -58,16 +58,35 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
 						updateViaCache: 'none', // Всегда проверяем обновления
 					})
 					setRegistration(registration)
-					if (import.meta.env.DEV) {
-						console.log('[PWA] Service Worker registered: ', registration)
-					}
 
-					// Функция для проверки обновлений
+					// Функция для проверки обновлений с защитой от частых вызовов
+					let lastUpdateCheck = 0
+					const MIN_UPDATE_INTERVAL = 60000 // Минимум 1 минута между проверками
 					const checkForUpdates = async () => {
 						if (registration) {
+							const now = Date.now()
+							// Защита от слишком частых проверок
+							if (now - lastUpdateCheck < MIN_UPDATE_INTERVAL) {
+								return
+							}
+							lastUpdateCheck = now
+
 							try {
 								await registration.update()
 							} catch (error) {
+								// Игнорируем ошибки превышения лимита обновлений
+								if (
+									error instanceof Error &&
+									error.name === 'AbortError' &&
+									error.message.includes('self-update limit exceeded')
+								) {
+									if (import.meta.env.DEV) {
+										console.warn(
+											'[PWA] Update check skipped: self-update limit exceeded'
+										)
+									}
+									return
+								}
 								if (import.meta.env.DEV) {
 									console.error('[PWA] Update check failed:', error)
 								}
@@ -114,8 +133,9 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
 					// Проверка обновлений при установке
 					registration.addEventListener('updatefound', handleUpdateFound)
 
-					// Периодическая проверка обновлений (каждые 5 минут)
-					updateInterval = setInterval(checkForUpdates, 5 * 60 * 1000)
+					// Периодическая проверка обновлений (каждые 10 минут)
+					// Увеличен интервал, чтобы избежать превышения лимита обновлений
+					updateInterval = setInterval(checkForUpdates, 10 * 60 * 1000)
 
 					// Проверка обновлений при фокусе на окне
 					handleFocus = () => {

@@ -55,7 +55,8 @@ export function QuestUpdateForm({
 		useUpdateQuestUpdateMutation()
 
 	const form = useForm<QuestUpdateFormData>({
-		resolver: zodResolver(questUpdateSchema),
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		resolver: zodResolver(questUpdateSchema) as any,
 		defaultValues: {
 			title: '',
 			text: '',
