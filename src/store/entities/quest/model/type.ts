@@ -20,9 +20,30 @@ export interface QuestContact {
 
 // Достижение для квеста
 export interface QuestAchievement {
+	id?: number
 	title: string
 	description: string
-	icon: string
+	icon?: string
+}
+
+// Владелец квеста
+export interface QuestOwner {
+	id: number
+	firstName: string
+	lastName: string
+	email: string
+}
+
+// Город квеста
+export interface QuestCity {
+	id: number
+	name: string
+}
+
+// Тип организации квеста
+export interface QuestOrganizationType {
+	id: number
+	name: string
 }
 
 // Требование для шага квеста
@@ -86,11 +107,12 @@ export interface Quest {
 	description: string
 	status: 'active' | 'completed' | 'archived'
 	experienceReward: number
-	achievement: QuestAchievement
+	achievementId: number | null
+	ownerId: number
 	cityId: number
 	organizationTypeId: number
-	latitude: number
-	longitude: number
+	latitude: string // Приходит как строка с сервера
+	longitude: string // Приходит как строка с сервера
 	address: string
 	contacts: QuestContact[]
 	coverImage?: string
@@ -99,13 +121,18 @@ export interface Quest {
 	categories: Category[]
 	createdAt?: string
 	updatedAt?: string
+	// Дополнительные поля, которые приходят с сервера
+	achievement?: QuestAchievement | null
+	owner?: QuestOwner
+	city?: QuestCity
+	organizationType?: QuestOrganizationType
 }
 
 export interface Category {
 	id: number
 	name: string
-	createdAt: string
-	updatedAt: string
+	createdAt?: string
+	updatedAt?: string
 }
 
 // Типы для ответов API

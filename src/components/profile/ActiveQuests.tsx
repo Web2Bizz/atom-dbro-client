@@ -1,11 +1,12 @@
-import { quests as baseQuests } from '@/components/map/data/quests'
 import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { getAllQuests } from '@/utils/userData'
+import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { ArrowRight, Clock } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 
 export function ActiveQuests() {
@@ -13,8 +14,17 @@ export function ActiveQuests() {
 	const { checkQuestCompletion } = useQuestActions()
 	const { addNotification } = useNotifications()
 
+	// Загружаем квесты с сервера
+	const { data: questsResponse } = useGetQuestsQuery()
+
+	// Преобразуем квесты с сервера в формат компонентов
+	const apiQuests = useMemo(() => {
+		if (!questsResponse?.data?.quests) return []
+		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
+	}, [questsResponse])
+
 	// Получаем все квесты (включая созданные пользователями)
-	const allQuests = getAllQuests(baseQuests)
+	const allQuests = useMemo(() => getAllQuests(apiQuests), [apiQuests])
 
 	// Фильтруем квесты, в которых участвует пользователь
 	const participatingQuests = allQuests.filter(q =>

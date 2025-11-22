@@ -4,9 +4,10 @@ import {
 	useGetOrganizationTypesQuery,
 	useGetOrganizationsQuery,
 } from '@/store/entities/organization'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { getAllOrganizations, getAllQuests } from '@/utils/userData'
+import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { useEffect, useMemo, useState } from 'react'
-import { quests as baseQuests, questCities } from '../../data/quests'
 import { useFilteredOrganizations } from '../../hooks/useFilteredOrganizations'
 import { useFilteredQuests } from '../../hooks/useFilteredQuests'
 import type { Quest } from '../../types/quest-types'
@@ -46,6 +47,13 @@ export function useMapState() {
 		isLoading: isLoadingOrganizations,
 		error: organizationsError,
 	} = useGetOrganizationsQuery()
+
+	// Загружаем квесты с сервера
+	const {
+		data: questsResponse,
+		isLoading: isLoadingQuests,
+		error: questsError,
+	} = useGetQuestsQuery()
 
 	// Загружаем города с сервера
 	const { data: citiesData = [] } = useGetCitiesQuery()
@@ -151,8 +159,14 @@ export function useMapState() {
 		})
 	}, [organizationsResponse])
 
-	// Объединяем базовые данные с созданными пользователями
-	const allQuests = useMemo(() => getAllQuests(baseQuests), [])
+	// Преобразуем квесты с сервера в формат компонентов
+	const apiQuests = useMemo(() => {
+		if (!questsResponse?.data?.quests) return []
+		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
+	}, [questsResponse])
+
+	// Объединяем квесты с сервера с созданными пользователями
+	const allQuests = useMemo(() => getAllQuests(apiQuests), [apiQuests])
 
 	// Используем организации из API вместо mock данных
 	// getAllOrganizations может добавить организации, созданные пользователем локально
@@ -169,14 +183,16 @@ export function useMapState() {
 		filters
 	)
 
-	// Объединяем города из API и локальных данных квестов
+	// Объединяем города из API и квестов с сервера
 	const allCities = useMemo(() => {
 		// Получаем названия городов из API
 		const apiCities = citiesData.map(city => city.name)
-		// Объединяем с городами из квестов
-		const allCitiesList = Array.from(new Set([...questCities, ...apiCities]))
+		// Получаем города из квестов с сервера
+		const questCitiesFromApi = apiQuests.map(quest => quest.city).filter(Boolean)
+		// Объединяем все города
+		const allCitiesList = Array.from(new Set([...apiCities, ...questCitiesFromApi]))
 		return allCitiesList.sort((a, b) => a.localeCompare(b))
-	}, [citiesData])
+	}, [citiesData, apiQuests])
 
 	// Получаем типы организаций из API (без объединения с типами квестов)
 	const allTypes = useMemo(() => {
@@ -221,6 +237,8 @@ export function useMapState() {
 		helpTypes: helpTypesData,
 		// Loading states
 		isLoadingOrganizations,
+		isLoadingQuests,
 		organizationsError,
+		questsError,
 	}
 }

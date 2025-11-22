@@ -75,6 +75,36 @@ export const questService = createApi({
 				const queryString = searchParams.toString()
 				return queryString ? `/quests?${queryString}` : '/quests'
 			},
+			transformResponse: (
+				response: Quest[] | QuestsListResponse
+			): QuestsListResponse => {
+				// Обрабатываем оба формата ответа: массив или объект с data
+				if (Array.isArray(response)) {
+					return {
+						data: {
+							quests: response,
+						},
+					}
+				}
+				// Если ответ уже в формате QuestsListResponse
+				if (response.data && Array.isArray(response.data.quests)) {
+					return response
+				}
+				// Если ответ в формате { data: Quest[] }
+				if (response.data && Array.isArray(response.data)) {
+					return {
+						data: {
+							quests: response.data as Quest[],
+						},
+					}
+				}
+				// Возвращаем пустой массив по умолчанию
+				return {
+					data: {
+						quests: [],
+					},
+				}
+			},
 			providesTags: ['QuestList'],
 		}),
 

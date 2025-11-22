@@ -1,7 +1,9 @@
 import { Calendar, Heart, Users } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
-import { quests } from '@/components/map/data/quests'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { formatDateTime } from '@/utils/format'
+import { transformApiQuestsToComponentQuests } from '@/utils/quest'
+import { useMemo } from 'react'
 import type { QuestContribution } from '@/types/user'
 
 // Моковые данные для демонстрации
@@ -24,6 +26,15 @@ const mockContributions: QuestContribution[] = [
 
 export function ContributionHistory() {
 	const { user } = useUser()
+
+	// Загружаем квесты с сервера
+	const { data: questsResponse } = useGetQuestsQuery()
+
+	// Преобразуем квесты с сервера в формат компонентов
+	const quests = useMemo(() => {
+		if (!questsResponse?.data?.quests) return []
+		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
+	}, [questsResponse])
 
 	if (!user) {
 		return null

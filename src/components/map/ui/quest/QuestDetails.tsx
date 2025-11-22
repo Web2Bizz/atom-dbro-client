@@ -132,7 +132,7 @@ export function QuestDetails({
 	const questId = quest?.id ? Number(quest.id) : undefined
 	const { data: questUpdates = [], isLoading: isLoadingUpdates } =
 		useGetQuestUpdatesQuery(questId!, {
-			skip: !questId || activeTab !== 'updates',
+			skip: !questId,
 		})
 
 	const isParticipating =
@@ -517,7 +517,7 @@ export function QuestDetails({
 												: 'border-transparent text-slate-500 hover:text-slate-700'
 										}`}
 									>
-										Обновления ({quest.updates.length})
+										Обновления ({questUpdates.length})
 									</button>
 								</div>
 							</div>
