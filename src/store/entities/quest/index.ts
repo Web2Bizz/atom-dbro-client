@@ -8,6 +8,12 @@ export {
 	useUpdateQuestMutation,
 	useDeleteQuestMutation,
 	useJoinQuestMutation,
+	useCreateQuestUpdateMutation,
+	useGetQuestUpdateQuery,
+	useLazyGetQuestUpdateQuery,
+	useGetQuestUpdatesQuery,
+	useLazyGetQuestUpdatesQuery,
+	useUpdateQuestUpdateMutation,
 } from './model/quest-service'
 export type * from './model/type'
 

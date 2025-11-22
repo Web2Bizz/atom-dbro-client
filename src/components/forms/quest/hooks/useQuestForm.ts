@@ -105,7 +105,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 					deadline: undefined,
 				},
 			],
-			updates: [],
 			customAchievement: undefined,
 			curatorName: user?.name || '',
 			curatorPhone: '',
@@ -515,7 +514,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 					},
 				],
 				customAchievement: undefined,
-				updates: [],
 				curatorName: user?.name || '',
 				curatorPhone: '',
 				curatorEmail: '',
@@ -588,5 +586,6 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 		onSubmit: handleSubmit,
 		handleCityChange,
 		handleDelete,
+		questId: existingQuest?.id,
 	}
 }

@@ -145,3 +145,35 @@ export interface JoinQuestResponse {
 		quest: Quest
 	}
 }
+
+// Типы для обновлений квеста
+export interface QuestUpdate {
+	id: number
+	questId: number
+	title: string
+	text: string
+	photos: string[]
+	createdAt?: string
+	updatedAt?: string
+}
+
+export interface CreateQuestUpdateRequest {
+	questId: number
+	title: string
+	text: string
+	photos: string[]
+}
+
+export interface UpdateQuestUpdateRequest {
+	questId?: number
+	title?: string
+	text?: string
+	photos?: string[]
+}
+
+export interface QuestUpdateResponse {
+	data: {
+		update: QuestUpdate
+		message?: string
+	}
+}

@@ -292,7 +292,6 @@ export function transformApiResponseToFormData(
 		latitude: quest.latitude.toString(),
 		longitude: quest.longitude.toString(),
 		stages,
-		updates: [], // API не возвращает updates
 		customAchievement,
 		curatorName: curatorContact?.value || '',
 		curatorPhone: phoneContact?.value || '',

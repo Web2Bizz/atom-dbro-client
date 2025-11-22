@@ -3,13 +3,17 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type {
 	CreateQuestRequest,
 	CreateQuestResponse,
+	CreateQuestUpdateRequest,
 	DeleteQuestResponse,
 	GetQuestsParams,
 	JoinQuestResponse,
 	Quest,
+	QuestUpdate,
+	QuestUpdateResponse,
 	QuestsListResponse,
 	UpdateQuestRequest,
 	UpdateQuestResponse,
+	UpdateQuestUpdateRequest,
 } from './type'
 
 // Функция для получения токена из localStorage
@@ -32,7 +36,7 @@ export const questService = createApi({
 			return headers
 		},
 	}),
-	tagTypes: ['Quest', 'QuestList'],
+	tagTypes: ['Quest', 'QuestList', 'QuestUpdate'],
 	endpoints: builder => ({
 		// GET /quests - Получить список квестов с фильтрацией
 		getQuests: builder.query<QuestsListResponse, GetQuestsParams | void>({
@@ -134,6 +138,68 @@ export const questService = createApi({
 				{ type: 'Quest', id: String(id) },
 			],
 		}),
+
+		// POST /api/v1/quest-updates - Создать обновление квеста
+		createQuestUpdate: builder.mutation<
+			QuestUpdateResponse,
+			CreateQuestUpdateRequest
+		>({
+			query: body => ({
+				url: '/quest-updates',
+				method: 'POST',
+				body,
+			}),
+			invalidatesTags: (_result, _error, { questId }) => [
+				{ type: 'Quest', id: String(questId) },
+				'QuestUpdate',
+			],
+		}),
+
+		// GET /api/v1/quest-updates/:id - Получить обновление квеста
+		getQuestUpdate: builder.query<QuestUpdate, number | string>({
+			query: id => `/quest-updates/${id}`,
+			providesTags: (_result, _error, id) => [
+				{ type: 'QuestUpdate', id: String(id) },
+			],
+		}),
+
+		// GET /api/v1/quest-updates?questId=... - Получить все обновления квеста
+		getQuestUpdates: builder.query<QuestUpdate[], number | string>({
+			query: questId => `/quest-updates?questId=${questId}`,
+			transformResponse: (
+				response: { data?: QuestUpdate[] } | QuestUpdate[]
+			) => {
+				// Обрабатываем оба формата ответа: { data: [...] } или [...]
+				if (Array.isArray(response)) {
+					return response
+				}
+				return response.data || []
+			},
+			providesTags: (_result, _error, questId) => [
+				{ type: 'QuestUpdate', id: `list-${questId}` },
+			],
+		}),
+
+		// PATCH /api/v1/quest-updates/:id - Обновить обновление квеста
+		updateQuestUpdate: builder.mutation<
+			QuestUpdateResponse,
+			{ id: number | string; data: UpdateQuestUpdateRequest }
+		>({
+			query: ({ id, data }) => ({
+				url: `/quest-updates/${id}`,
+				method: 'PATCH',
+				body: data,
+			}),
+			invalidatesTags: (_result, _error, { id, data }) => {
+				const tags: Array<
+					{ type: 'QuestUpdate'; id: string } | { type: 'Quest'; id: string }
+				> = [{ type: 'QuestUpdate', id: String(id) }]
+				if (data.questId) {
+					tags.push({ type: 'Quest', id: String(data.questId) })
+				}
+				return tags
+			},
+		}),
 	}),
 })
 
@@ -146,4 +212,10 @@ export const {
 	useUpdateQuestMutation,
 	useDeleteQuestMutation,
 	useJoinQuestMutation,
+	useCreateQuestUpdateMutation,
+	useGetQuestUpdateQuery,
+	useLazyGetQuestUpdateQuery,
+	useGetQuestUpdatesQuery,
+	useLazyGetQuestUpdatesQuery,
+	useUpdateQuestUpdateMutation,
 } = questService

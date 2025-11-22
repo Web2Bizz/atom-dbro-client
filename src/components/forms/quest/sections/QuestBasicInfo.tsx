@@ -126,7 +126,7 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 					name='organizationTypeId'
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Тип *</FormLabel>
+							<FormLabel>Тип квеста *</FormLabel>
 							<FormControl>
 								{isLoadingTypes ? (
 									<div className='flex items-center gap-2 h-9'>

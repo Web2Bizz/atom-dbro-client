@@ -31,13 +31,6 @@ export const stageFormSchema = z.object({
 		.transform(val => (val === null ? undefined : val)),
 })
 
-export const updateFormSchema = z.object({
-	id: z.string(),
-	title: z.string().min(1, 'Заголовок обновления обязателен'),
-	content: z.string().min(1, 'Текст обновления обязателен'),
-	images: z.array(z.string()).default([]),
-})
-
 export const customAchievementSchema = z
 	.object({
 		icon: z.string().min(1, 'Эмодзи обязательно'),
@@ -82,7 +75,6 @@ export const questFormSchema = z.object({
 			return !isNaN(num) && num >= -180 && num <= 180
 		}, 'Некорректная долгота'),
 	stages: z.array(stageFormSchema).min(1, 'Добавьте хотя бы один этап квеста'),
-	updates: z.array(updateFormSchema).default([]),
 	customAchievement: customAchievementSchema,
 	curatorName: z.string().optional(),
 	curatorPhone: z.string().optional(),
@@ -96,4 +88,3 @@ export const questFormSchema = z.object({
 export type QuestFormData = z.infer<typeof questFormSchema>
 export type StageFormData = z.infer<typeof stageFormSchema>
 export type ContactFormData = z.infer<typeof contactSchema>
-export type UpdateFormData = z.infer<typeof updateFormSchema>

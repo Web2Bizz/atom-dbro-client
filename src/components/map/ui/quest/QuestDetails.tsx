@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
+import { useGetQuestUpdatesQuery } from '@/store/entities/quest'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { CheckCircle2, Circle, Clock, Share2, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -126,6 +127,13 @@ export function QuestDetails({
 	const [showAmbassadorShare, setShowAmbassadorShare] = useState(false)
 	const [galleryIndex, setGalleryIndex] = useState<number | null>(null)
 	const [showAuthDialog, setShowAuthDialog] = useState(false)
+
+	// Получаем обновления квеста через API
+	const questId = quest?.id ? Number(quest.id) : undefined
+	const { data: questUpdates = [], isLoading: isLoadingUpdates } =
+		useGetQuestUpdatesQuery(questId!, {
+			skip: !questId || activeTab !== 'updates',
+		})
 
 	const isParticipating =
 		user?.participatingQuests.includes(quest?.id ?? '') ?? false
@@ -621,52 +629,49 @@ export function QuestDetails({
 
 							{activeTab === 'updates' && (
 								<div className='space-y-4'>
-									{quest.updates.length === 0 ? (
+									{isLoadingUpdates ? (
+										<div className='flex items-center justify-center py-8'>
+											<Skeleton className='h-8 w-8' />
+										</div>
+									) : questUpdates.length === 0 ? (
 										<p className='text-sm text-slate-500 text-center py-8'>
 											Пока нет обновлений
 										</p>
 									) : (
-										quest.updates.map(
-											(update: {
-												id: string
-												title: string
-												date: string
-												author: string
-												content: string
-												images?: string[]
-											}) => (
-												<div
-													key={update.id}
-													className='p-4 rounded-xl border border-slate-200 bg-white'
-												>
-													<div className='flex items-start justify-between mb-2'>
-														<div>
-															<h4 className='text-base font-semibold text-slate-900 m-0'>
-																{update.title}
-															</h4>
+										questUpdates.map(update => (
+											<div
+												key={update.id}
+												className='p-4 rounded-xl border border-slate-200 bg-white'
+											>
+												<div className='flex items-start justify-between mb-2'>
+													<div>
+														<h4 className='text-base font-semibold text-slate-900 m-0'>
+															{update.title}
+														</h4>
+														{update.createdAt && (
 															<p className='text-xs text-slate-500 m-0 mt-1'>
-																{formatDate(update.date)} • {update.author}
+																{formatDate(update.createdAt)}
 															</p>
-														</div>
+														)}
 													</div>
-													<p className='text-sm text-slate-700 leading-relaxed m-0 mb-3'>
-														{update.content}
-													</p>
-													{update.images && update.images.length > 0 && (
-														<div className='grid grid-cols-2 gap-2'>
-															{update.images.map((img: string, idx: number) => (
-																<img
-																	key={idx}
-																	src={img}
-																	alt={update.title}
-																	className='w-full h-32 object-cover rounded-lg'
-																/>
-															))}
-														</div>
-													)}
 												</div>
-											)
-										)
+												<p className='text-sm text-slate-700 leading-relaxed m-0 mb-3'>
+													{update.text}
+												</p>
+												{update.photos && update.photos.length > 0 && (
+													<div className='grid grid-cols-2 gap-2'>
+														{update.photos.map((img: string, idx: number) => (
+															<img
+																key={idx}
+																src={img}
+																alt={update.title}
+																className='w-full h-32 object-cover rounded-lg'
+															/>
+														))}
+													</div>
+												)}
+											</div>
+										))
 									)}
 								</div>
 							)}
