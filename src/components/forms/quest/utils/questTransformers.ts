@@ -266,13 +266,16 @@ export function transformApiResponseToFormData(
 	}))
 
 	// Преобразуем achievement в customAchievement
-	const customAchievement = quest.achievement
-		? {
-				icon: quest.achievement.icon,
-				title: quest.achievement.title,
-				description: quest.achievement.description,
-		  }
-		: undefined
+	const customAchievement =
+		quest.achievement?.icon &&
+		quest.achievement.title &&
+		quest.achievement.description
+			? {
+					icon: quest.achievement.icon,
+					title: quest.achievement.title,
+					description: quest.achievement.description,
+			  }
+			: undefined
 
 	return {
 		title: quest.title,
