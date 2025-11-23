@@ -38,7 +38,8 @@ export function ActiveQuests() {
 		) as Array<{ type: string; questId?: string; achievementId?: string }>
 
 		participatingQuests.forEach(quest => {
-			if (quest.overallProgress === 100) {
+			// Проверяем завершение квеста (когда куратор нажал кнопку "Завершить квест")
+			if (quest.status === 'completed') {
 				// Проверяем, было ли уже отправлено уведомление о завершении этого квеста
 				const hasQuestNotification = existingNotifications.some(
 					n => n.type === 'quest_completed' && n.questId === quest.id
@@ -65,7 +66,7 @@ export function ActiveQuests() {
 								addNotification({
 									type: 'quest_completed',
 									title: '🎉 Квест завершен!',
-									message: `Квест "${completedQuest.title}" успешно завершен на 100%!`,
+									message: `Квест "${completedQuest.title}" успешно завершен!`,
 									questId: completedQuest.id,
 									icon: '🎉',
 									actionUrl: `/map?quest=${completedQuest.id}`,

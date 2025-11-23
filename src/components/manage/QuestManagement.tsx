@@ -132,7 +132,7 @@ export function QuestManagement({
 
 	const handleArchive = async () => {
 		if (!canArchive) {
-			toast.error('Квест можно архивировать только если он завершен на 100%')
+			toast.error('Квест можно архивировать только если он завершен')
 			return
 		}
 

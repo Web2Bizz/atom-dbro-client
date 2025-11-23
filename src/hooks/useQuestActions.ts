@@ -449,8 +449,8 @@ export function useQuestActions() {
 				// Проверяем, что пользователь участвует в квесте (через isParticipating из API)
 				// Если квест не имеет isParticipating, пропускаем проверку
 
-				// Проверяем, что квест завершен на 100%
-				if (quest.overallProgress < 100) {
+				// Проверяем, что квест завершен куратором (статус completed)
+				if (quest.status !== 'completed') {
 					return currentUser
 				}
 

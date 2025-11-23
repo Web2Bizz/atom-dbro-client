@@ -189,8 +189,8 @@ export function QuestDetails({
 	useEffect(() => {
 		if (!transformedQuest || !isParticipating) return
 
-		// Проверяем завершение квеста
-		if (transformedQuest.overallProgress === 100) {
+		// Проверяем завершение квеста (когда куратор нажал кнопку "Завершить квест")
+		if (transformedQuest.status === 'completed') {
 			// Проверяем, было ли уже отправлено уведомление о завершении этого квеста
 			// Проверяем существующие уведомления в localStorage
 			const existingNotifications = JSON.parse(
@@ -221,7 +221,7 @@ export function QuestDetails({
 							addNotification({
 								type: 'quest_completed',
 								title: '🎉 Квест завершен!',
-								message: `Квест "${completedQuest.title}" успешно завершен на 100%!`,
+								message: `Квест "${completedQuest.title}" успешно завершен!`,
 								questId: completedQuest.id,
 								icon: '🎉',
 								actionUrl: `/map?quest=${completedQuest.id}`,
@@ -280,7 +280,7 @@ export function QuestDetails({
 
 		// Автоматически добавляем пользователя в квест
 		await participateInQuest(transformedQuest.id)
-		checkAndUnlockAchievements(transformedQuest.id)
+		checkAndUnlockAchievements()
 
 		// Добавляем уведомление об успешном участии
 		addNotification({
@@ -400,7 +400,7 @@ export function QuestDetails({
 						})
 				}
 
-				checkAndUnlockAchievements(transformedQuest.id)
+				checkAndUnlockAchievements()
 
 				// Показываем благодарность за репост через toast
 				toast.success('🙏 Спасибо за распространение!', {
