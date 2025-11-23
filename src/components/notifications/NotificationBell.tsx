@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/hooks/useNotifications'
 import type { Notification } from '@/types/notifications'
 import { formatShortDate } from '@/utils/format'
-import { Bell, X } from 'lucide-react'
+import { Bell, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 export function NotificationBell() {
@@ -12,6 +12,7 @@ export function NotificationBell() {
 		markAsRead,
 		markAllAsRead,
 		clearNotification,
+		clearAll,
 	} = useNotifications()
 	const [isOpen, setIsOpen] = useState(false)
 	const dropdownRef = useRef<HTMLDivElement>(null)
@@ -78,17 +79,19 @@ export function NotificationBell() {
 
 			{isOpen && (
 				<div className='absolute -right-12 top-12 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-slate-200 z-[3000] max-h-[600px] overflow-hidden flex flex-col'>
-					<div className='p-4 border-b border-slate-200 flex items-center justify-between'>
+					<div className='p-4 border-b border-slate-200 flex items-center justify-between gap-2'>
 						<h3 className='font-semibold text-slate-900'>Уведомления</h3>
-						{unreadCount > 0 && (
+						{notifications.length > 0 && (
 							<Button
 								variant='ghost'
 								size='sm'
-								onClick={markAllAsRead}
-								className='text-xs'
+								onClick={clearAll}
+								className='text-xs text-red-600 hover:text-red-700 hover:bg-red-50'
 								type='button'
+								title='Очистить все уведомления'
 							>
-								Отметить все как прочитанные
+								<Trash2 className='h-3 w-3 mr-1' />
+								Очистить
 							</Button>
 						)}
 					</div>
@@ -155,6 +158,20 @@ export function NotificationBell() {
 							</div>
 						)}
 					</div>
+
+					{unreadCount > 0 && notifications.length > 0 && (
+						<div className='p-3 border-t border-slate-200'>
+							<Button
+								variant='ghost'
+								size='sm'
+								onClick={markAllAsRead}
+								className='w-full text-xs'
+								type='button'
+							>
+								Отметить все как прочитанные
+							</Button>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
