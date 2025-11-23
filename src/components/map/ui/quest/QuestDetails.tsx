@@ -126,7 +126,6 @@ export function QuestDetails({
 }: QuestDetailsProps) {
 	const {
 		user,
-		setUser,
 		participateInQuest,
 		leaveQuest,
 		contributeToQuest,

@@ -106,10 +106,6 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 						{/* Системные достижения */}
 						{systemAchievements.map(achievement => {
-							// Используем данные из API, если они есть, иначе из локальных данных
-							const achievementData =
-								allAchievements[achievement.id as keyof typeof allAchievements]
-
 							return (
 								<div
 									key={achievement.id}
