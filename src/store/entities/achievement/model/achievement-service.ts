@@ -2,12 +2,14 @@ import { API_BASE_URL } from '@/constants'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type {
 	AchievementsListResponse,
+	AssignAchievementResponse,
 	CreateAchievementRequest,
 	CreateAchievementResponse,
 	DeleteAchievementResponse,
 	GetAchievementResponse,
 	UpdateAchievementRequest,
 	UpdateAchievementResponse,
+	UserAchievementsByUserIdResponse,
 	UserAchievementsResponse,
 } from './type'
 
@@ -112,6 +114,31 @@ export const achievementService = createApi({
 				{ type: 'UserAchievement', id: userId },
 			],
 		}),
+
+		// POST /v1/achievements/:id/assign/:userId - Назначить достижение пользователю
+		assignAchievement: builder.mutation<
+			AssignAchievementResponse,
+			{ id: number | string; userId: number | string }
+		>({
+			query: ({ id, userId }) => ({
+				url: `/v1/achievements/${id}/assign/${userId}`,
+				method: 'POST',
+			}),
+			invalidatesTags: (_result, _error, { userId }) => [
+				{ type: 'UserAchievement', id: String(userId) },
+			],
+		}),
+
+		// GET /v1/achievements/user/:userId - Получить достижения пользователя
+		getUserAchievementsByUserId: builder.query<
+			UserAchievementsByUserIdResponse,
+			number | string
+		>({
+			query: userId => `/v1/achievements/user/${userId}`,
+			providesTags: (_result, _error, userId) => [
+				{ type: 'UserAchievement', id: String(userId) },
+			],
+		}),
 	}),
 })
 
@@ -125,4 +152,7 @@ export const {
 	useDeleteAchievementMutation,
 	useGetUserAchievementsQuery,
 	useLazyGetUserAchievementsQuery,
+	useAssignAchievementMutation,
+	useGetUserAchievementsByUserIdQuery,
+	useLazyGetUserAchievementsByUserIdQuery,
 } = achievementService

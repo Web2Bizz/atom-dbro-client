@@ -62,7 +62,7 @@ export default function ProfilePage() {
 						/>
 					</div>
 
-					<ProfileAchievements userAchievements={user.achievements} />
+					<ProfileAchievements userId={user.id} />
 
 					<MyQuests />
 

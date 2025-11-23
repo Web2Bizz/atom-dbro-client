@@ -1,4 +1,9 @@
 export { achievementService } from './achievement/model/achievement-service'
+export {
+	useAssignAchievementMutation,
+	useGetUserAchievementsByUserIdQuery,
+	useLazyGetUserAchievementsByUserIdQuery,
+} from './achievement'
 export type { Achievement } from './achievement/model/type'
 
 export {

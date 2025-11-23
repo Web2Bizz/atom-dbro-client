@@ -9,6 +9,9 @@ export {
 	useDeleteAchievementMutation,
 	useGetUserAchievementsQuery,
 	useLazyGetUserAchievementsQuery,
+	useAssignAchievementMutation,
+	useGetUserAchievementsByUserIdQuery,
+	useLazyGetUserAchievementsByUserIdQuery,
 } from './model/achievement-service'
 export type * from './model/type'
 

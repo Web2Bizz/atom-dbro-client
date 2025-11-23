@@ -3,10 +3,6 @@
 export type AchievementId =
 	| 'first_quest'
 	| 'volunteer_month'
-	| 'tree_planter'
-	| 'wildlife_protector'
-	| 'eco_warrior'
-	| 'community_hero'
 	| 'quest_completer'
 	| 'social_ambassador'
 	| string // Позволяет использовать пользовательские достижения с ID вида "custom-*"

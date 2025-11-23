@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
+import { useAssignAchievementMutation } from '@/store/entities'
 import {
 	useGetQuestQuery,
 	useGetQuestUpdatesQuery,
@@ -134,6 +135,7 @@ export function QuestDetails({
 	const { isAuthenticated } = useAuth()
 	const { checkQuestCompletion } = useQuestActions()
 	const { addNotification } = useNotifications()
+	const [assignAchievement] = useAssignAchievementMutation()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
 	const [showVolunteerRegistration, setShowVolunteerRegistration] = useState<{
 		stage: QuestStage
@@ -369,38 +371,33 @@ export function QuestDetails({
 				sharedQuests.push(transformedQuest.id)
 				localStorage.setItem(sharedQuestsKey, JSON.stringify(sharedQuests))
 
-				// Проверяем и разблокируем достижение за шаринг
+				// Проверяем и разблокируем достижение за шаринг через API
 				const hasSocialAmbassador = user.achievements.some(
 					a => a.id === 'social_ambassador'
 				)
 
-				if (!hasSocialAmbassador) {
-					const updatedUser = {
-						...user,
-						achievements: [
-							...user.achievements,
-							{
-								id: 'social_ambassador' as const,
-								title: 'Социальный амбассадор',
-								description: 'Поделились квестом в социальных сетях',
-								icon: '📢',
-								rarity: 'common' as const,
-								unlockedAt: new Date().toISOString(),
-							},
-						],
-					}
-
-					setUser(updatedUser)
-
-					// Показываем уведомление о достижении
-					addNotification({
-						type: 'achievement_unlocked',
-						title: '🎉 Достижение разблокировано!',
-						message:
-							'Социальный амбассадор - Поделились квестом в социальных сетях',
-						questId: transformedQuest.id,
-						icon: '🏆',
+				if (!hasSocialAmbassador && user.id) {
+					// Используем API для назначения достижения
+					assignAchievement({
+						id: 'social_ambassador',
+						userId: user.id,
 					})
+						.unwrap()
+						.then(() => {
+							// Показываем уведомление о достижении
+							addNotification({
+								type: 'achievement_unlocked',
+								title: '🎉 Достижение разблокировано!',
+								message:
+									'Социальный амбассадор - Поделились квестом в социальных сетях',
+								questId: transformedQuest.id,
+								icon: '🏆',
+							})
+						})
+						.catch(error => {
+							// Логируем ошибку, но не показываем пользователю, чтобы не мешать UX
+							console.error('Failed to assign achievement:', error)
+						})
 				}
 
 				checkAndUnlockAchievements(transformedQuest.id)

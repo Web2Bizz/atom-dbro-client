@@ -1,10 +1,12 @@
 import { allAchievements } from '@/data/achievements'
-import type { User } from '@/types/user'
+import { useGetUserAchievementsByUserIdQuery } from '@/store/entities'
 import { Award } from 'lucide-react'
 import { memo, useMemo } from 'react'
+import { Spinner } from '@/components/ui/spinner'
+import type { UserAchievement } from '@/store/entities/achievement/model/type'
 
 interface ProfileAchievementsProps {
-	userAchievements: User['achievements']
+	userId: string | number
 }
 
 const rarityColors = {
@@ -15,8 +17,20 @@ const rarityColors = {
 } as const
 
 export const ProfileAchievements = memo(function ProfileAchievements({
-	userAchievements,
+	userId,
 }: ProfileAchievementsProps) {
+	// Получаем достижения пользователя через API
+	const {
+		data: achievementsResponse,
+		isLoading,
+		error,
+	} = useGetUserAchievementsByUserIdQuery(userId)
+
+	const userAchievements: UserAchievement[] = useMemo(
+		() => achievementsResponse?.data?.achievements || [],
+		[achievementsResponse]
+	)
+
 	const unlockedAchievements = useMemo(
 		() => userAchievements.filter(a => a.unlockedAt),
 		[userAchievements]
@@ -24,12 +38,12 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 
 	// Разделяем на системные и пользовательские достижения
 	const { systemAchievements, customAchievements } = useMemo(() => {
-		const system: typeof unlockedAchievements = []
-		const custom: typeof unlockedAchievements = []
+		const system: UserAchievement[] = []
+		const custom: UserAchievement[] = []
 
 		unlockedAchievements.forEach(achievement => {
-			// Пользовательские достижения имеют ID вида "custom-*"
-			if (achievement.id.startsWith('custom-')) {
+			// Пользовательские достижения имеют ID вида "custom-*" или type === 'custom'
+			if (achievement.id.startsWith('custom-') || achievement.type === 'custom') {
 				custom.push(achievement)
 			} else {
 				system.push(achievement)
@@ -47,6 +61,26 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 		[userAchievements]
 	)
 
+	if (isLoading) {
+		return (
+			<div className='bg-white rounded-2xl shadow-lg p-8'>
+				<div className='flex items-center justify-center py-12'>
+					<Spinner />
+				</div>
+			</div>
+		)
+	}
+
+	if (error) {
+		return (
+			<div className='bg-white rounded-2xl shadow-lg p-8'>
+				<div className='text-center py-12 text-slate-500'>
+					Не удалось загрузить достижения
+				</div>
+			</div>
+		)
+	}
+
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-8'>
 			<h2 className='text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2'>
@@ -62,25 +96,25 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 						{/* Системные достижения */}
 						{systemAchievements.map(achievement => {
+							// Используем данные из API, если они есть, иначе из локальных данных
 							const achievementData =
 								allAchievements[achievement.id as keyof typeof allAchievements]
-							if (!achievementData) return null
 
 							return (
 								<div
 									key={achievement.id}
 									className={`p-4 rounded-xl border-2 ${
-										rarityColors[achievementData.rarity]
+										rarityColors[achievement.rarity]
 									}`}
 								>
 									<div className='flex items-start gap-3'>
-										<div className='text-3xl'>{achievementData.icon}</div>
+										<div className='text-3xl'>{achievement.icon}</div>
 										<div className='flex-1'>
 											<h4 className='font-semibold text-slate-900 mb-1'>
-												{achievementData.title}
+												{achievement.title}
 											</h4>
 											<p className='text-sm text-slate-600 mb-2'>
-												{achievementData.description}
+												{achievement.description}
 											</p>
 											{achievement.unlockedAt && (
 												<p className='text-xs text-slate-500'>

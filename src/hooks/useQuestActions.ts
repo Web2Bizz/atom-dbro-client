@@ -1,9 +1,10 @@
 import type { Quest } from '@/components/map/types/quest-types'
 import { UserContext } from '@/contexts/UserContext'
-import { allAchievements } from '@/data/achievements'
 import {
 	useAddExperienceMutation,
+	useAssignAchievementMutation,
 	useJoinQuestMutation,
+	useLazyGetQuestQuery,
 	useLazyGetUserQuery,
 	useLeaveQuestMutation,
 } from '@/store/entities'
@@ -28,6 +29,8 @@ export function useQuestActions() {
 	const [joinQuest] = useJoinQuestMutation()
 	const [leaveQuest] = useLeaveQuestMutation()
 	const [getUser] = useLazyGetUserQuery()
+	const [getQuest] = useLazyGetQuestQuery()
+	const [assignAchievement] = useAssignAchievementMutation()
 
 	const participateInQuest = useCallback(
 		async (questId: string) => {
@@ -46,6 +49,22 @@ export function useQuestActions() {
 					throw new Error('Неверный формат ID квеста или пользователя')
 				}
 
+				// Получаем информацию о квесте, чтобы проверить, создан ли он пользователем
+				let questOwnerId: number | null = null
+				try {
+					const questResult = await getQuest(questIdNum).unwrap()
+					if (questResult) {
+						questOwnerId = questResult.ownerId
+					}
+				} catch (error) {
+					logger.error('Error fetching quest data:', error)
+					// Продолжаем выполнение, даже если не удалось получить данные о квесте
+				}
+
+				// Проверяем, что квест не создан текущим пользователем
+				const isQuestCreatedByUser =
+					questOwnerId !== null && questOwnerId === userIdNum
+
 				// Вызываем API для присоединения к квесту
 				const joinResult = await joinQuest({
 					id: questIdNum,
@@ -54,12 +73,65 @@ export function useQuestActions() {
 
 				logger.debug('Join quest result:', joinResult)
 
+				// Сохраняем количество квестов до присоединения для проверки первого квеста
+				const previousParticipatingQuestsCount =
+					user.participatingQuests?.length || 0
+
+				// Проверяем, есть ли уже достижение first_quest до присоединения
+				const hasFirstQuestAchievementBefore = user.achievements.some(
+					(a: Achievement) => a.id === 'first_quest'
+				)
+
 				// Обновляем данные пользователя с сервера после успешного присоединения
 				try {
 					const userResult = await getUser(user.id).unwrap()
 					if (userResult) {
 						const transformedUser = transformUserFromAPI(userResult)
 						setUser(transformedUser)
+
+						// Проверяем, является ли это первым квестом пользователя
+						// (количество квестов увеличилось с 0 до 1)
+						const currentParticipatingQuestsCount =
+							transformedUser.participatingQuests?.length || 0
+						const isFirstQuest =
+							previousParticipatingQuestsCount === 0 &&
+							currentParticipatingQuestsCount >= 1
+
+						// Назначаем достижение за первый квест, если:
+						// 1. Это первый квест, в который пользователь вступает
+						// 2. Квест не создан пользователем
+						// 3. Достижение еще не получено
+						if (
+							isFirstQuest &&
+							!isQuestCreatedByUser &&
+							!hasFirstQuestAchievementBefore &&
+							user.id
+						) {
+							try {
+								await assignAchievement({
+									id: 'first_quest',
+									userId: user.id,
+								}).unwrap()
+
+								// Обновляем данные пользователя еще раз, чтобы получить новое достижение
+								const updatedUserResult = await getUser(user.id).unwrap()
+								if (updatedUserResult) {
+									const updatedTransformedUser =
+										transformUserFromAPI(updatedUserResult)
+									setUser(updatedTransformedUser)
+								}
+
+								// Показываем уведомление о достижении
+								toast.success('🎯 Достижение разблокировано!', {
+									description:
+										'Первый шаг - Присоединились к своему первому квесту',
+									duration: 5000,
+								})
+							} catch (error) {
+								logger.error('Error assigning first_quest achievement:', error)
+								// Не показываем ошибку пользователю, чтобы не мешать UX
+							}
+						}
 					}
 				} catch (error) {
 					logger.error('Error fetching updated user data after join:', error)
@@ -109,7 +181,7 @@ export function useQuestActions() {
 				logger.error('Error joining quest:', error)
 			}
 		},
-		[setUser, user, getUser, joinQuest]
+		[setUser, user, getUser, getQuest, joinQuest, assignAchievement]
 	)
 
 	const leaveQuestAction = useCallback(
@@ -225,33 +297,6 @@ export function useQuestActions() {
 					},
 				}
 
-				// Проверяем достижения
-				if (contribution.amount) {
-					if (updatedUser.stats.totalDonations >= 100000) {
-						const achievement = allAchievements.donation_champion
-						if (
-							!updatedUser.achievements.some(a => a.id === 'donation_champion')
-						) {
-							updatedUser.achievements.push({
-								...achievement,
-								unlockedAt: new Date().toISOString(),
-							})
-						}
-					} else if (updatedUser.stats.totalDonations >= 50000) {
-						const achievement = allAchievements.crowdfunding_master
-						if (
-							!updatedUser.achievements.some(
-								a => a.id === 'crowdfunding_master'
-							)
-						) {
-							updatedUser.achievements.push({
-								...achievement,
-								unlockedAt: new Date().toISOString(),
-							})
-						}
-					}
-				}
-
 				return updatedUser
 			})
 
@@ -317,59 +362,14 @@ export function useQuestActions() {
 		[setUser, user, addExperience, getUser]
 	)
 
-	const checkAndUnlockAchievements = useCallback(
-		(questId: string) => {
-			setUser(currentUser => {
-				if (!currentUser) return currentUser
+	const checkAndUnlockAchievements = useCallback(() => {
+		setUser(currentUser => {
+			if (!currentUser) return currentUser
 
-				const updatedUser = { ...currentUser }
-				let hasNewAchievements = false
-
-				// Проверяем различные достижения на основе квеста
-				if (
-					questId === 'ozero-chistoe' &&
-					!updatedUser.achievements.some(
-						(a: Achievement) => a.id === 'lake_saver'
-					)
-				) {
-					updatedUser.achievements.push({
-						...allAchievements.lake_saver,
-						unlockedAt: new Date().toISOString(),
-					})
-					hasNewAchievements = true
-				}
-
-				if (
-					questId === 'les-1000-derev' &&
-					!updatedUser.achievements.some(
-						(a: Achievement) => a.id === 'tree_planter'
-					)
-				) {
-					updatedUser.achievements.push({
-						...allAchievements.tree_planter,
-						unlockedAt: new Date().toISOString(),
-					})
-					hasNewAchievements = true
-				}
-
-				if (
-					questId === 'volk-berkut' &&
-					!updatedUser.achievements.some(
-						(a: Achievement) => a.id === 'wildlife_protector'
-					)
-				) {
-					updatedUser.achievements.push({
-						...allAchievements.wildlife_protector,
-						unlockedAt: new Date().toISOString(),
-					})
-					hasNewAchievements = true
-				}
-
-				return hasNewAchievements ? updatedUser : currentUser
-			})
-		},
-		[setUser]
-	)
+			// Нет предопределенных достижений для проверки
+			return currentUser
+		})
+	}, [setUser])
 
 	// Проверка пользовательского достижения при завершении квеста на 100%
 	const checkCustomAchievement = useCallback(

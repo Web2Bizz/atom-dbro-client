@@ -101,3 +101,16 @@ export interface UpdateAchievementResponse {
 export interface DeleteAchievementResponse {
 	message: string
 }
+
+// Ответ при назначении достижения пользователю
+export interface AssignAchievementResponse {
+	message: string
+	achievement: UserAchievement
+}
+
+// Ответ при получении достижений пользователя по новому эндпоинту
+export interface UserAchievementsByUserIdResponse {
+	data: {
+		achievements: UserAchievement[]
+	}
+}

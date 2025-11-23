@@ -140,6 +140,11 @@ export function useMapHandlers({
 			setSelectedQuestId(undefined)
 			setSelectedOrganization(undefined)
 			setIsClosing(false)
+			// Очищаем URL параметры при закрытии деталей
+			const url = new URL(globalThis.location.href)
+			url.searchParams.delete('quest')
+			url.searchParams.delete('organization')
+			globalThis.history.replaceState({}, '', url.toString())
 		}, ANIMATION_DURATION)
 	}, [setSelectedQuestId, setSelectedOrganization, setIsClosing])
 
@@ -151,4 +156,3 @@ export function useMapHandlers({
 		handleCloseDetails,
 	}
 }
-

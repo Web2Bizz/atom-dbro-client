@@ -1,3 +1,5 @@
+import { SEARCH_MAP_ZOOM } from '@/constants'
+import { useGeolocation } from '@/hooks/useGeolocation'
 import { useEffect, useMemo, useRef } from 'react'
 import { loadLeafletStyles } from '../lib/loadLeafletStyles'
 import { MapControls } from './MapControls'
@@ -13,6 +15,7 @@ export const MapComponent = () => {
 	useEffect(() => {
 		loadLeafletStyles()
 	}, [])
+
 	const {
 		searchCenter,
 		setSearchCenter,
@@ -42,6 +45,41 @@ export const MapComponent = () => {
 		allTypes,
 		helpTypes,
 	} = useMapState()
+
+	// Получаем геолокацию пользователя при загрузке страницы
+	// Используем более строгие настройки для повышения точности
+	const {
+		position: userPosition,
+		getCurrentPosition,
+		isLoading: isGeolocationLoading,
+	} = useGeolocation({
+		enableHighAccuracy: true,
+		timeout: 20000, // 20 секунд для получения более точных данных
+		maximumAge: 0, // Только свежие данные
+		minAccuracy: 30, // Требуем точность не хуже 30 метров
+		maxRetries: 3, // До 3 попыток для получения точной позиции
+	})
+
+	// Автоматически запрашиваем геолокацию при монтировании компонента
+	useEffect(() => {
+		getCurrentPosition()
+	}, [getCurrentPosition])
+
+	// Центрируем карту на местоположении пользователя, если оно получено
+	// Но только если нет параметров в URL (чтобы не перекрывать открытый квест/организацию)
+	useEffect(() => {
+		if (userPosition && !urlProcessedRef.current) {
+			const params = new URLSearchParams(globalThis.location.search)
+			const hasQuestParam = params.has('quest')
+			const hasOrgParam = params.has('organization')
+
+			// Центрируем только если нет параметров в URL
+			if (!hasQuestParam && !hasOrgParam) {
+				setSearchCenter([userPosition.latitude, userPosition.longitude])
+				setSearchZoom(SEARCH_MAP_ZOOM)
+			}
+		}
+	}, [userPosition, setSearchCenter, setSearchZoom])
 
 	const {
 		handleAddressSelect,
@@ -83,7 +121,7 @@ export const MapComponent = () => {
 			return
 		}
 
-		const params = new URLSearchParams(window.location.search)
+		const params = new URLSearchParams(globalThis.location.search)
 		const questId = params.get('quest')
 		const orgId = params.get('organization')
 
@@ -180,6 +218,17 @@ export const MapComponent = () => {
 		// В будущем здесь будет API вызов для регистрации участия
 	}
 
+	// Функция для центрирования карты на местоположении пользователя
+	const handleCenterOnUserLocation = () => {
+		if (userPosition) {
+			setSearchCenter([userPosition.latitude, userPosition.longitude])
+			setSearchZoom(SEARCH_MAP_ZOOM)
+		} else {
+			// Если позиция еще не получена, запрашиваем ее
+			getCurrentPosition()
+		}
+	}
+
 	return (
 		<div className='relative w-full h-full'>
 			<UnifiedMapView
@@ -246,6 +295,9 @@ export const MapComponent = () => {
 				onFiltersChange={setFilters}
 				onSelectQuest={handleSelectQuest}
 				onSelectOrganization={handleSelectOrganization}
+				onCenterOnUserLocation={handleCenterOnUserLocation}
+				isGeolocationLoading={isGeolocationLoading}
+				hasUserLocation={!!userPosition}
 			/>
 
 			<MapDetails

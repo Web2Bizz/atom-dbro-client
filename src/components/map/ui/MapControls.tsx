@@ -23,6 +23,9 @@ interface MapControlsProps {
 	onFiltersChange: (filters: FiltersState) => void
 	onSelectQuest: (quest: Quest) => void
 	onSelectOrganization: (org: Organization) => void
+	onCenterOnUserLocation: () => void
+	isGeolocationLoading?: boolean
+	hasUserLocation?: boolean
 }
 
 export function MapControls({
@@ -43,6 +46,9 @@ export function MapControls({
 	onFiltersChange,
 	onSelectQuest,
 	onSelectOrganization,
+	onCenterOnUserLocation,
+	isGeolocationLoading = false,
+	hasUserLocation = false,
 }: MapControlsProps) {
 	return (
 		<>
@@ -51,6 +57,9 @@ export function MapControls({
 				isListOpen={isListOpen}
 				onToggleFilters={onToggleFilters}
 				onToggleList={onToggleList}
+				onCenterOnUserLocation={onCenterOnUserLocation}
+				isGeolocationLoading={isGeolocationLoading}
+				hasUserLocation={hasUserLocation}
 			/>
 
 			{(isFiltersOpen || isFiltersClosing) && (
