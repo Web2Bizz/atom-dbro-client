@@ -33,7 +33,7 @@ export function MyQuests() {
 		// Преобразуем в формат компонентов и исключаем архивированные
 		const allQuests = transformApiQuestsToComponentQuests(createdQuests)
 		return allQuests.filter(quest => quest.status !== 'archived')
-	}, [questsResponse, user?.id])
+	}, [questsResponse, user])
 
 	if (isLoading) {
 		return (

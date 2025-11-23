@@ -110,27 +110,54 @@ export const ProfileHeader = memo(function ProfileHeader({
 				const imageUrl = uploadResult[0].url
 
 				// Получаем текущие данные пользователя с сервера для получения avatarUrls
-				let currentAvatarUrls: Record<number, string> = {}
+				let currentAvatarUrls: Record<string, string> = {}
 				try {
 					const currentUserData = await getUser(user.id).unwrap()
-					currentAvatarUrls = currentUserData.avatarUrls || {}
+					// Преобразуем avatarUrls в правильный формат (ключи вида "size_4", "size_5" и т.д.)
+					if (currentUserData.avatarUrls) {
+						// Если приходит объект с числовыми ключами, преобразуем их
+						const avatarUrlsObj = currentUserData.avatarUrls as
+							| Record<number, string>
+							| Record<string, string>
+						currentAvatarUrls = Object.keys(avatarUrlsObj).reduce(
+							(acc, key) => {
+								// Если ключ уже в формате "size_X", оставляем как есть
+								if (key.startsWith('size_')) {
+									acc[key] = avatarUrlsObj[key as keyof typeof avatarUrlsObj]
+								} else {
+									// Если ключ числовой, преобразуем в формат "size_X"
+									const numKey = Number(key)
+									if (!isNaN(numKey)) {
+										acc[`size_${numKey}`] =
+											avatarUrlsObj[key as keyof typeof avatarUrlsObj]
+									}
+								}
+								return acc
+							},
+							{} as Record<string, string>
+						)
+					}
 				} catch (error) {
 					logger.warn('Не удалось получить текущие данные пользователя:', error)
 				}
 
-				// Определяем следующий ID для avatarUrls
-				// Используем максимальный ID из существующих + 1, или 1 если нет существующих
-				const existingIds = Object.keys(currentAvatarUrls)
-					.map(Number)
-					.filter(id => !isNaN(id) && id > 0)
+				// Определяем следующий размер для avatarUrls
+				// Извлекаем номера размеров из существующих ключей вида "size_X"
+				const existingSizes = Object.keys(currentAvatarUrls)
+					.map(key => {
+						const match = key.match(/^size_(\d+)$/)
+						return match ? Number(match[1]) : null
+					})
+					.filter((size): size is number => size !== null)
 
-				// Используем максимальный ID + 1, или 1 если нет существующих
-				const nextId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
+				// Используем максимальный размер + 1, или 4 если нет существующих
+				const nextSize = existingSizes.length > 0 ? Math.max(...existingSizes) + 1 : 4
 
 				// Создаем новый объект avatarUrls с новым изображением
-				const newAvatarUrls: Record<number, string> = {
+				// Формат ключей: "size_4", "size_5" и т.д.
+				const newAvatarUrls: Record<string, string> = {
 					...currentAvatarUrls,
-					[nextId]: imageUrl,
+					[`size_${nextSize}`]: imageUrl,
 				}
 
 				// Обновляем пользователя через API с avatarUrls

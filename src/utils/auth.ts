@@ -14,22 +14,43 @@ import {
  */
 function getAvatarUrl(
 	avatar?: string | number,
-	avatarUrls?: Record<number, string>
+	avatarUrls?: Record<string, string> | Record<number, string>
 ): string | undefined {
-	// Если есть avatarUrls, берем последний ID (самый новый)
+	// Если есть avatarUrls, берем последний размер (самый новый)
 	if (avatarUrls && Object.keys(avatarUrls).length > 0) {
-		const avatarIds = Object.keys(avatarUrls)
-			.map(Number)
-			.sort((a, b) => b - a) // Сортируем по убыванию, чтобы взять последний
-		const lastId = avatarIds[0]
-		if (lastId) {
-			const urlValue = avatarUrls[lastId]
+		// Обрабатываем оба формата: Record<string, string> (ключи "size_4") и Record<number, string> (для обратной совместимости)
+		const keys = Object.keys(avatarUrls)
+		
+		// Извлекаем размеры из ключей вида "size_4", "size_5" или числовых ключей
+		const sizes = keys
+			.map(key => {
+				// Если ключ в формате "size_X"
+				const sizeMatch = key.match(/^size_(\d+)$/)
+				if (sizeMatch) {
+					return { key, size: Number(sizeMatch[1]) }
+				}
+				// Если ключ числовой (для обратной совместимости)
+				const numKey = Number(key)
+				if (!isNaN(numKey)) {
+					return { key, size: numKey }
+				}
+				return null
+			})
+			.filter((item): item is { key: string; size: number } => item !== null)
+			.sort((a, b) => b.size - a.size) // Сортируем по убыванию, чтобы взять последний
+
+		if (sizes.length > 0) {
+			const lastItem = sizes[0]
+			const urlValue = avatarUrls[lastItem.key as keyof typeof avatarUrls] as
+				| string
+				| undefined
 			// Если значение уже является URL, используем его
 			if (urlValue && (urlValue.startsWith('http://') || urlValue.startsWith('https://'))) {
 				return urlValue
 			}
-			// Иначе формируем URL по ID
-			return `${API_BASE_URL}/v1/upload/images/${lastId}`
+			// Иначе формируем URL по размеру (для обратной совместимости)
+			// В новом формате значение уже должно быть URL
+			return urlValue
 		}
 	}
 

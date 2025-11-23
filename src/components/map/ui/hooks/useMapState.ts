@@ -1,9 +1,8 @@
 import { useGetCitiesQuery } from '@/store/entities/city'
 import { useGetHelpTypesQuery } from '@/store/entities/help-type'
-import { useGetOrganizationTypesQuery } from '@/store/entities/organization-type'
 import { useGetOrganizationsQuery } from '@/store/entities/organization'
+import { useGetOrganizationTypesQuery } from '@/store/entities/organization-type'
 import { useGetQuestsQuery } from '@/store/entities/quest'
-import { getAllOrganizations, getAllQuests } from '@/utils/userData'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { useEffect, useMemo, useState } from 'react'
 import { useFilteredOrganizations } from '../../hooks/useFilteredOrganizations'
@@ -164,17 +163,11 @@ export function useMapState() {
 		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
 	}, [questsResponse])
 
-	// Объединяем квесты с сервера с созданными пользователями
-	const allQuests = useMemo(() => getAllQuests(apiQuests), [apiQuests])
+	// Используем только квесты из API
+	const allQuests = useMemo(() => apiQuests, [apiQuests])
 
-	// Используем организации из API вместо mock данных
-	// getAllOrganizations может добавить организации, созданные пользователем локально
-	const allOrganizations = useMemo(() => {
-		const userOrganizations = getAllOrganizations([])
-
-		// Объединяем API организации с локальными (если есть)
-		return [...apiOrganizations, ...userOrganizations]
-	}, [apiOrganizations])
+	// Используем только организации из API
+	const allOrganizations = useMemo(() => apiOrganizations, [apiOrganizations])
 
 	const filteredQuests = useFilteredQuests(allQuests, filters)
 	const filteredOrganizations = useFilteredOrganizations(
@@ -187,9 +180,13 @@ export function useMapState() {
 		// Получаем названия городов из API
 		const apiCities = citiesData.map(city => city.name)
 		// Получаем города из квестов с сервера
-		const questCitiesFromApi = apiQuests.map(quest => quest.city).filter(Boolean)
+		const questCitiesFromApi = apiQuests
+			.map(quest => quest.city)
+			.filter(Boolean)
 		// Объединяем все города
-		const allCitiesList = Array.from(new Set([...apiCities, ...questCitiesFromApi]))
+		const allCitiesList = Array.from(
+			new Set([...apiCities, ...questCitiesFromApi])
+		)
 		return allCitiesList.sort((a, b) => a.localeCompare(b))
 	}, [citiesData, apiQuests])
 

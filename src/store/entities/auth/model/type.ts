@@ -29,7 +29,7 @@ export interface UpdateUserRequest {
 	middleName?: string
 	email?: string
 	avatar?: string
-	avatarUrls?: Record<number, string>
+	avatarUrls?: Record<string, string> // Ключи вида "size_4", "size_5" и т.д.
 	questId?: number
 	organisationId?: number | string | null
 }
@@ -47,7 +47,7 @@ export type UserShortData = {
 	middleName: string
 	email: string
 	avatar?: string
-	avatarUrls?: Record<number, string>
+	avatarUrls?: Record<string, string> // Ключи вида "size_4", "size_5" и т.д.
 }
 // Тип пользователя (соответствует API)
 export type UserFullData = UserShortData & {

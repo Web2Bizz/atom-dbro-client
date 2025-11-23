@@ -1,6 +1,5 @@
 import { MAX_ORGANIZATIONS_PER_USER } from '@/constants'
 import { UserContext } from '@/contexts/UserContext'
-import { logger } from '@/utils/logger'
 import { useCallback, useContext } from 'react'
 
 export function useOrganizationActions() {
@@ -67,21 +66,7 @@ export function useOrganizationActions() {
 				if (!currentUser) return currentUser
 				if (currentUser.createdQuestId !== questId) return currentUser
 
-				try {
-					const existingQuests = JSON.parse(
-						localStorage.getItem('user_created_quests') || '[]'
-					)
-					const updatedQuests = existingQuests.filter(
-						(q: { id: string }) => q.id !== questId
-					)
-					localStorage.setItem(
-						'user_created_quests',
-						JSON.stringify(updatedQuests)
-					)
-				} catch (error) {
-					logger.error('Error deleting quest:', error)
-				}
-
+				// Данные квеста удаляются через API, не нужно удалять из localStorage
 				return {
 					...currentUser,
 					createdQuestId: undefined,
@@ -98,21 +83,7 @@ export function useOrganizationActions() {
 				if (currentUser.createdOrganizationId !== organizationId)
 					return currentUser
 
-				try {
-					const existingOrganizations = JSON.parse(
-						localStorage.getItem('user_created_organizations') || '[]'
-					)
-					const updatedOrganizations = existingOrganizations.filter(
-						(o: { id: string }) => o.id !== organizationId
-					)
-					localStorage.setItem(
-						'user_created_organizations',
-						JSON.stringify(updatedOrganizations)
-					)
-				} catch (error) {
-					logger.error('Error deleting organization:', error)
-				}
-
+				// Данные организации удаляются через API, не нужно удалять из localStorage
 				return {
 					...currentUser,
 					createdOrganizationId: undefined,
