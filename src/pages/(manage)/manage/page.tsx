@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { ProtectedRoute } from '@/provider/ProtectedRoute'
 import { useGetOrganizationsQuery } from '@/store/entities/organization'
-import { useGetUserQuestsQuery } from '@/store/entities/quest'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { Building2, Plus, Settings, Target } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -31,23 +31,31 @@ export default function ManagePage() {
 	)
 
 	// Загружаем данные для статистики
-	const { data: questsResponse } = useGetUserQuestsQuery(user?.id || '', {
-		skip: !user?.id,
-	})
+	const { data: questsResponse } = useGetQuestsQuery()
 	const { data: organizations = [] } = useGetOrganizationsQuery()
 
-	// Статистика квестов
+	// Статистика квестов (только созданные пользователем)
 	const questsStats = useMemo(() => {
-		if (!questsResponse?.data?.quests)
+		if (!questsResponse?.data?.quests || !user?.id)
 			return { total: 0, active: 0, completed: 0, archived: 0 }
-		const quests = questsResponse.data.quests
+
+		// Фильтруем квесты, созданные текущим пользователем (по ownerId)
+		const userIdNum =
+			typeof user.id === 'string'
+				? Number.parseInt(user.id, 10)
+				: Number(user.id)
+
+		const createdQuests = questsResponse.data.quests.filter(
+			quest => quest.ownerId === userIdNum
+		)
+
 		return {
-			total: quests.length,
-			active: quests.filter(q => q.status === 'active').length,
-			completed: quests.filter(q => q.status === 'completed').length,
-			archived: quests.filter(q => q.status === 'archived').length,
+			total: createdQuests.length,
+			active: createdQuests.filter(q => q.status === 'active').length,
+			completed: createdQuests.filter(q => q.status === 'completed').length,
+			archived: createdQuests.filter(q => q.status === 'archived').length,
 		}
-	}, [questsResponse])
+	}, [questsResponse, user])
 
 	// Статистика организаций
 	const orgsStats = useMemo(() => {

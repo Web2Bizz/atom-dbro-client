@@ -1,7 +1,7 @@
 import type { Quest } from '@/components/map/types/quest-types'
 import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
-import { useGetUserQuestsQuery } from '@/store/entities/quest'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { logger } from '@/utils/logger'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import {
@@ -22,20 +22,27 @@ export function MyQuestsList() {
 	const navigate = useNavigate()
 	const [filter, setFilter] = useState<QuestFilter>('all')
 
-	// Получаем квесты пользователя через новый endpoint
-	const { data: questsResponse, isLoading } = useGetUserQuestsQuery(
-		user?.id || '',
-		{
-			skip: !user?.id, // Пропускаем запрос, если нет userId
-		}
-	)
+	// Загружаем все квесты для фильтрации по ownerId
+	const { data: questsResponse, isLoading } = useGetQuestsQuery()
 
 	// Преобразуем квесты с сервера в формат компонентов
+	// Фильтруем только квесты, созданные текущим пользователем
 	const allQuests = useMemo(() => {
-		if (!questsResponse?.data?.quests) return []
-		logger.debug('Quests response:', questsResponse.data.quests)
-		return transformApiQuestsToComponentQuests(questsResponse.data.quests)
-	}, [questsResponse])
+		if (!questsResponse?.data?.quests || !user?.id) return []
+		
+		// Фильтруем квесты, созданные текущим пользователем (по ownerId)
+		const userIdNum =
+			typeof user.id === 'string'
+				? Number.parseInt(user.id, 10)
+				: Number(user.id)
+		
+		const createdQuests = questsResponse.data.quests.filter(
+			quest => quest.ownerId === userIdNum
+		)
+		
+		logger.debug('Created quests:', createdQuests)
+		return transformApiQuestsToComponentQuests(createdQuests)
+	}, [questsResponse, user?.id])
 
 	logger.debug('All quests:', allQuests)
 	// Фильтруем квесты по выбранному фильтру

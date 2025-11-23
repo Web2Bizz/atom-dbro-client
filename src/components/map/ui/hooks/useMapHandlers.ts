@@ -13,7 +13,6 @@ interface UseMapHandlersProps {
 	selectedOrganization: Organization | undefined
 	setSelectedOrganization: (org: Organization | undefined) => void
 	setIsClosing: (closing: boolean) => void
-	allQuests: Quest[]
 }
 
 export function useMapHandlers({
@@ -24,7 +23,6 @@ export function useMapHandlers({
 	selectedOrganization,
 	setSelectedOrganization,
 	setIsClosing,
-	allQuests,
 }: UseMapHandlersProps) {
 	const handleAddressSelect = useCallback(
 		(result: GeocodeResult) => {

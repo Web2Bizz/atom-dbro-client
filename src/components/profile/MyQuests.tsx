@@ -2,7 +2,7 @@ import type { Quest } from '@/components/map/types/quest-types'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
-import { useGetUserQuestsQuery } from '@/store/entities/quest'
+import { useGetQuestsQuery } from '@/store/entities/quest'
 import { logger } from '@/utils/logger'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { ArrowRight, Map, MapPin, Target, TrendingUp } from 'lucide-react'
@@ -13,21 +13,27 @@ export function MyQuests() {
 	const { user } = useUser()
 	const navigate = useNavigate()
 
-	const { data: questsResponse, isLoading } = useGetUserQuestsQuery(
-		user?.id || '',
-		{
-			skip: !user?.id,
-		}
-	)
+	// Загружаем все квесты для фильтрации по ownerId
+	const { data: questsResponse, isLoading } = useGetQuestsQuery()
 
 	const myQuests = useMemo(() => {
 		logger.debug('questsResponse', questsResponse)
-		if (!questsResponse?.data?.quests) return []
-		const allQuests = transformApiQuestsToComponentQuests(
-			questsResponse.data.quests
+		if (!questsResponse?.data?.quests || !user?.id) return []
+
+		// Фильтруем квесты, созданные текущим пользователем (по ownerId)
+		const userIdNum =
+			typeof user.id === 'string'
+				? Number.parseInt(user.id, 10)
+				: Number(user.id)
+
+		const createdQuests = questsResponse.data.quests.filter(
+			quest => quest.ownerId === userIdNum
 		)
+
+		// Преобразуем в формат компонентов и исключаем архивированные
+		const allQuests = transformApiQuestsToComponentQuests(createdQuests)
 		return allQuests.filter(quest => quest.status !== 'archived')
-	}, [questsResponse])
+	}, [questsResponse, user?.id])
 
 	if (isLoading) {
 		return (
@@ -59,7 +65,7 @@ export function MyQuests() {
 						asChild
 						className='bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700'
 					>
-						<a href='/add-quest'>
+						<a href='/add-organization'>
 							Создать квест
 							<ArrowRight className='h-4 w-4 ml-2' />
 						</a>

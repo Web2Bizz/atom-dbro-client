@@ -57,7 +57,6 @@ export const MapComponent = () => {
 		selectedOrganization,
 		setSelectedOrganization,
 		setIsClosing,
-		allQuests,
 	})
 
 	const { handleToggleFilters, handleToggleList } = useMapControls({

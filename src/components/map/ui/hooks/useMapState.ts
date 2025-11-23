@@ -8,7 +8,6 @@ import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { useEffect, useMemo, useState } from 'react'
 import { useFilteredOrganizations } from '../../hooks/useFilteredOrganizations'
 import { useFilteredQuests } from '../../hooks/useFilteredQuests'
-import type { Quest } from '../../types/quest-types'
 import type { Organization } from '../../types/types'
 import type { FiltersState } from '../actions/types'
 

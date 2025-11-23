@@ -190,27 +190,19 @@ export function QuestManagement({
 				<div className='space-y-6'>
 					{currentQuest.steps.map((step, stepIndex) => {
 						if (!step.requirement) {
+							// Не показываем сообщение для архивированных квестов
+							if (isArchived) {
+								return null
+							}
 							return (
 								<div
 									key={stepIndex}
-									className={`border rounded-lg p-4 ${
-										isArchived
-											? 'border-slate-300 bg-slate-100'
-											: 'border-slate-200 bg-slate-50'
-									}`}
+									className='border rounded-lg p-4 border-slate-200 bg-slate-50'
 								>
-									<h4
-										className={`font-semibold mb-2 ${
-											isArchived ? 'text-slate-600' : 'text-slate-900'
-										}`}
-									>
+									<h4 className='font-semibold mb-2 text-slate-900'>
 										{step.title}
 									</h4>
-									<p
-										className={`text-sm ${
-											isArchived ? 'text-slate-500' : 'text-slate-600'
-										}`}
-									>
+									<p className='text-sm text-slate-600'>
 										У этого этапа нет требований выполнения
 									</p>
 								</div>
