@@ -45,8 +45,10 @@ export const ProfileAchievements = memo(function ProfileAchievements({
 
 		unlockedAchievements.forEach(achievement => {
 			// Пользовательские достижения имеют ID вида "custom-*" или type === 'custom'
+			// Преобразуем id в строку на случай, если он приходит как число
+			const achievementId = String(achievement.id)
 			if (
-				achievement.id.startsWith('custom-') ||
+				achievementId.startsWith('custom-') ||
 				achievement.type === 'custom'
 			) {
 				custom.push(achievement)

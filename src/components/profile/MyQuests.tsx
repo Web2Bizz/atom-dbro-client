@@ -122,7 +122,7 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 
 	const progressColor = isArchived
 		? 'from-slate-400 to-slate-500'
-		: quest.overallProgress === 100
+		: isCompleted
 		? 'from-green-500 to-emerald-600'
 		: quest.overallProgress >= 50
 		? 'from-orange-500 to-amber-600'

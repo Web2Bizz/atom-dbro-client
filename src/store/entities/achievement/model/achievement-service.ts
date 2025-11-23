@@ -1,6 +1,8 @@
 import { API_BASE_URL } from '@/constants'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type {
+	AchievementRarity,
+	AchievementType,
 	AchievementsListResponse,
 	AssignAchievementResponse,
 	CreateAchievementRequest,
@@ -9,6 +11,7 @@ import type {
 	GetAchievementResponse,
 	UpdateAchievementRequest,
 	UpdateAchievementResponse,
+	UserAchievement,
 	UserAchievementsByUserIdResponse,
 	UserAchievementsResponse,
 } from './type'
@@ -134,6 +137,7 @@ export const achievementService = createApi({
 			}),
 			invalidatesTags: (_result, _error, { userId }) => [
 				{ type: 'UserAchievement', id: String(userId) },
+				'UserAchievement', // Инвалидируем все достижения пользователя
 			],
 		}),
 
@@ -148,8 +152,60 @@ export const achievementService = createApi({
 					| UserAchievementsByUserIdResponse
 					| { data: UserAchievementsByUserIdResponse }
 					| UserAchievementsByUserIdResponse['data']
+					| Array<{
+							id: number
+							userId: number
+							achievementId: number
+							unlockedAt: string
+							achievement: {
+								id: number
+								title: string
+								description: string
+								icon: string
+								rarity?: AchievementRarity
+								type?: AchievementType
+							}
+					  }>
 			): UserAchievementsByUserIdResponse => {
 				// Обрабатываем разные форматы ответа API
+
+				// Если ответ - это массив объектов с полем achievement (новый формат API)
+				if (Array.isArray(response)) {
+					const transformedAchievements: UserAchievement[] = response.map(
+						(item: {
+							id: number
+							userId: number
+							achievementId: number
+							unlockedAt: string
+							achievement: {
+								id: number
+								title: string
+								description: string
+								icon: string
+								rarity?: AchievementRarity
+								type?: AchievementType
+							}
+						}) => {
+							// Преобразуем структуру API в формат UserAchievement
+							return {
+								id: String(item.achievement.id), // Используем ID из achievement
+								title: item.achievement.title,
+								description: item.achievement.description,
+								icon: item.achievement.icon,
+								rarity: item.achievement.rarity || 'common',
+								type: item.achievement.type || 'system',
+								unlockedAt: item.unlockedAt,
+							}
+						}
+					)
+
+					return {
+						data: {
+							achievements: transformedAchievements,
+						},
+					}
+				}
+
 				// Если ответ уже в правильном формате
 				if (
 					'data' in response &&
@@ -163,14 +219,6 @@ export const achievementService = createApi({
 					return {
 						data: {
 							achievements: response.data,
-						},
-					}
-				}
-				// Если ответ - это массив achievements напрямую
-				if (Array.isArray(response)) {
-					return {
-						data: {
-							achievements: response,
 						},
 					}
 				}

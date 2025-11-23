@@ -39,7 +39,7 @@ export const questService = createApi({
 			return headers
 		},
 	}),
-	tagTypes: ['Quest', 'QuestList', 'QuestUpdate'],
+	tagTypes: ['Quest', 'QuestList', 'QuestUpdate', 'UserQuest'],
 	endpoints: builder => ({
 		// GET /quests - Получить список квестов с фильтрацией
 		getQuests: builder.query<QuestsListResponse, GetQuestsParams | void>({
@@ -208,7 +208,10 @@ export const questService = createApi({
 					},
 				}
 			},
-			providesTags: ['QuestList'],
+			providesTags: (_result, _error, userId) => [
+				'QuestList',
+				{ type: 'UserQuest', id: String(userId) },
+			],
 		}),
 
 		// POST /v1/quests - Создать новый квест
@@ -258,6 +261,8 @@ export const questService = createApi({
 			invalidatesTags: (_result, _error, id) => [
 				'QuestList',
 				{ type: 'Quest', id: String(id) },
+				'UserQuest', // Инвалидируем квесты пользователя для обновления статуса
+				'UserAchievement', // Инвалидируем достижения пользователя, так как может быть начислено новое достижение
 			],
 		}),
 

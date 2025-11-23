@@ -1,10 +1,17 @@
 import { Spinner } from '@/components/ui/spinner'
+import { allAchievements } from '@/data/achievements'
+import { useUser } from '@/hooks/useUser'
+import {
+	useLazyGetUserAchievementsByUserIdQuery,
+	useLazyGetUserQuery,
+} from '@/store/entities'
 import {
 	useCompleteQuestMutation,
 	useGetQuestQuery,
 	useUpdateQuestMutation,
 } from '@/store/entities/quest'
 import type { Quest } from '@/store/entities/quest/model/type'
+import { transformUserFromAPI } from '@/utils/auth'
 import { getErrorMessage } from '@/utils/error'
 import { logger } from '@/utils/logger'
 import { useMemo, useState } from 'react'
@@ -27,6 +34,9 @@ export function QuestManagement({
 	const { data: quest, isLoading, refetch } = useGetQuestQuery(questId)
 	const [updateQuest, { isLoading: isUpdating }] = useUpdateQuestMutation()
 	const [completeQuest] = useCompleteQuestMutation()
+	const { user, setUser } = useUser()
+	const [getUser] = useLazyGetUserQuery()
+	const [getUserAchievements] = useLazyGetUserAchievementsByUserIdQuery()
 	const [showQRCode, setShowQRCode] = useState(false)
 	const [qrCodeData, setQrCodeData] = useState<string>('')
 	const [showArchiveDialog, setShowArchiveDialog] = useState(false)
@@ -115,9 +125,75 @@ export function QuestManagement({
 	const handleComplete = async () => {
 		setIsCompleting(true)
 		try {
+			// Сохраняем текущие достижения пользователя для сравнения
+			const previousAchievements = user?.achievements || []
+			const previousAchievementIds = new Set(
+				previousAchievements.map(a => String(a.id))
+			)
+
 			await completeQuest(questId).unwrap()
 			toast.success('Квест успешно завершен!')
+
+			// Обновляем данные квеста
 			refetch()
+
+			// Обновляем данные пользователя и проверяем новые достижения
+			if (user?.id && setUser) {
+				try {
+					// Обновляем данные пользователя
+					const userResult = await getUser(user.id).unwrap()
+					if (userResult && setUser) {
+						const transformedUser = transformUserFromAPI(userResult)
+						setUser(transformedUser)
+
+						// Проверяем новые достижения
+						const currentAchievements = transformedUser.achievements || []
+						const newAchievements = currentAchievements.filter(
+							a => !previousAchievementIds.has(String(a.id))
+						)
+
+						// Показываем тостер для каждого нового достижения
+						for (const achievement of newAchievements) {
+							const achievementData =
+								allAchievements[achievement.id as keyof typeof allAchievements]
+							const title = achievementData?.title || achievement.title
+							const icon = achievementData?.icon || achievement.icon
+
+							toast.success('🏆 Достижение разблокировано!', {
+								description: `${icon} "${title}"`,
+								duration: 5000,
+							})
+						}
+					}
+
+					// Также проверяем достижения через API
+					const achievementsResult = await getUserAchievements(user.id).unwrap()
+					if (achievementsResult?.data?.achievements) {
+						const apiAchievements = achievementsResult.data.achievements
+						const newApiAchievements = apiAchievements.filter(
+							a => !previousAchievementIds.has(String(a.id))
+						)
+
+						for (const achievement of newApiAchievements) {
+							const achievementData =
+								allAchievements[achievement.id as keyof typeof allAchievements]
+							const title = achievementData?.title || achievement.title
+							const icon = achievementData?.icon || achievement.icon
+
+							toast.success('🏆 Достижение разблокировано!', {
+								description: `${icon} "${title}"`,
+								duration: 5000,
+							})
+						}
+					}
+				} catch (error) {
+					logger.error(
+						'Error fetching user data after quest completion:',
+						error
+					)
+					// Не показываем ошибку пользователю, чтобы не мешать UX
+				}
+			}
 		} catch (error) {
 			logger.error('Error completing quest:', error)
 			const errorMessage = getErrorMessage(

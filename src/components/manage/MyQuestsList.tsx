@@ -29,17 +29,17 @@ export function MyQuestsList() {
 	// Фильтруем только квесты, созданные текущим пользователем
 	const allQuests = useMemo(() => {
 		if (!questsResponse?.data?.quests || !user?.id) return []
-		
+
 		// Фильтруем квесты, созданные текущим пользователем (по ownerId)
 		const userIdNum =
 			typeof user.id === 'string'
 				? Number.parseInt(user.id, 10)
 				: Number(user.id)
-		
+
 		const createdQuests = questsResponse.data.quests.filter(
 			quest => quest.ownerId === userIdNum
 		)
-		
+
 		logger.debug('Created quests:', createdQuests)
 		return transformApiQuestsToComponentQuests(createdQuests)
 	}, [questsResponse, user?.id])
@@ -181,8 +181,6 @@ function QuestCard({ quest, onClick }: QuestCardProps) {
 	const progressColor = isArchived
 		? 'from-slate-400 to-slate-500'
 		: isCompleted
-		? 'from-green-500 to-emerald-600'
-		: quest.overallProgress === 100
 		? 'from-green-500 to-emerald-600'
 		: quest.overallProgress >= 50
 		? 'from-orange-500 to-amber-600'
