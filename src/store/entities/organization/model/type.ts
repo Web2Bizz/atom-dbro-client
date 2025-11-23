@@ -76,3 +76,39 @@ export interface UpdateOrganizationResponse {
 export interface DeleteOrganizationResponse {
 	message: string
 }
+
+// Типы для обновлений организации
+export interface OrganizationUpdate {
+	id: number
+	organizationId: number
+	title: string
+	text: string
+	photos: string[]
+	createdAt?: string
+	updatedAt?: string
+}
+
+export interface CreateOrganizationUpdateRequest {
+	organizationId: number
+	title: string
+	text: string
+	photos: string[]
+}
+
+export interface UpdateOrganizationUpdateRequest {
+	organizationId?: number
+	title?: string
+	text?: string
+	photos?: string[]
+}
+
+export interface OrganizationUpdateResponse {
+	data: {
+		update: OrganizationUpdate
+		message?: string
+	}
+}
+
+export interface DeleteOrganizationUpdateResponse {
+	message: string
+}

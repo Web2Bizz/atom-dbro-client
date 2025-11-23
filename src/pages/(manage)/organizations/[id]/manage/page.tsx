@@ -6,6 +6,7 @@
  * @priority 0.6
  */
 
+import { OrganizationUpdatesManagement } from '@/components/forms/organization/sections/OrganizationUpdatesManagement'
 import { OrganizationEditForm } from '@/components/manage/OrganizationEditForm'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -181,12 +182,9 @@ export default function OrganizationManagePage() {
 								<OrganizationEditForm organizationId={organizationId} />
 							)}
 							{activeTab === 'updates' && organizationId && (
-								<div className='text-center py-12 text-slate-500'>
-									<p>
-										Управление обновлениями организации будет доступно в
-										ближайшее время
-									</p>
-								</div>
+								<OrganizationUpdatesManagement
+									organizationId={Number(organizationId)}
+								/>
 							)}
 						</div>
 					</div>
@@ -195,4 +193,3 @@ export default function OrganizationManagePage() {
 		</ProtectedRoute>
 	)
 }
-
