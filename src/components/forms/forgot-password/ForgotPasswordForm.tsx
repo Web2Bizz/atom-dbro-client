@@ -53,11 +53,6 @@ export function ForgotPasswordForm() {
 					'Если указанный email существует, на него будет отправлена инструкция по восстановлению пароля.',
 				duration: 5000,
 			})
-
-			// Перенаправляем на страницу входа через 2 секунды
-			setTimeout(() => {
-				globalThis.location.href = '/login'
-			}, 2000)
 		} catch (error: unknown) {
 			logger.error('Forgot password error:', error)
 			toast.error('Ошибка отправки запроса. Попробуйте еще раз.')

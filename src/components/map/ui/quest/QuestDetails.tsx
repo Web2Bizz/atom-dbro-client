@@ -273,18 +273,32 @@ export function QuestDetails({
 	}
 
 	const handleShare = (platform: string) => {
-		if (quest) {
-			// Засчитываем шаринг как вклад в квест
-			contributeToQuest({
-				questId: quest.id,
-				stageId: quest.stages[0]?.id || '', // Используем первый этап или пустую строку
-				action: `Поделился в ${platform}`,
-				contributedAt: new Date().toISOString(),
-				impact: `Поделился квестом "${quest.title}" в ${platform}`,
-			})
+		if (quest && user) {
+			// Проверяем, делился ли пользователь уже этим квестом
+			const sharedQuestsKey = `shared_quests_${user.id}`
+			const sharedQuestsJson = localStorage.getItem(sharedQuestsKey)
+			const sharedQuests: string[] = sharedQuestsJson
+				? JSON.parse(sharedQuestsJson)
+				: []
 
-			// Проверяем и разблокируем достижение за шаринг
-			if (user) {
+			const hasSharedQuest = sharedQuests.includes(quest.id)
+			const isFirstShare = !hasSharedQuest
+
+			// Засчитываем шаринг как вклад в квест только при первом шаринге
+			if (isFirstShare) {
+				contributeToQuest({
+					questId: quest.id,
+					stageId: quest.stages[0]?.id || '', // Используем первый этап или пустую строку
+					action: `Поделился в ${platform}`,
+					contributedAt: new Date().toISOString(),
+					impact: `Поделился квестом "${quest.title}" в ${platform}`,
+				})
+
+				// Сохраняем информацию о том, что пользователь поделился этим квестом
+				sharedQuests.push(quest.id)
+				localStorage.setItem(sharedQuestsKey, JSON.stringify(sharedQuests))
+
+				// Проверяем и разблокируем достижение за шаринг
 				const hasSocialAmbassador = user.achievements.some(
 					a => a.id === 'social_ambassador'
 				)
@@ -317,24 +331,25 @@ export function QuestDetails({
 						icon: '🏆',
 					})
 				}
+
+				checkAndUnlockAchievements(quest.id)
+
+				// Показываем благодарность за репост через toast
+				toast.success('🙏 Спасибо за распространение!', {
+					description: `Ваш репост поможет квесту "${quest.title}" найти больше участников! Вы получили опыт за помощь.`,
+					duration: 5000,
+				})
+
+				// Также добавляем в систему уведомлений
+				addNotification({
+					type: 'quest_update',
+					title: '🙏 Спасибо за распространение!',
+					message: `Ваш репост поможет квесту "${quest.title}" найти больше участников! Вы получили опыт за помощь.`,
+					questId: quest.id,
+					icon: '📢',
+				})
 			}
-
-			checkAndUnlockAchievements(quest.id)
-
-			// Показываем благодарность за репост через toast
-			toast.success('🙏 Спасибо за распространение!', {
-				description: `Ваш репост поможет квесту "${quest.title}" найти больше участников! Вы получили опыт за помощь.`,
-				duration: 5000,
-			})
-
-			// Также добавляем в систему уведомлений
-			addNotification({
-				type: 'quest_update',
-				title: '🙏 Спасибо за распространение!',
-				message: `Ваш репост поможет квесту "${quest.title}" найти больше участников! Вы получили опыт за помощь.`,
-				questId: quest.id,
-				icon: '📢',
-			})
+			// При повторном шаринге ничего не делаем - просто открывается окно поделиться
 		}
 	}
 
