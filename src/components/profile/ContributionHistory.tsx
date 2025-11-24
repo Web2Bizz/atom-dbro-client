@@ -1,10 +1,11 @@
-import { Calendar, Heart, Users } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import { useGetQuestsQuery } from '@/store/entities/quest'
+import type { QuestContribution } from '@/types/user'
 import { formatDateTime } from '@/utils/format'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
+import { Calendar, Heart, Users } from 'lucide-react'
 import { useMemo } from 'react'
-import type { QuestContribution } from '@/types/user'
+import { Link } from 'react-router-dom'
 
 // Моковые данные для демонстрации
 const mockContributions: QuestContribution[] = [
@@ -43,7 +44,6 @@ export function ContributionHistory() {
 	// В реальном приложении это будет загружаться из API
 	const contributions = mockContributions
 
-
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-8'>
 			<h2 className='text-2xl font-bold text-slate-900 mb-6'>
@@ -53,12 +53,12 @@ export function ContributionHistory() {
 			{contributions.length === 0 ? (
 				<div className='text-center py-12'>
 					<p className='text-slate-500 mb-4'>Вы еще не участвовали в квестах</p>
-					<a
-						href='/map'
+					<Link
+						to='/map'
 						className='inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors'
 					>
 						Найти квест
-					</a>
+					</Link>
 				</div>
 			) : (
 				<div className='space-y-4'>
@@ -114,4 +114,3 @@ export function ContributionHistory() {
 		</div>
 	)
 }
-

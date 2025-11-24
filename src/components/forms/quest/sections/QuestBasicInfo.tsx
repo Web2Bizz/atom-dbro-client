@@ -158,66 +158,67 @@ export function QuestBasicInfo({ onCityChange }: QuestBasicInfoProps) {
 			<FormField
 				control={form.control}
 				name='category'
-				render={({ field }) => (
-					<FormItem>
-						<FormLabel>Категория *</FormLabel>
-						<FormControl>
-							{isLoadingCategories ? (
-								<div className='flex items-center gap-2 h-9'>
-									<div className='h-4 w-4'>
-										<Spinner />
+				render={({ field }) => {
+					// Маппинг имени категории в enum значение
+					const categoryNameToEnumMap: Record<
+						string,
+						QuestFormData['category']
+					> = {
+						Экология: 'environment',
+						Животные: 'animals',
+						Люди: 'people',
+						Образование: 'education',
+						Другое: 'other',
+					}
+
+					// Находим текущую категорию по enum значению для отображения
+					const currentCategory = sortedCategories.find(cat => {
+						const categoryEnum = categoryNameToEnumMap[cat.name]
+						return categoryEnum === field.value
+					})
+
+					return (
+						<FormItem>
+							<FormLabel>Категория *</FormLabel>
+							<FormControl>
+								{isLoadingCategories ? (
+									<div className='flex items-center gap-2 h-9'>
+										<div className='h-4 w-4'>
+											<Spinner />
+										</div>
+										<span className='text-sm text-slate-500'>Загрузка...</span>
 									</div>
-									<span className='text-sm text-slate-500'>Загрузка...</span>
-								</div>
-							) : (
-								<select
-									value={field.value || ''}
-									onChange={e => {
-										const categoryId = Number(e.target.value)
-										// Преобразуем ID в строку для схемы
-										const categoryName = sortedCategories
-											.find(c => c.id === categoryId)
-											?.name.toLowerCase()
-										// Маппинг имени категории в enum значение
-										const categoryMap: Record<
-											string,
-											QuestFormData['category']
-										> = {
-											экология: 'environment',
-											животные: 'animals',
-											люди: 'people',
-											образование: 'education',
-											другое: 'other',
-										}
-										const categoryValue =
-											categoryMap[categoryName || ''] || 'other'
-										field.onChange(categoryValue)
-									}}
-									className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
-								>
-									<option value=''>Выберите категорию</option>
-									{sortedCategories.map(cat => {
-										// Маппинг имени категории в enum значение для value
-										const categoryMap: Record<string, string> = {
-											Экология: 'environment',
-											Животные: 'animals',
-											Люди: 'people',
-											Образование: 'education',
-											Другое: 'other',
-										}
-										const categoryValue = categoryMap[cat.name] || 'other'
-										return (
-											<option key={cat.id} value={categoryValue}>
+								) : (
+									<select
+										value={currentCategory?.id || ''}
+										onChange={e => {
+											const categoryId = Number(e.target.value)
+											// Находим категорию по ID
+											const category = sortedCategories.find(
+												c => c.id === categoryId
+											)
+											if (category) {
+												// Преобразуем имя категории в enum значение
+												const categoryEnum =
+													categoryNameToEnumMap[category.name] || 'other'
+												field.onChange(categoryEnum)
+											}
+										}}
+										className='w-full h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm'
+									>
+										<option value=''>Выберите категорию</option>
+										{sortedCategories.map(cat => (
+											<option key={cat.id} value={cat.id}>
 												{cat.name}
 											</option>
-										)
-									})}
-								</select>
-							)}
-						</FormControl>
-						<FormMessage />
-					</FormItem>
-				)}
+										))}
+									</select>
+								)}
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)
+				}}
 			/>
 
 			<FormField

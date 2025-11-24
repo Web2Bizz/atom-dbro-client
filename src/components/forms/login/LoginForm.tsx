@@ -17,6 +17,7 @@ import { logger } from '@/utils/logger'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -176,12 +177,12 @@ export function LoginForm() {
 										</FormControl>
 										<div className='flex items-center justify-between'>
 											<FormMessage />
-											<a
-												href='/forgot-password'
+											<Link
+												to='/forgot-password'
 												className='text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer ml-auto'
 											>
 												Забыли пароль?
-											</a>
+											</Link>
 										</div>
 									</FormItem>
 								)}
@@ -201,12 +202,12 @@ export function LoginForm() {
 					</Form>
 
 					<div className='mt-6 text-center'>
-						<a
-							href='/registartion'
+						<Link
+							to='/registartion'
 							className='text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer'
 						>
 							Нет аккаунта? Зарегистрируйтесь
-						</a>
+						</Link>
 					</div>
 				</div>
 			</div>

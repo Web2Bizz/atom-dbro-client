@@ -7,7 +7,7 @@ import { getOrganizationCoordinates } from '@/utils/cityCoordinates'
 import { logger } from '@/utils/logger'
 import { ArrowRight, Building2, Heart, Map, MapPin } from 'lucide-react'
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export function MyOrganizations() {
 	const { user } = useUser()
@@ -56,10 +56,10 @@ export function MyOrganizations() {
 						asChild
 						className='bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
 					>
-						<a href='/add-organization'>
+						<Link to='/add-organization'>
 							Создать организацию
 							<ArrowRight className='h-4 w-4 ml-2' />
-						</a>
+						</Link>
 					</Button>
 				</div>
 			</div>

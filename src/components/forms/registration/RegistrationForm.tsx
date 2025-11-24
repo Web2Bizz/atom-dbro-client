@@ -14,6 +14,7 @@ import { useRegisterMutation } from '@/store/entities'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -238,12 +239,12 @@ export function RegistrationForm() {
 					</Form>
 
 					<div className='mt-6 text-center'>
-						<a
-							href='/login'
+						<Link
+							to='/login'
 							className='text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer'
 						>
 							Уже есть аккаунт? Войдите
-						</a>
+						</Link>
 					</div>
 				</div>
 			</div>

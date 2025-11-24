@@ -14,6 +14,7 @@ import { logger } from '@/utils/logger'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft } from 'lucide-react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -64,13 +65,13 @@ export function ForgotPasswordForm() {
 			<div className='max-w-md w-full'>
 				<div className='bg-white rounded-2xl shadow-xl p-8'>
 					<div className='mb-6'>
-						<a
-							href='/login'
+						<Link
+							to='/login'
 							className='inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium mb-4'
 						>
 							<ArrowLeft className='h-4 w-4 mr-2' />
 							Вернуться к входу
-						</a>
+						</Link>
 					</div>
 
 					<div className='text-center mb-8'>
