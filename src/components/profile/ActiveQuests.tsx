@@ -5,6 +5,7 @@ import { useGetUserQuestsQuery } from '@/store/entities/quest'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { ArrowRight, Clock } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 export function ActiveQuests() {
@@ -74,10 +75,10 @@ export function ActiveQuests() {
 						Вы еще не участвуете ни в одном квесте
 					</p>
 					<Button asChild>
-						<a href='/map'>
+						<Link to='/map'>
 							Найти квест
 							<ArrowRight className='h-4 w-4 ml-2' />
-						</a>
+						</Link>
 					</Button>
 				</div>
 			</div>
@@ -161,10 +162,10 @@ export function ActiveQuests() {
 										asChild
 										className='w-full sm:w-auto'
 									>
-										<a href={`/map?quest=${quest.id}`}>
+										<Link to={`/map?quest=${quest.id}`}>
 											Открыть детали
 											<ArrowRight className='h-4 w-4 ml-2' />
-										</a>
+										</Link>
 									</Button>
 								</div>
 							</div>

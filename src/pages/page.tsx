@@ -21,6 +21,7 @@ import {
 	Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const HERO_CONTENT = {
 	badge: 'ATOM ДОБРО',
@@ -79,7 +80,9 @@ function HeroActions() {
 				className='bg-linear-to-r from-cyan-400 to-blue-600 text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 hover:scale-105 animate-fade-in-up'
 				asChild
 			>
-				<a href='/add-organization'>{HERO_CONTENT.actions.addOrganization}</a>
+				<Link to='/add-organization'>
+					{HERO_CONTENT.actions.addOrganization}
+				</Link>
 			</Button>
 			<Button
 				size='lg'
@@ -87,7 +90,7 @@ function HeroActions() {
 				className='border-slate-400/30 bg-white/8 text-white backdrop-blur-sm transition-all hover:bg-white/14 hover:-translate-y-0.5 hover:scale-105 animate-fade-in-up animation-delay-200'
 				asChild
 			>
-				<a href='/map'>{HERO_CONTENT.actions.viewMap}</a>
+				<Link to='/map'>{HERO_CONTENT.actions.viewMap}</Link>
 			</Button>
 		</div>
 	)
@@ -163,8 +166,7 @@ function AboutSection() {
 			<div className='mx-auto max-w-6xl'>
 				<div className='text-center mb-16'>
 					<div className='inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium'>
-						<Sparkles className='h-4 w-4' />
-						О платформе
+						<Sparkles className='h-4 w-4' />О платформе
 					</div>
 					<h2 className='text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4'>
 						Единая экосистема добрых дел
@@ -399,7 +401,9 @@ function HowItWorksSection() {
 							<h3 className='text-xl font-bold text-slate-900 mb-2'>
 								{step.title}
 							</h3>
-							<p className='text-slate-600 leading-relaxed'>{step.description}</p>
+							<p className='text-slate-600 leading-relaxed'>
+								{step.description}
+							</p>
 							{index < steps.length - 1 && (
 								<div className='hidden lg:block absolute top-12 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-400 to-cyan-400 group-hover:w-12 transition-all' />
 							)}
@@ -415,10 +419,30 @@ function StatsSection() {
 	const { ref, isVisible } = useScrollAnimation()
 
 	const stats = [
-		{ value: '100+', label: 'Организаций на карте', icon: MapPin, color: 'from-blue-400 to-cyan-400' },
-		{ value: '50+', label: 'Активных квестов', icon: Target, color: 'from-purple-400 to-pink-400' },
-		{ value: '1000+', label: 'Активных участников', icon: Users, color: 'from-green-400 to-emerald-400' },
-		{ value: '24/7', label: 'Доступность платформы', icon: CheckCircle2, color: 'from-yellow-400 to-amber-400' },
+		{
+			value: '100+',
+			label: 'Организаций на карте',
+			icon: MapPin,
+			color: 'from-blue-400 to-cyan-400',
+		},
+		{
+			value: '50+',
+			label: 'Активных квестов',
+			icon: Target,
+			color: 'from-purple-400 to-pink-400',
+		},
+		{
+			value: '1000+',
+			label: 'Активных участников',
+			icon: Users,
+			color: 'from-green-400 to-emerald-400',
+		},
+		{
+			value: '24/7',
+			label: 'Доступность платформы',
+			icon: CheckCircle2,
+			color: 'from-yellow-400 to-amber-400',
+		},
 	]
 
 	return (
@@ -462,7 +486,9 @@ function StatsSection() {
 									transitionDelay: `${index * 100}ms`,
 								}}
 							>
-								<div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+								<div
+									className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mx-auto mb-4 shadow-lg`}
+								>
 									<Icon className='h-6 w-6 text-white' />
 								</div>
 								<div className='text-4xl md:text-5xl font-bold mb-2'>
@@ -511,10 +537,10 @@ function CTASection() {
 						className='bg-linear-to-r from-cyan-400 to-blue-600 text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 hover:scale-105'
 						asChild
 					>
-						<a href='/map'>
+						<Link to='/map'>
 							Смотреть карту
 							<ArrowRight className='ml-2 h-5 w-5' />
-						</a>
+						</Link>
 					</Button>
 					<Button
 						size='lg'
@@ -522,7 +548,7 @@ function CTASection() {
 						className='border-slate-400/30 bg-white/8 text-white backdrop-blur-sm transition-all hover:bg-white/14 hover:scale-105'
 						asChild
 					>
-						<a href='/registartion'>Зарегистрироваться</a>
+						<Link to='/registartion'>Зарегистрироваться</Link>
 					</Button>
 				</div>
 			</div>

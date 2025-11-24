@@ -87,8 +87,8 @@ importers:
         specifier: ^4.1.17
         version: 4.1.17
       w2b-vite-filebased-routing:
-        specifier: ^1.0.0
-        version: 1.0.0(react-dom@19.2.0(react@19.2.0))(react-router-dom@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1))
+        specifier: ^1.1.0
+        version: 1.1.0(react-dom@19.2.0(react@19.2.0))(react-router-dom@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1))
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -3031,8 +3031,8 @@ packages:
       yaml:
         optional: true
 
-  w2b-vite-filebased-routing@1.0.0:
-    resolution: {integrity: sha512-ZnhrfR9oyYBfSRAIEeTsMENW74xE372A3DT1KcwSFuj4be/hwr+BCjDUrQ4FcUrjii5msWfEuOtau77BcoL8Ww==}
+  w2b-vite-filebased-routing@1.1.0:
+    resolution: {integrity: sha512-u/ClLUlUulDxAt/OFUJmWVpwdyNJo9y6GdL/RXRe1dq0kidl7yVdK7U0wg/+U6QxbtZ6lB4+4fZISW+8zuwwpg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -6138,7 +6138,7 @@ snapshots:
       lightningcss: 1.30.2
       terser: 5.44.1
 
-  w2b-vite-filebased-routing@1.0.0(react-dom@19.2.0(react@19.2.0))(react-router-dom@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)):
+  w2b-vite-filebased-routing@1.1.0(react-dom@19.2.0(react@19.2.0))(react-router-dom@7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)):
     dependencies:
       fast-glob: 3.3.3
       react: 19.2.0

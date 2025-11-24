@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { ArrowRight, Map, MapPin, Target, TrendingUp } from 'lucide-react'
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export function MyQuests() {
 	const { user } = useUser()
@@ -65,10 +65,10 @@ export function MyQuests() {
 						asChild
 						className='bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700'
 					>
-						<a href='/add-organization'>
+						<Link to='/add-organization'>
 							Создать квест
 							<ArrowRight className='h-4 w-4 ml-2' />
-						</a>
+						</Link>
 					</Button>
 				</div>
 			</div>
