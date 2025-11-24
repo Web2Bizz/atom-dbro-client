@@ -77,10 +77,35 @@ export function useQuestActions() {
 				const previousParticipatingQuestsCount =
 					user.participatingQuests?.length || 0
 
-				// Проверяем, есть ли уже достижение first_quest до присоединения
+				// Проверяем, является ли это первым квестом (было 0 квестов)
+				const isFirstQuest = previousParticipatingQuestsCount === 0
 				const hasFirstQuestAchievementBefore = user.achievements.some(
-					(a: Achievement) => a.id === 'first_quest'
+					(a: Achievement) => String(a.id) === '15'
 				)
+
+				// Назначаем достижение за первый квест, если условия выполнены
+				if (
+					isFirstQuest &&
+					!isQuestCreatedByUser &&
+					!hasFirstQuestAchievementBefore &&
+					user.id
+				) {
+					try {
+						await assignAchievement({
+							id: 15,
+							userId: user.id,
+						}).unwrap()
+
+						// Показываем toast уведомление сразу после успешного назначения
+						toast.success('🎯 Достижение разблокировано!', {
+							description:
+								'Первый шаг - Присоединились к своему первому квесту',
+							duration: 5000,
+						})
+					} catch (error) {
+						logger.error('Error assigning first_quest achievement:', error)
+					}
+				}
 
 				// Обновляем данные пользователя с сервера после успешного присоединения
 				try {
@@ -88,54 +113,9 @@ export function useQuestActions() {
 					if (userResult) {
 						const transformedUser = transformUserFromAPI(userResult)
 						setUser(transformedUser)
-
-						// Проверяем, является ли это первым квестом пользователя
-						// (количество квестов увеличилось с 0 до 1)
-						const currentParticipatingQuestsCount =
-							transformedUser.participatingQuests?.length || 0
-						const isFirstQuest =
-							previousParticipatingQuestsCount === 0 &&
-							currentParticipatingQuestsCount >= 1
-
-						// Назначаем достижение за первый квест, если:
-						// 1. Это первый квест, в который пользователь вступает
-						// 2. Квест не создан пользователем
-						// 3. Достижение еще не получено
-						if (
-							isFirstQuest &&
-							!isQuestCreatedByUser &&
-							!hasFirstQuestAchievementBefore &&
-							user.id
-						) {
-							try {
-								await assignAchievement({
-									id: 'first_quest',
-									userId: user.id,
-								}).unwrap()
-
-								// Обновляем данные пользователя еще раз, чтобы получить новое достижение
-								const updatedUserResult = await getUser(user.id).unwrap()
-								if (updatedUserResult) {
-									const updatedTransformedUser =
-										transformUserFromAPI(updatedUserResult)
-									setUser(updatedTransformedUser)
-								}
-
-								// Показываем уведомление о достижении
-								toast.success('🎯 Достижение разблокировано!', {
-									description:
-										'Первый шаг - Присоединились к своему первому квесту',
-									duration: 5000,
-								})
-							} catch (error) {
-								logger.error('Error assigning first_quest achievement:', error)
-								// Не показываем ошибку пользователю, чтобы не мешать UX
-							}
-						}
 					}
 				} catch (error) {
 					logger.error('Error fetching updated user data after join:', error)
-					// Данные пользователя должны обновляться с сервера, не обновляем локально
 				}
 
 				// Показываем уведомление об успешном присоединении

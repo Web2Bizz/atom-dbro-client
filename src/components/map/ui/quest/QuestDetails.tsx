@@ -1,3 +1,13 @@
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { ImageGallery } from '@/components/ui/ImageGallery'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -5,11 +15,15 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
-import { useAssignAchievementMutation } from '@/store/entities'
+import {
+	useAssignAchievementMutation,
+	useLazyGetUserQuery,
+} from '@/store/entities'
 import {
 	useGetQuestQuery,
 	useGetQuestUpdatesQuery,
 } from '@/store/entities/quest'
+import { transformUserFromAPI } from '@/utils/auth'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { transformApiQuestToComponentQuest } from '@/utils/quest'
 import {
@@ -125,6 +139,7 @@ export function QuestDetails({
 }: QuestDetailsProps) {
 	const {
 		user,
+		setUser,
 		participateInQuest,
 		leaveQuest,
 		contributeToQuest,
@@ -133,11 +148,13 @@ export function QuestDetails({
 	const { isAuthenticated } = useAuth()
 	const { checkQuestCompletion } = useQuestActions()
 	const [assignAchievement] = useAssignAchievementMutation()
+	const [getUser] = useLazyGetUserQuery()
 	const [activeTab, setActiveTab] = useState<'stages' | 'updates'>('stages')
 	const [showVolunteerRegistration, setShowVolunteerRegistration] = useState<{
 		stage: QuestStage
 	} | null>(null)
 	const [showAmbassadorShare, setShowAmbassadorShare] = useState(false)
+	const [showLeaveDialog, setShowLeaveDialog] = useState(false)
 	const [galleryIndex, setGalleryIndex] = useState<number | null>(null)
 	const [updateGalleryState, setUpdateGalleryState] = useState<{
 		updateId: number
@@ -242,24 +259,23 @@ export function QuestDetails({
 		}
 	}
 
-	const handleLeave = async () => {
-		if (!transformedQuest) return
-
+	const handleLeaveClick = () => {
 		// Проверяем авторизацию
 		if (!isAuthenticated) {
 			setShowAuthDialog(true)
 			return
 		}
 
-		// Подтверждение выхода
-		const confirmed = globalThis.confirm(
-			`Вы уверены, что хотите выйти из квеста "${transformedQuest.title}"?`
-		)
+		// Открываем диалог подтверждения
+		setShowLeaveDialog(true)
+	}
 
-		if (!confirmed) return
+	const handleLeaveConfirm = async () => {
+		if (!transformedQuest) return
 
 		// Выходим из квеста
 		await leaveQuest(transformedQuest.id)
+		setShowLeaveDialog(false)
 	}
 
 	const handleVolunteerRegister = (
@@ -299,19 +315,35 @@ export function QuestDetails({
 				localStorage.setItem(sharedQuestsKey, JSON.stringify(sharedQuests))
 
 				// Проверяем и разблокируем достижение за шаринг через API
-				const hasSocialAmbassador = user.achievements.some(
-					a => a.id === 'social_ambassador'
+				const hasSocialAmbassadorBefore = user.achievements.some(
+					a => String(a.id) === '17'
 				)
 
-				if (!hasSocialAmbassador && user.id) {
+				if (!hasSocialAmbassadorBefore && user.id) {
 					// Используем API для назначения достижения
 					assignAchievement({
-						id: 'social_ambassador',
+						id: 17,
 						userId: user.id,
 					})
 						.unwrap()
-						.then(() => {
-							// Достижение разблокировано
+						.then(async () => {
+							// Показываем toast уведомление сразу после успешного назначения
+							toast.success('📢 Достижение разблокировано!', {
+								description:
+									'Социальный амбассадор - Поделились квестом в социальных сетях',
+								duration: 5000,
+							})
+
+							// Обновляем данные пользователя, чтобы получить новое достижение
+							try {
+								const userResult = await getUser(user.id).unwrap()
+								if (userResult && setUser) {
+									const transformedUser = transformUserFromAPI(userResult)
+									setUser(transformedUser)
+								}
+							} catch (error) {
+								console.error('Error fetching updated user data:', error)
+							}
 						})
 						.catch(error => {
 							// Логируем ошибку, но не показываем пользователю, чтобы не мешать UX
@@ -355,6 +387,28 @@ export function QuestDetails({
 					onClose={() => setShowAmbassadorShare(false)}
 				/>
 			)}
+
+			<AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Выход из квеста</AlertDialogTitle>
+						<AlertDialogDescription>
+							{transformedQuest
+								? `Вы уверены, что хотите выйти из квеста "${transformedQuest.title}"? Вы больше не будете участвовать в этом квесте.`
+								: 'Вы уверены, что хотите выйти из квеста? Вы больше не будете участвовать в этом квесте.'}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleLeaveConfirm}
+							className='bg-red-600 hover:bg-red-700 text-white'
+						>
+							Выйти из квеста
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			<section
 				className={`fixed left-5 top-[88px] bottom-20 w-[480px] max-w-[calc(100vw-40px)] z-[100] bg-white/98 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/80 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
@@ -454,7 +508,7 @@ export function QuestDetails({
 									</Button>
 									<Button
 										type='button'
-										onClick={handleLeave}
+										onClick={handleLeaveClick}
 										variant='outline'
 										className='w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700'
 									>
