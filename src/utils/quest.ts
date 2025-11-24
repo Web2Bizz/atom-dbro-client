@@ -188,7 +188,7 @@ export function transformApiQuestToComponentQuest(apiQuest: ApiQuest): Quest {
 			email: emailContact?.value,
 			organization: organizationTypeName,
 		},
-		socials: [], // Социальные сети не приходят с сервера в текущем формате
+		socials: [],
 		gallery: apiQuest.gallery || [],
 		customAchievement,
 		createdAt: apiQuest.createdAt || new Date().toISOString(),
