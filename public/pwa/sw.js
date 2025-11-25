@@ -89,6 +89,11 @@ self.addEventListener('fetch', event => {
 		return
 	}
 
+	// Не трогаем админку - пропускаем все пути, начинающиеся с /admin-panel/
+	if (url.pathname.startsWith('/admin-panel')) {
+		return // Пропускаем обработку, используем только сеть
+	}
+
 	// Пропускаем Swagger UI и все API пути (включая /api#/)
 	// Swagger находится по пути /api#/, поэтому исключаем все пути начинающиеся с /api
 	if (url.pathname.startsWith('/api')) {
