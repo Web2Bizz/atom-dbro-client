@@ -25,15 +25,7 @@ import {
 import { transformUserFromAPI } from '@/utils/auth'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { transformApiQuestToComponentQuest } from '@/utils/quest'
-import {
-	CheckCircle2,
-	Circle,
-	Clock,
-	LogOut,
-	Share2,
-	Users,
-	X,
-} from 'lucide-react'
+import { CheckCircle2, Circle, Clock, LogOut, Share2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type { QuestStage } from '../../types/quest-types'
@@ -628,20 +620,6 @@ export function QuestDetails({
 																		из {stage.requirements.volunteers.needed}
 																	</span>
 																</div>
-																{isParticipating &&
-																	stage.status !== 'completed' && (
-																		<Button
-																			size='sm'
-																			onClick={() =>
-																				setShowVolunteerRegistration({ stage })
-																			}
-																			className='bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700'
-																			type='button'
-																		>
-																			<Users className='h-3 w-3 mr-1' />
-																			Записаться
-																		</Button>
-																	)}
 															</div>
 														)}
 														{stage.requirements.items && (
