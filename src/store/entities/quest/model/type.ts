@@ -243,3 +243,81 @@ export interface QuestParticipant {
 export interface QuestParticipantsResponse {
 	data: QuestParticipant[]
 }
+
+// Запрос на добавление вклада в этап квеста
+export interface AddQuestStepContributionRequest {
+	contributeValue: number
+}
+
+// Параметры для добавления вклада в этап квеста
+export interface AddQuestStepContributionParams {
+	questId: number
+	stepType: 'finance' | 'material' | 'no_required'
+	userId: number
+	contributeValue: number
+}
+
+// Ответ при добавлении вклада в этап квеста
+export interface AddQuestStepContributionResponse {
+	data: {
+		message?: string
+	}
+}
+
+// Запрос на генерацию токена для checkin
+export interface GenerateCheckInTokenRequest {
+	questId: number
+	type: 'contributers' | 'finance' | 'material'
+}
+
+// Ответ при генерации токена для checkin
+export interface GenerateCheckInTokenResponse {
+	token: string
+}
+
+// Параметры для проверки checkin токена
+export interface CheckInParams {
+	questId: number
+	type: 'contributers' | 'finance' | 'material'
+	token: string
+}
+
+// Ответ при проверке checkin токена
+export interface CheckInResponse {
+	data: {
+		message?: string
+	}
+}
+
+// Запрос на отметку волонтеров для этапа квеста
+export interface MarkVolunteersRequest {
+	userIds: number[]
+}
+
+// Параметры для отметки волонтеров
+export interface MarkVolunteersParams {
+	questId: number
+	userIds: number[]
+}
+
+// Ответ при отметке волонтеров
+export interface MarkVolunteersResponse {
+	data: {
+		message?: string
+	}
+}
+
+// Отмеченный волонтер
+export interface MarkedVolunteer {
+	id: number
+	firstName: string
+	lastName: string
+	middleName?: string | null
+	email: string
+	joinedAt: string
+}
+
+// Ответ при получении отмеченных волонтеров
+export interface MarkedVolunteersResponse {
+	data: MarkedVolunteer[]
+}

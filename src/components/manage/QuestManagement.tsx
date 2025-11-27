@@ -7,6 +7,7 @@ import {
 } from '@/store/entities'
 import {
 	useCompleteQuestMutation,
+	useGenerateCheckInTokenMutation,
 	useGetQuestQuery,
 	useUpdateQuestMutation,
 } from '@/store/entities/quest'
@@ -34,6 +35,7 @@ export function QuestManagement({
 	const { data: quest, isLoading, refetch } = useGetQuestQuery(questId)
 	const [updateQuest, { isLoading: isUpdating }] = useUpdateQuestMutation()
 	const [completeQuest] = useCompleteQuestMutation()
+	const [generateCheckInToken] = useGenerateCheckInTokenMutation()
 	const { user, setUser } = useUser()
 	const [getUser] = useLazyGetUserQuery()
 	const [getUserAchievements] = useLazyGetUserAchievementsByUserIdQuery()
@@ -233,21 +235,39 @@ export function QuestManagement({
 		}
 	}
 
-	const generateQRCode = (stepIndex: number) => {
+	const generateQRCode = async (stepIndex: number) => {
 		const step = currentQuest.steps?.[stepIndex]
 		if (!step) return
 
-		// Генерируем уникальный токен для QR кода
-		const token = `${questId}-${stepIndex}-${Date.now()}`
-		const qrData = JSON.stringify({
-			questId,
-			stepIndex,
-			token,
-			type: 'volunteer_checkin',
-		})
+		try {
+			// Отправляем запрос на генерацию токена
+			const response = await generateCheckInToken({
+				questId,
+				type: 'contributers',
+			}).unwrap()
 
-		setQrCodeData(qrData)
-		setShowQRCode(true)
+			const token = response.token
+
+			// Создаем URL для страницы checkin
+			// Страница затем сделает GET запрос на API /v1/checkin
+			const checkInUrl = new URL('/checkin', globalThis.location.origin)
+			checkInUrl.searchParams.set('questId', String(questId))
+			checkInUrl.searchParams.set('type', 'contributers')
+			checkInUrl.searchParams.set('token', token)
+
+			// Используем URL для QR кода
+			const qrData = checkInUrl.toString()
+
+			setQrCodeData(qrData)
+			setShowQRCode(true)
+		} catch (error) {
+			logger.error('Error generating checkin token:', error)
+			const errorMessage = getErrorMessage(
+				error,
+				'Не удалось сгенерировать QR код. Попробуйте еще раз.'
+			)
+			toast.error(errorMessage)
+		}
 	}
 
 	return (

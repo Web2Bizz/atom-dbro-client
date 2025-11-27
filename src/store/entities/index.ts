@@ -22,6 +22,7 @@ export { experienceService, useAddExperienceMutation } from './experience'
 export type { AddExperienceRequest, AddExperienceResponse } from './experience'
 
 export {
+	useAddQuestStepContributionMutation,
 	useCompleteQuestMutation,
 	useCreateQuestMutation,
 	useDeleteQuestMutation,
