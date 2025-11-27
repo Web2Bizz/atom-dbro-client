@@ -505,7 +505,9 @@ export function QuestRequirementInput({
 							>
 								{isGeneratingQR ? (
 									<>
-										<Spinner className='h-4 w-4 mr-2' />
+										<div className='mr-2 flex items-center justify-center'>
+											<Spinner />
+										</div>
 										<span className='hidden sm:inline'>Генерация...</span>
 										<span className='sm:hidden'>...</span>
 									</>
