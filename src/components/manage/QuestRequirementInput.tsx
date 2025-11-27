@@ -1,11 +1,21 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, type SelectOption } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 import { useQuestParticipants } from '@/hooks/useQuestParticipants'
+import {
+	useAddQuestStepContributionMutation,
+	useGetMarkedVolunteersQuery,
+	useGetQuestQuery,
+	useMarkVolunteersMutation,
+} from '@/store/entities/quest'
 import type { QuestStepRequirement } from '@/store/entities/quest/model/type'
+import { getErrorMessage } from '@/utils/error'
 import { formatCurrency } from '@/utils/format'
+import { logger } from '@/utils/logger'
 import { Check, Plus, QrCode, Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 export type RequirementType = 'financial' | 'volunteers' | 'items'
 
@@ -13,6 +23,7 @@ interface QuestRequirementInputProps {
 	readonly requirement: QuestStepRequirement
 	readonly stepIndex: number
 	readonly type: RequirementType
+	readonly stepType?: 'finance' | 'contributers' | 'material'
 	readonly isUpdating: boolean
 	readonly questId: number
 	readonly onAddAmount: (
@@ -28,17 +39,56 @@ export function QuestRequirementInput({
 	requirement,
 	stepIndex,
 	type,
+	stepType,
 	isUpdating,
 	questId,
 	onAddAmount,
 	onGenerateQRCode,
 }: QuestRequirementInputProps) {
-	const { participants } = useQuestParticipants(questId)
+	const { participants, isLoading: isLoadingParticipants } =
+		useQuestParticipants(questId)
+	const [addContribution, { isLoading: isAddingContribution }] =
+		useAddQuestStepContributionMutation()
+	const [markVolunteers, { isLoading: isMarkingVolunteers }] =
+		useMarkVolunteersMutation()
+	const { refetch: refetchQuest } = useGetQuestQuery(questId)
+	
+	// Загружаем уже отмеченных волонтеров только для этапа с типом "contributers"
+	const {
+		data: markedVolunteersData,
+		isLoading: isLoadingMarkedVolunteers,
+		refetch: refetchMarkedVolunteers,
+	} = useGetMarkedVolunteersQuery(questId, {
+		skip: type !== 'volunteers' || stepType !== 'contributers',
+	})
+	
 	const [selectedUserId, setSelectedUserId] = useState<string>('')
 	const [selectedVolunteers, setSelectedVolunteers] = useState<Set<string>>(
 		new Set()
 	)
+	const [markedVolunteerIds, setMarkedVolunteerIds] = useState<Set<string>>(
+		new Set()
+	)
 	const [amount, setAmount] = useState<string>('')
+	
+	// Инициализируем markedVolunteerIds с уже отмеченными пользователями (заблокированные)
+	useEffect(() => {
+		if (
+			type === 'volunteers' &&
+			stepType === 'contributers' &&
+			!isLoadingMarkedVolunteers
+		) {
+			if (markedVolunteersData?.data && Array.isArray(markedVolunteersData.data)) {
+				const markedIds = new Set(
+					markedVolunteersData.data.map(volunteer => String(volunteer.id))
+				)
+				setMarkedVolunteerIds(markedIds)
+			} else {
+				// Если данных нет, очищаем отмеченных волонтеров
+				setMarkedVolunteerIds(new Set())
+			}
+		}
+	}, [type, stepType, markedVolunteersData, isLoadingMarkedVolunteers])
 
 	const userOptions: SelectOption[] = useMemo(
 		() => [
@@ -54,9 +104,53 @@ export function QuestRequirementInput({
 	const isAnonymous = selectedUserId === 'anonymous'
 	const actualUserId = isAnonymous ? undefined : selectedUserId || undefined
 
-	const handleInputSubmit = () => {
+	const handleInputSubmit = async () => {
 		const numAmount = Number.parseFloat(amount || '0')
-		if (numAmount > 0) {
+		if (numAmount <= 0) return
+
+		// Если это финансовый или материальный этап, и выбран пользователь, используем API
+		if (
+			(stepType === 'finance' || stepType === 'material') &&
+			actualUserId &&
+			!isAnonymous
+		) {
+			try {
+				const userIdNum = Number.parseInt(actualUserId, 10)
+				if (Number.isNaN(userIdNum)) {
+					toast.error('Неверный ID пользователя')
+					return
+				}
+
+				// Маппинг типа этапа для API
+				const apiStepType =
+					stepType === 'finance'
+						? 'finance'
+						: stepType === 'material'
+						? 'material'
+						: 'no_required'
+
+				await addContribution({
+					questId,
+					stepType: apiStepType,
+					userId: userIdNum,
+					contributeValue: numAmount,
+				}).unwrap()
+
+				toast.success('Вклад успешно добавлен')
+				setAmount('')
+				setSelectedUserId('')
+				// Обновляем данные квеста
+				await refetchQuest()
+			} catch (error) {
+				logger.error('Error adding contribution:', error)
+				const errorMessage = getErrorMessage(
+					error,
+					'Не удалось добавить вклад. Попробуйте еще раз.'
+				)
+				toast.error(errorMessage)
+			}
+		} else {
+			// Для волонтеров или анонимных вкладов используем старый метод
 			onAddAmount(stepIndex, numAmount, actualUserId, isAnonymous)
 			setAmount('')
 			setSelectedUserId('')
@@ -64,6 +158,11 @@ export function QuestRequirementInput({
 	}
 
 	const handleVolunteerToggle = (userId: string) => {
+		// Не позволяем изменять уже отмеченных волонтеров
+		if (markedVolunteerIds.has(userId)) {
+			return
+		}
+		
 		setSelectedVolunteers(prev => {
 			const newSet = new Set(prev)
 			if (newSet.has(userId)) {
@@ -75,12 +174,44 @@ export function QuestRequirementInput({
 		})
 	}
 
-	const handleMarkVolunteers = () => {
-		if (selectedVolunteers.size > 0) {
-			for (const userId of selectedVolunteers) {
-				onAddAmount(stepIndex, 1, userId, false)
+	const handleMarkVolunteers = async () => {
+		// Отправляем только новых выбранных волонтеров (исключая уже отмеченных)
+		const newVolunteers = Array.from(selectedVolunteers).filter(
+			id => !markedVolunteerIds.has(id)
+		)
+		
+		if (newVolunteers.length === 0) {
+			toast.info('Нет новых волонтеров для отметки')
+			return
+		}
+
+		try {
+			// Преобразуем выбранные ID из строк в числа
+			const userIds = newVolunteers.map(id => Number.parseInt(id, 10))
+
+			// Проверяем, что все ID валидны
+			if (userIds.some(id => Number.isNaN(id))) {
+				toast.error('Неверный ID пользователя')
+				return
 			}
+
+			await markVolunteers({
+				questId,
+				userIds,
+			}).unwrap()
+
+			toast.success('Волонтеры успешно отмечены')
+			// Обновляем данные квеста и отмеченных волонтеров
+			await Promise.all([refetchQuest(), refetchMarkedVolunteers()])
+			// Очищаем выбранных волонтеров, так как они теперь отмечены на сервере
 			setSelectedVolunteers(new Set())
+		} catch (error) {
+			logger.error('Error marking volunteers:', error)
+			const errorMessage = getErrorMessage(
+				error,
+				'Не удалось отметить волонтеров. Попробуйте еще раз.'
+			)
+			toast.error(errorMessage)
 		}
 	}
 
@@ -139,14 +270,20 @@ export function QuestRequirementInput({
 						>
 							Участник квеста
 						</label>
-						<Select
-							id={`participant-select-financial-${stepIndex}`}
-							options={userOptions}
-							value={selectedUserId}
-							onChange={e => setSelectedUserId(e.target.value)}
-							placeholder='Выберите участника'
-							className='w-full text-sm'
-						/>
+						{isLoadingParticipants ? (
+							<div className='relative h-10 w-full flex items-center justify-center border border-slate-300 rounded-md bg-white'>
+								<Spinner />
+							</div>
+						) : (
+							<Select
+								id={`participant-select-financial-${stepIndex}`}
+								options={userOptions}
+								value={selectedUserId}
+								onChange={e => setSelectedUserId(e.target.value)}
+								placeholder='Выберите участника'
+								className='w-full text-sm'
+							/>
+						)}
 					</div>
 
 					<div>
@@ -176,11 +313,16 @@ export function QuestRequirementInput({
 					<Button
 						type='button'
 						onClick={handleInputSubmit}
-						disabled={isUpdating || !amount || Number.parseFloat(amount) <= 0}
+						disabled={
+							isUpdating ||
+							isAddingContribution ||
+							!amount ||
+							Number.parseFloat(amount) <= 0
+						}
 						className='w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md h-10 sm:h-auto text-sm sm:text-base'
 					>
 						<Plus className='h-4 w-4 mr-2' />
-						Добавить взнос
+						{isAddingContribution ? 'Добавление...' : 'Добавить взнос'}
 					</Button>
 				</div>
 			</div>
@@ -240,32 +382,49 @@ export function QuestRequirementInput({
 						<p className='block text-xs sm:text-sm font-medium text-slate-700 mb-2 sm:mb-3'>
 							Выберите участников для отметки:
 						</p>
-						<div className='bg-white/60 rounded-lg p-3 sm:p-4 space-y-2 max-h-48 overflow-y-auto'>
-							{participants.length > 0 ? (
+						<div className='bg-white/60 rounded-lg p-3 sm:p-4 space-y-2 max-h-48 overflow-y-auto relative min-h-[100px]'>
+							{isLoadingParticipants || isLoadingMarkedVolunteers ? (
+								<div className='absolute inset-0 flex items-center justify-center'>
+									<Spinner />
+								</div>
+							) : participants.length > 0 ? (
 								participants.map(participant => {
-									const isSelected = selectedVolunteers.has(participant.id)
+									const isMarked = markedVolunteerIds.has(participant.id)
+									const isSelected = isMarked || selectedVolunteers.has(participant.id)
+									const isDisabled = isMarked
+									
 									return (
 										<label
 											key={participant.id}
-											className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg cursor-pointer transition-all ${
-												isSelected
-													? 'bg-green-100 border-2 border-green-500'
-													: 'bg-white border-2 border-slate-200 hover:border-green-300'
+											className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-all ${
+												isDisabled
+													? 'bg-slate-100 border-2 border-slate-300 cursor-not-allowed opacity-75'
+													: isSelected
+													? 'bg-green-100 border-2 border-green-500 cursor-pointer'
+													: 'bg-white border-2 border-slate-200 hover:border-green-300 cursor-pointer'
 											}`}
 										>
 											<input
 												type='checkbox'
 												checked={isSelected}
+												disabled={isDisabled}
 												onChange={() => handleVolunteerToggle(participant.id)}
-												className='h-4 w-4 sm:h-5 sm:w-5 rounded border-slate-300 text-green-600 focus:ring-green-500 flex-shrink-0'
+												className='h-4 w-4 sm:h-5 sm:w-5 rounded border-slate-300 text-green-600 focus:ring-green-500 flex-shrink-0 disabled:cursor-not-allowed'
 											/>
 											<div className='flex-1 min-w-0'>
 												<p className='font-medium text-sm sm:text-base text-slate-900 truncate'>
 													{participant.name}
+													{isMarked && (
+														<span className='ml-2 text-xs text-slate-500 font-normal'>
+															(уже отмечен)
+														</span>
+													)}
 												</p>
-												<p className='text-xs text-slate-500 truncate'>
-													{participant.email}
-												</p>
+												{participant.email && (
+													<p className='text-xs text-slate-500 truncate'>
+														{participant.email}
+													</p>
+												)}
 											</div>
 											{isSelected && (
 												<Check className='h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0' />
@@ -285,11 +444,22 @@ export function QuestRequirementInput({
 						<Button
 							type='button'
 							onClick={handleMarkVolunteers}
-							disabled={isUpdating || selectedVolunteers.size === 0}
+							disabled={
+								isUpdating ||
+								isMarkingVolunteers ||
+								selectedVolunteers.size === 0 ||
+								Array.from(selectedVolunteers).every(id => markedVolunteerIds.has(id))
+							}
 							className='flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md h-10 sm:h-auto text-sm sm:text-base'
 						>
 							<Users className='h-4 w-4 mr-2' />
-							Отметить ({selectedVolunteers.size})
+							{isMarkingVolunteers
+								? 'Отмечаем...'
+								: `Отметить (${
+										Array.from(selectedVolunteers).filter(
+											id => !markedVolunteerIds.has(id)
+										).length
+								  })`}
 						</Button>
 						{onGenerateQRCode && (
 							<Button
@@ -364,14 +534,20 @@ export function QuestRequirementInput({
 						>
 							Участник квеста
 						</label>
-						<Select
-							id={`participant-select-items-${stepIndex}`}
-							options={userOptions}
-							value={selectedUserId}
-							onChange={e => setSelectedUserId(e.target.value)}
-							placeholder='Выберите участника'
-							className='w-full text-sm'
-						/>
+						{isLoadingParticipants ? (
+							<div className='relative h-10 w-full flex items-center justify-center border border-slate-300 rounded-md bg-white'>
+								<Spinner />
+							</div>
+						) : (
+							<Select
+								id={`participant-select-items-${stepIndex}`}
+								options={userOptions}
+								value={selectedUserId}
+								onChange={e => setSelectedUserId(e.target.value)}
+								placeholder='Выберите участника'
+								className='w-full text-sm'
+							/>
+						)}
 					</div>
 
 					<div>
@@ -401,11 +577,16 @@ export function QuestRequirementInput({
 					<Button
 						type='button'
 						onClick={handleInputSubmit}
-						disabled={isUpdating || !amount || Number.parseFloat(amount) <= 0}
+						disabled={
+							isUpdating ||
+							isAddingContribution ||
+							!amount ||
+							Number.parseFloat(amount) <= 0
+						}
 						className='w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md h-10 sm:h-auto text-sm sm:text-base'
 					>
 						<Plus className='h-4 w-4 mr-2' />
-						Добавить предметы
+						{isAddingContribution ? 'Добавление...' : 'Добавить предметы'}
 					</Button>
 				</div>
 			</div>

@@ -1,14 +1,26 @@
 import { baseQueryWithReauth } from '@/store/baseQueryWithReauth'
 import { createApi } from '@reduxjs/toolkit/query/react'
 import type {
+	AddQuestStepContributionParams,
+	AddQuestStepContributionRequest,
+	AddQuestStepContributionResponse,
+	CheckInParams,
+	CheckInResponse,
 	CreateQuestRequest,
 	CreateQuestResponse,
 	CreateQuestUpdateRequest,
 	DeleteQuestResponse,
 	DeleteQuestUpdateResponse,
+	GenerateCheckInTokenRequest,
+	GenerateCheckInTokenResponse,
 	GetQuestsParams,
 	JoinQuestResponse,
 	LeaveQuestResponse,
+	MarkVolunteersParams,
+	MarkVolunteersRequest,
+	MarkVolunteersResponse,
+	MarkedVolunteer,
+	MarkedVolunteersResponse,
 	Quest,
 	QuestParticipant,
 	QuestParticipantsResponse,
@@ -24,7 +36,13 @@ import type {
 export const questService = createApi({
 	reducerPath: 'questApi',
 	baseQuery: baseQueryWithReauth,
-	tagTypes: ['Quest', 'QuestList', 'QuestUpdate', 'UserQuest'],
+	tagTypes: [
+		'Quest',
+		'QuestList',
+		'QuestUpdate',
+		'UserQuest',
+		'MarkedVolunteers',
+	],
 	endpoints: builder => ({
 		// GET /quests - Получить список квестов с фильтрацией
 		getQuests: builder.query<QuestsListResponse, GetQuestsParams | void>({
@@ -390,6 +408,94 @@ export const questService = createApi({
 				{ type: 'Quest', id: String(id) },
 			],
 		}),
+
+		// POST /v1/quests/:id/steps/:type/volunteers/:userId - Добавить вклад пользователя в этап квеста
+		addQuestStepContribution: builder.mutation<
+			AddQuestStepContributionResponse,
+			AddQuestStepContributionParams
+		>({
+			query: ({ questId, stepType, userId, contributeValue }) => ({
+				url: `/v1/quests/${questId}/steps/${stepType}/volunteers/${userId}`,
+				method: 'POST',
+				body: {
+					contributeValue,
+				} as AddQuestStepContributionRequest,
+			}),
+			invalidatesTags: (_result, _error, { questId }) => [
+				{ type: 'Quest', id: String(questId) },
+			],
+		}),
+
+		// GET /v1/quests/:questId/steps/contributers/volunteers - Получить отмеченных волонтеров для этапа квеста
+		getMarkedVolunteers: builder.query<
+			MarkedVolunteersResponse,
+			number | string
+		>({
+			query: questId => `/v1/quests/${questId}/steps/contributers/volunteers`,
+			transformResponse: (
+				response: MarkedVolunteer[] | MarkedVolunteersResponse
+			): MarkedVolunteersResponse => {
+				// Если ответ - это массив объектов напрямую
+				if (Array.isArray(response)) {
+					return {
+						data: response,
+					}
+				}
+				// Если ответ уже в формате { data: [...] }
+				if ('data' in response && Array.isArray(response.data)) {
+					return response
+				}
+				// Возвращаем пустой массив по умолчанию
+				return {
+					data: [],
+				}
+			},
+			providesTags: (_result, _error, questId) => [
+				{ type: 'MarkedVolunteers', id: String(questId) },
+			],
+		}),
+
+		// POST /v1/quests/:questId/steps/contributers/volunteers - Отметить волонтеров для этапа квеста
+		markVolunteers: builder.mutation<
+			MarkVolunteersResponse,
+			MarkVolunteersParams
+		>({
+			query: ({ questId, userIds }) => ({
+				url: `/v1/quests/${questId}/steps/contributers/volunteers`,
+				method: 'POST',
+				body: {
+					userIds,
+				} as MarkVolunteersRequest,
+			}),
+			invalidatesTags: (_result, _error, { questId }) => [
+				{ type: 'Quest', id: String(questId) },
+				{ type: 'MarkedVolunteers', id: String(questId) },
+			],
+		}),
+
+		// POST /v1/checkin/generate-token - Генерация токена для QR кода checkin
+		generateCheckInToken: builder.mutation<
+			GenerateCheckInTokenResponse,
+			GenerateCheckInTokenRequest
+		>({
+			query: body => ({
+				url: '/v1/checkin/generate-token',
+				method: 'POST',
+				body,
+			}),
+		}),
+
+		// GET /v1/checkin - Проверка токена и отметка пользователя
+		checkIn: builder.query<CheckInResponse, CheckInParams>({
+			query: ({ questId, type, token }) => ({
+				url: '/v1/checkin',
+				params: {
+					questId,
+					type,
+					token,
+				},
+			}),
+		}),
 	}),
 })
 
@@ -415,4 +521,11 @@ export const {
 	useDeleteQuestUpdateMutation,
 	useGetQuestUsersQuery,
 	useLazyGetQuestUsersQuery,
+	useAddQuestStepContributionMutation,
+	useGetMarkedVolunteersQuery,
+	useLazyGetMarkedVolunteersQuery,
+	useMarkVolunteersMutation,
+	useGenerateCheckInTokenMutation,
+	useCheckInQuery,
+	useLazyCheckInQuery,
 } = questService

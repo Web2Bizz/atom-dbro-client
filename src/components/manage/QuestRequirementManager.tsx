@@ -102,6 +102,7 @@ export function QuestRequirementManager({
 					requirement={requirement}
 					stepIndex={stepIndex}
 					type={requirementType}
+					stepType={step.type}
 					isUpdating={isUpdating}
 					questId={questId}
 					onAddAmount={onAddAmount}
