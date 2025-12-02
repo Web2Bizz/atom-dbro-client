@@ -17,9 +17,6 @@ interface QuestSubmissionOptions {
 	uploadImages: (
 		data: QuestFormData
 	) => Promise<{ storyImageUrl: string | undefined; galleryUrls: string[] }>
-	createAchievement: (
-		customAchievement: QuestFormData['customAchievement']
-	) => Promise<number | undefined>
 }
 
 /**
@@ -29,7 +26,6 @@ interface QuestSubmissionOptions {
 export function useQuestSubmission({
 	onSuccess,
 	uploadImages,
-	createAchievement,
 }: QuestSubmissionOptions) {
 	const { user, setUser, createQuest: setUserQuestId } = useUser()
 	const { data: questsResponse } = useGetQuestsQuery()
@@ -110,25 +106,17 @@ export function useQuestSubmission({
 			// Загружаем изображения
 			const { storyImageUrl, galleryUrls } = await uploadImages(data)
 
-			// Создаем достижение, если указано
-			let achievementId: number | undefined = data.achievementId || undefined
-			if (data.customAchievement) {
-				achievementId = await createAchievement(data.customAchievement)
-			}
-
-			// Обновляем данные формы с загруженными URL и achievementId
+			// Обновляем данные формы с загруженными URL
+			// При создании achievement передается как объект в запросе
 			const updatedData = {
 				...data,
 				storyImage: storyImageUrl,
 				gallery: galleryUrls,
-				achievementId,
 			}
-
-			logger.debug('Updated data with achievementId:', updatedData.achievementId)
 
 			const requestData = transformFormDataToCreateRequest(updatedData)
 			logger.debug('Create request data:', requestData)
-			logger.debug('AchievementId in request:', requestData.achievementId)
+			logger.debug('Achievement in request:', requestData.achievement)
 
 			// Создаем квест
 			const result = await createQuestMutation(requestData).unwrap()
@@ -203,4 +191,3 @@ export function useQuestSubmission({
 		isCreating,
 	}
 }
-
