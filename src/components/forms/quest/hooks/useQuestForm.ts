@@ -10,7 +10,6 @@ import {
 	questFormSchema,
 	type QuestFormData,
 } from '../schemas/quest-form.schema'
-import { useQuestAchievement } from './useQuestAchievement'
 import { useQuestContactSync } from './useQuestContactSync'
 import { useQuestImageUpload } from './useQuestImageUpload'
 import { useQuestSubmission } from './useQuestSubmission'
@@ -62,11 +61,9 @@ export function useQuestForm(onSuccess?: (questId: string) => void) {
 
 	// Хуки для обработки данных
 	const { uploadImages, isUploadingImages } = useQuestImageUpload()
-	const { createAchievement } = useQuestAchievement()
 	const { submitQuest, isCreating } = useQuestSubmission({
 		onSuccess,
 		uploadImages,
-		createAchievement,
 	})
 
 	const { data: citiesData = [] } = useGetCitiesQuery()

@@ -69,7 +69,11 @@ export interface CreateQuestRequest {
 	description: string
 	status: 'active' | 'completed' | 'archived'
 	experienceReward: number
-	achievementId?: number // ID достижения (если есть)
+	achievement?: {
+		title: string
+		description: string
+		icon: string
+	}
 	cityId: number
 	organizationTypeId: number
 	latitude: number

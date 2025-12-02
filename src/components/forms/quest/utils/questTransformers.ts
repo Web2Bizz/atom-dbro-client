@@ -110,11 +110,16 @@ export function transformFormDataToCreateRequest(
 		categoryIds: [categoryId],
 	}
 
-	if (data.achievementId !== undefined && data.achievementId !== null) {
-		request.achievementId = data.achievementId
-		logger.debug('Adding achievementId to create request:', data.achievementId)
+	// При создании передаем объект achievement, если указано пользовательское достижение
+	if (data.customAchievement) {
+		request.achievement = {
+			title: data.customAchievement.title,
+			description: data.customAchievement.description,
+			icon: data.customAchievement.icon,
+		}
+		logger.debug('Adding achievement object to create request:', request.achievement)
 	} else {
-		logger.debug('No achievementId in data:', data.achievementId)
+		logger.debug('No customAchievement in data')
 	}
 
 	return request
