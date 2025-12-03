@@ -2,10 +2,20 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import { w2bViteFileBasedRouting } from 'w2b-vite-filebased-routing/core'
 
 export default defineConfig({
+	test: {
+		// Делает Vitest API глобально доступным без импортов
+		globals: true,
+
+		// Создает браузерное окружение для тестирования DOM и React компонентов
+		environment: 'jsdom',
+
+		// Выполняет указанный файл перед запуском КАЖДОГО теста
+		setupFiles: './src/tests/setup.ts',
+	},
 	plugins: [
 		react(),
 		w2bViteFileBasedRouting({
