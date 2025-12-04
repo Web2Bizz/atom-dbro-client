@@ -8,6 +8,12 @@ vi.mock('@/store/baseQueryWithReauth', () => ({
 	baseQueryWithReauth: (...args: unknown[]) => mockBaseQuery(...args),
 }))
 
+// Мокируем getToken для проверки версии API
+const mockGetToken = vi.hoisted(() => vi.fn<() => string | null>(() => null))
+vi.mock('@/utils/auth', () => ({
+	getToken: mockGetToken,
+}))
+
 describe('quest-service', () => {
 	const store = configureStore({
 		reducer: {
@@ -19,6 +25,8 @@ describe('quest-service', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		// По умолчанию токен отсутствует (неавторизованный пользователь)
+		mockGetToken.mockReturnValue(null)
 		// Сбрасываем кэш RTK Query между тестами
 		store.dispatch(questService.util.resetApiState())
 	})
@@ -346,8 +354,10 @@ describe('quest-service', () => {
 	})
 
 	describe('getQuest query', () => {
-		it('должен отправлять GET запрос на /v2/quests/:id', async () => {
+		it('должен отправлять GET запрос на /v2/quests/:id для авторизованного пользователя', async () => {
 			const questId = 123
+			// Мокируем токен для авторизованного пользователя
+			mockGetToken.mockReturnValue('valid-token')
 
 			const mockQuest = {
 				id: questId,
@@ -369,8 +379,35 @@ describe('quest-service', () => {
 			expect(result.error).toBeUndefined()
 		})
 
-		it('должен работать со строковым id', async () => {
+		it('должен отправлять GET запрос на /v1/quests/:id для неавторизованного пользователя', async () => {
+			const questId = 123
+			// Убеждаемся, что токен отсутствует
+			mockGetToken.mockReturnValue(null)
+
+			const mockQuest = {
+				id: questId,
+				title: 'Test Quest',
+				description: 'Test Description',
+			}
+
+			mockBaseQuery.mockResolvedValue({ data: mockQuest })
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuest.initiate(questId)
+			)
+
+			expect(mockBaseQuery).toHaveBeenCalled()
+			// query возвращает строку, а не объект
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(`/v1/quests/${questId}`)
+
+			expect(result.data).toEqual(mockQuest)
+			expect(result.error).toBeUndefined()
+		})
+
+		it('должен работать со строковым id для авторизованного пользователя', async () => {
 			const questId = '123'
+			// Мокируем токен для авторизованного пользователя
+			mockGetToken.mockReturnValue('valid-token')
 
 			mockBaseQuery.mockResolvedValue({
 				data: { id: 123, title: 'Test Quest' },
@@ -387,8 +424,30 @@ describe('quest-service', () => {
 			expect(result.error).toBeUndefined()
 		})
 
+		it('должен работать со строковым id для неавторизованного пользователя', async () => {
+			const questId = '123'
+			// Убеждаемся, что токен отсутствует
+			mockGetToken.mockReturnValue(null)
+
+			mockBaseQuery.mockResolvedValue({
+				data: { id: 123, title: 'Test Quest' },
+			})
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuest.initiate(questId)
+			)
+
+			expect(mockBaseQuery).toHaveBeenCalled()
+			// query возвращает строку, а не объект
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(`/v1/quests/${questId}`)
+
+			expect(result.error).toBeUndefined()
+		})
+
 		it('должен предоставлять тег Quest с правильным id', async () => {
 			const questId = 123
+			// Мокируем токен для авторизованного пользователя
+			mockGetToken.mockReturnValue('valid-token')
 
 			mockBaseQuery.mockResolvedValue({
 				data: { id: questId, title: 'Test Quest' },
