@@ -1,5 +1,6 @@
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import type { User } from '@/types/user'
+import { getToken } from '@/utils/auth'
 import { getLevelTitle, normalizeUserLevel } from '@/utils/level'
 import type { ReactNode } from 'react'
 import { createContext, useEffect, useMemo } from 'react'
@@ -15,8 +16,17 @@ export const UserContext = createContext<UserContextType | undefined>(undefined)
 export function UserProvider({ children }: Readonly<{ children: ReactNode }>) {
 	const [user, setUser] = useLocalStorage<User | null>('ecoquest_user', null)
 
-	// При загрузке приложения данные пользователя берутся только из localStorage
-	// Остальные данные (квесты, достижения и т.д.) загружаются только после авторизации
+	// При загрузке приложения проверяем наличие токенов
+	// Если токенов нет, но пользователь есть в localStorage - очищаем пользователя
+	useEffect(() => {
+		const token = getToken()
+		if (!token && user) {
+			// Токенов нет, но пользователь есть - это невалидное состояние
+			// Очищаем пользователя, чтобы приложение перенаправило на страницу входа
+			setUser(null)
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []) // Запускаем только при монтировании
 
 	// Нормализуем уровень пользователя при загрузке
 	useEffect(() => {

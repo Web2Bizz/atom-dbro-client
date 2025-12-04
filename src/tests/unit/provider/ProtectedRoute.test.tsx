@@ -9,8 +9,15 @@ const mockUseUser = vi.hoisted(() => vi.fn<() => { user: User | null }>(() => ({
 	user: null as User | null,
 }))) as Mock<() => { user: User | null }>
 
+// Мокируем getToken
+const mockGetToken = vi.hoisted(() => vi.fn<() => string | null>(() => null)) as Mock<() => string | null>
+
 vi.mock('@/hooks/useUser', () => ({
 	useUser: mockUseUser,
+}))
+
+vi.mock('@/utils/auth', () => ({
+	getToken: mockGetToken,
 }))
 
 describe('ProtectedRoute', () => {
@@ -53,6 +60,9 @@ describe('ProtectedRoute', () => {
 			...originalLocation,
 			href: '',
 		} as Location
+		
+		// По умолчанию токен отсутствует
+		mockGetToken.mockReturnValue(null)
 	})
 
 	afterEach(() => {
@@ -60,9 +70,40 @@ describe('ProtectedRoute', () => {
 		window.location = originalLocation
 	})
 
-	describe('редирект на /login при отсутствии пользователя', () => {
+	describe('редирект на /login при отсутствии пользователя или токенов', () => {
 		it('должен перенаправлять на /login, когда пользователь отсутствует', async () => {
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
+
+			render(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			await waitFor(() => {
+				expect(window.location.href).toBe('/login')
+			})
+		})
+
+		it('должен перенаправлять на /login, когда токен отсутствует, даже если пользователь есть', async () => {
+			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue(null)
+
+			render(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			await waitFor(() => {
+				expect(window.location.href).toBe('/login')
+			})
+		})
+
+		it('должен перенаправлять на /login, когда и пользователь, и токен отсутствуют', async () => {
+			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 
 			render(
 				<ProtectedRoute>
@@ -91,6 +132,7 @@ describe('ProtectedRoute', () => {
 
 		it('должен перенаправлять на /login, когда пользователь становится null', async () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -100,10 +142,13 @@ describe('ProtectedRoute', () => {
 
 			// Проверяем, что контент отображается
 			expect(screen.getByText('Protected Content')).toBeTruthy()
+			// Ждем немного, чтобы убедиться, что useEffect выполнился
+			await new Promise(resolve => setTimeout(resolve, 100))
 			expect(window.location.href).toBe('')
 
 			// Изменяем пользователя на null
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -137,9 +182,10 @@ describe('ProtectedRoute', () => {
 		})
 	})
 
-	describe('рендеринг children при наличии пользователя', () => {
-		it('должен рендерить children, когда пользователь присутствует', () => {
+	describe('рендеринг children при наличии пользователя и токена', () => {
+		it('должен рендерить children, когда пользователь и токен присутствуют', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -151,8 +197,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен рендерить сложный контент, когда пользователь присутствует', () => {
+		it('должен рендерить сложный контент, когда пользователь и токен присутствуют', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -170,8 +217,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен рендерить несколько children элементов', () => {
+		it('должен рендерить несколько children элементов, когда пользователь и токен присутствуют', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -187,8 +235,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен рендерить children, когда пользователь появляется после монтирования', async () => {
+		it('должен рендерить children, когда пользователь и токен появляются после монтирования', async () => {
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -204,11 +253,12 @@ describe('ProtectedRoute', () => {
 				expect(window.location.href).toBe('/login')
 			})
 
-			// Сбрасываем href перед изменением пользователя
+			// Сбрасываем href перед изменением пользователя и токена
 			window.location.href = ''
 
-			// Изменяем пользователя на существующего
+			// Изменяем пользователя и токен на существующие
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -217,7 +267,7 @@ describe('ProtectedRoute', () => {
 
 			// Проверяем, что контент теперь отображается
 			expect(screen.getByText('Protected Content')).toBeTruthy()
-			// href не должен измениться, так как пользователь теперь присутствует
+			// href не должен измениться, так как пользователь и токен теперь присутствуют
 			expect(window.location.href).toBe('')
 		})
 	})
@@ -251,6 +301,7 @@ describe('ProtectedRoute', () => {
 
 		it('должен возвращать null при переходе от пользователя к отсутствию пользователя', async () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			const { container, rerender } = render(
 				<ProtectedRoute>
@@ -263,6 +314,7 @@ describe('ProtectedRoute', () => {
 
 			// Изменяем пользователя на null
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -277,6 +329,7 @@ describe('ProtectedRoute', () => {
 
 		it('должен корректно обрабатывать быстрые изменения состояния пользователя', async () => {
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -284,8 +337,9 @@ describe('ProtectedRoute', () => {
 				</ProtectedRoute>
 			)
 
-			// Быстро меняем на пользователя
+			// Быстро меняем на пользователя и токен
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -296,6 +350,7 @@ describe('ProtectedRoute', () => {
 
 			// Быстро меняем обратно на null
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -310,7 +365,7 @@ describe('ProtectedRoute', () => {
 	})
 
 	describe('граничные случаи', () => {
-		it('должен корректно обрабатывать пользователя с минимальными данными', () => {
+		it('должен корректно обрабатывать пользователя с минимальными данными при наличии токена', () => {
 			const minimalUser: User = {
 				id: '2',
 				name: 'Minimal User',
@@ -339,6 +394,7 @@ describe('ProtectedRoute', () => {
 			}
 
 			mockUseUser.mockReturnValue({ user: minimalUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -350,7 +406,7 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен корректно обрабатывать пользователя с максимальными данными', () => {
+		it('должен корректно обрабатывать пользователя с максимальными данными при наличии токена', () => {
 			const maxUser: User = {
 				id: '3',
 				name: 'Max User',
@@ -379,6 +435,7 @@ describe('ProtectedRoute', () => {
 			}
 
 			mockUseUser.mockReturnValue({ user: maxUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -390,8 +447,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен корректно обрабатывать пустой children', () => {
+		it('должен корректно обрабатывать пустой children при наличии пользователя и токена', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			const { container } = render(
 				<ProtectedRoute>
@@ -405,8 +463,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен корректно обрабатывать children с условным рендерингом', () => {
+		it('должен корректно обрабатывать children с условным рендерингом при наличии пользователя и токена', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -420,8 +479,9 @@ describe('ProtectedRoute', () => {
 			expect(window.location.href).toBe('')
 		})
 
-		it('должен корректно обрабатывать фрагменты React', () => {
+		it('должен корректно обрабатывать фрагменты React при наличии пользователя и токена', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -438,9 +498,10 @@ describe('ProtectedRoute', () => {
 		})
 	})
 
-	describe('интеграция с useUser', () => {
+	describe('интеграция с useUser и проверка токенов', () => {
 		it('должен вызывать useUser при монтировании', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -451,8 +512,26 @@ describe('ProtectedRoute', () => {
 			expect(mockUseUser).toHaveBeenCalled()
 		})
 
-		it('должен вызывать useUser при каждом рендере', () => {
+		it('должен вызывать getToken при монтировании', () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
+
+			render(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			expect(mockGetToken).toHaveBeenCalled()
+		})
+
+		it('должен вызывать useUser и getToken при каждом рендере', () => {
+			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
+
+			// Сбрасываем счетчики перед первым рендером
+			mockUseUser.mockClear()
+			mockGetToken.mockClear()
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -460,7 +539,12 @@ describe('ProtectedRoute', () => {
 				</ProtectedRoute>
 			)
 
-			const firstCallCount = mockUseUser.mock.calls.length
+			const firstUserCallCount = mockUseUser.mock.calls.length
+			const firstTokenCallCount = mockGetToken.mock.calls.length
+
+			// Проверяем, что функции были вызваны при первом рендере
+			expect(firstUserCallCount).toBeGreaterThan(0)
+			expect(firstTokenCallCount).toBeGreaterThan(0)
 
 			rerender(
 				<ProtectedRoute>
@@ -468,11 +552,13 @@ describe('ProtectedRoute', () => {
 				</ProtectedRoute>
 			)
 
-			expect(mockUseUser.mock.calls.length).toBeGreaterThan(firstCallCount)
+			expect(mockUseUser.mock.calls.length).toBeGreaterThan(firstUserCallCount)
+			expect(mockGetToken.mock.calls.length).toBeGreaterThan(firstTokenCallCount)
 		})
 
-		it('должен реагировать на изменения user из useUser', async () => {
+		it('должен реагировать на изменения user из useUser и токена', async () => {
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -482,8 +568,9 @@ describe('ProtectedRoute', () => {
 
 			expect(screen.queryByText('Protected Content')).toBeNull()
 
-			// Изменяем возвращаемое значение useUser
+			// Изменяем возвращаемое значение useUser и токена
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>
@@ -497,6 +584,7 @@ describe('ProtectedRoute', () => {
 	describe('поведение useEffect', () => {
 		it('должен устанавливать window.location.href в useEffect при отсутствии пользователя', async () => {
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
 
 			render(
 				<ProtectedRoute>
@@ -510,8 +598,25 @@ describe('ProtectedRoute', () => {
 			}, { timeout: 1000 })
 		})
 
-		it('не должен изменять window.location.href, когда пользователь присутствует', async () => {
+		it('должен устанавливать window.location.href в useEffect при отсутствии токена', async () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue(null)
+
+			render(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			// useEffect выполняется асинхронно, поэтому нужно подождать
+			await waitFor(() => {
+				expect(window.location.href).toBe('/login')
+			}, { timeout: 1000 })
+		})
+
+		it('не должен изменять window.location.href, когда пользователь и токен присутствуют', async () => {
+			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			render(
 				<ProtectedRoute>
@@ -527,6 +632,7 @@ describe('ProtectedRoute', () => {
 
 		it('должен обновлять window.location.href при изменении user с существующего на null', async () => {
 			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
 
 			const { rerender } = render(
 				<ProtectedRoute>
@@ -538,6 +644,36 @@ describe('ProtectedRoute', () => {
 
 			// Изменяем пользователя на null
 			mockUseUser.mockReturnValue({ user: null })
+			mockGetToken.mockReturnValue(null)
+			rerender(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			await waitFor(() => {
+				expect(window.location.href).toBe('/login')
+			})
+		})
+
+		it('должен обновлять window.location.href при изменении токена с существующего на null', async () => {
+			mockUseUser.mockReturnValue({ user: mockUser })
+			mockGetToken.mockReturnValue('valid-token')
+
+			const { rerender } = render(
+				<ProtectedRoute>
+					<div>Protected Content</div>
+				</ProtectedRoute>
+			)
+
+			// Проверяем, что контент отображается
+			expect(screen.getByText('Protected Content')).toBeInTheDocument()
+			// Ждем немного, чтобы убедиться, что useEffect выполнился
+			await new Promise(resolve => setTimeout(resolve, 100))
+			expect(window.location.href).toBe('')
+
+			// Изменяем токен на null
+			mockGetToken.mockReturnValue(null)
 			rerender(
 				<ProtectedRoute>
 					<div>Protected Content</div>

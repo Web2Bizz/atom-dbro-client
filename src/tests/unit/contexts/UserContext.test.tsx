@@ -11,6 +11,12 @@ vi.mock('@/utils/level', () => ({
 	getLevelTitle: vi.fn(),
 }))
 
+// Мокируем getToken для проверки токенов
+const mockGetToken = vi.hoisted(() => vi.fn<() => string | null>(() => 'valid-token'))
+vi.mock('@/utils/auth', () => ({
+	getToken: mockGetToken,
+}))
+
 const mockNormalizeUserLevel = vi.mocked(normalizeUserLevel)
 const mockGetLevelTitle = vi.mocked(getLevelTitle)
 
@@ -18,6 +24,8 @@ describe('UserContext', () => {
 	beforeEach(() => {
 		localStorage.clear()
 		vi.clearAllMocks()
+		// По умолчанию токен присутствует (авторизованный пользователь)
+		mockGetToken.mockReturnValue('valid-token')
 		mockGetLevelTitle.mockImplementation((level: number) => {
 			if (level >= 50) return 'Легенда'
 			if (level >= 40) return 'Мастер'
