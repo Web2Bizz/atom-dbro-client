@@ -35,6 +35,9 @@ export function LoginForm() {
 
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
+		mode: 'onSubmit',
+		reValidateMode: 'onChange',
+		shouldFocusError: true,
 		defaultValues: {
 			email: '',
 			password: '',
@@ -143,7 +146,18 @@ export function LoginForm() {
 					</div>
 
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+						<form
+							onSubmit={form.handleSubmit(onSubmit, errors => {
+								logger.error('Form validation errors:', errors)
+								const firstError = Object.values(errors)[0]
+								if (firstError && 'message' in firstError) {
+									toast.error(String(firstError.message))
+								} else {
+									toast.error('Пожалуйста, заполните все обязательные поля')
+								}
+							})}
+							className='space-y-4'
+						>
 							<FormField
 								control={form.control}
 								name='email'
