@@ -3,14 +3,20 @@ import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
 import { useGetUserQuestsQuery } from '@/store/entities/quest'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
-import { ArrowRight, Clock } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { ArrowRight, Clock, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+
+const MAX_DISPLAYED_QUESTS_MOBILE = 2 // Для мобильных устройств
+const MAX_DISPLAYED_QUESTS_DESKTOP = 3 // Для десктопов
 
 export function ActiveQuests() {
 	const { user } = useUser()
 	const { checkQuestCompletion } = useQuestActions()
+	const [showAllQuests, setShowAllQuests] = useState(false)
+	const [isClosing, setIsClosing] = useState(false)
+	const [isMobile, setIsMobile] = useState(false)
 
 	// Загружаем квесты пользователя с сервера
 	const { data: userQuestsResponse } = useGetUserQuestsQuery(user?.id ?? '', {
@@ -29,6 +35,64 @@ export function ActiveQuests() {
 
 	// Отслеживаем уже обработанные квесты, чтобы не показывать toast повторно
 	const processedQuestsRef = useRef<Set<string>>(new Set())
+
+	// Определяем, является ли устройство мобильным
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth < 768) // md breakpoint в Tailwind
+		}
+
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+
+		return () => {
+			window.removeEventListener('resize', checkMobile)
+		}
+	}, [])
+
+	// Адаптивное количество отображаемых квестов
+	const displayLimit = useMemo(
+		() =>
+			isMobile ? MAX_DISPLAYED_QUESTS_MOBILE : MAX_DISPLAYED_QUESTS_DESKTOP,
+		[isMobile]
+	)
+
+	// Адаптивный список отображаемых квестов
+	const displayedQuests = useMemo(
+		() => participatingQuests.slice(0, displayLimit),
+		[participatingQuests, displayLimit]
+	)
+
+	// Функция для плавного закрытия модального окна
+	const handleCloseModal = useCallback(() => {
+		setIsClosing(true)
+		setTimeout(() => {
+			setShowAllQuests(false)
+			setIsClosing(false)
+		}, 300) // Длительность анимации закрытия
+	}, [])
+
+	// Функция для открытия модального окна
+	const handleOpenModal = useCallback(() => {
+		setShowAllQuests(true)
+		setIsClosing(false)
+	}, [])
+
+	// Обработка закрытия модального окна по Escape
+	useEffect(() => {
+		if (!showAllQuests) return
+
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && !isClosing) {
+				handleCloseModal()
+			}
+		}
+
+		document.addEventListener('keydown', handleEscape)
+		return () => {
+			document.removeEventListener('keydown', handleEscape)
+		}
+	}, [showAllQuests, isClosing, handleCloseModal])
 
 	// Проверка завершения квестов и разблокировки достижений
 	useEffect(() => {
@@ -88,14 +152,26 @@ export function ActiveQuests() {
 	return (
 		<div className='bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8'>
 			<div className='mb-4 sm:mb-6'>
-				<h2 className='text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2'>
-					<Clock className='h-5 w-5 sm:h-6 sm:w-6 text-blue-600 shrink-0' />
-					Последняя активность
-				</h2>
+				<div className='flex items-center justify-between gap-4'>
+					<h2 className='text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2'>
+						<Clock className='h-5 w-5 sm:h-6 sm:w-6 text-blue-600 shrink-0' />
+						Последняя активность ({participatingQuests.length})
+					</h2>
+					{participatingQuests.length > displayLimit && (
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={handleOpenModal}
+							className='text-sm shrink-0'
+						>
+							Показать все
+						</Button>
+					)}
+				</div>
 			</div>
 
 			<div className='space-y-3 sm:space-y-4'>
-				{participatingQuests.map(quest => {
+				{displayedQuests.map(quest => {
 					return (
 						<div
 							key={quest.id}
@@ -173,6 +249,143 @@ export function ActiveQuests() {
 					)
 				})}
 			</div>
+
+			{/* Модальное окно для просмотра всех квестов */}
+			{(showAllQuests || isClosing) && (
+				<div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
+					{/* Overlay с анимацией */}
+					<button
+						type='button'
+						className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+							isClosing ? 'opacity-0' : 'opacity-100'
+						}`}
+						onClick={handleCloseModal}
+						aria-label='Закрыть модальное окно'
+					/>
+					{/* Модальное окно с анимацией */}
+					<div
+						className={`relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col z-10 transition-all duration-300 ${
+							isClosing
+								? 'opacity-0 scale-95 translate-y-4'
+								: 'opacity-100 scale-100 translate-y-0'
+						}`}
+						role='dialog'
+						aria-modal='true'
+						aria-labelledby='quests-modal-title'
+					>
+						{/* Заголовок */}
+						<div className='flex items-center justify-between p-6 border-b border-slate-200'>
+							<h2
+								id='quests-modal-title'
+								className='text-2xl font-bold text-slate-900 flex items-center gap-2'
+							>
+								<Clock className='h-6 w-6 text-blue-600' />
+								Все активные квесты ({participatingQuests.length})
+							</h2>
+							<Button
+								variant='ghost'
+								size='sm'
+								onClick={handleCloseModal}
+								className='h-8 w-8 p-0 hover:bg-slate-100 transition-colors'
+							>
+								<X className='h-5 w-5' />
+							</Button>
+						</div>
+
+						{/* Контент с прокруткой */}
+						<div className='flex-1 overflow-y-auto p-6'>
+							<div className='space-y-3 sm:space-y-4'>
+								{participatingQuests.map((quest, index) => {
+									return (
+										<div
+											key={quest.id}
+											className={`p-4 sm:p-6 rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all bg-slate-50 ${
+												isClosing
+													? 'opacity-0 scale-95 translate-y-2'
+													: 'opacity-100 scale-100 translate-y-0'
+											}`}
+											style={{
+												transitionDelay: isClosing ? '0ms' : `${index * 30}ms`,
+											}}
+										>
+											<div className='flex flex-col sm:flex-row items-start gap-3 sm:gap-4'>
+												{quest.storyMedia?.image ? (
+													<img
+														src={quest.storyMedia.image}
+														alt={quest.title}
+														className='w-full sm:w-24 sm:h-24 h-40 rounded-lg object-cover shrink-0'
+													/>
+												) : (
+													<div className='w-full sm:w-24 sm:h-24 h-40 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-3xl sm:text-2xl font-bold shrink-0'>
+														{quest.title.charAt(0)}
+													</div>
+												)}
+												<div className='flex-1 min-w-0 w-full'>
+													<div className='flex items-start justify-between gap-2 sm:gap-4 mb-2'>
+														<div className='flex-1 min-w-0'>
+															<div className='flex items-center gap-2 mb-1 flex-wrap'>
+																<span className='text-xs font-medium text-blue-600 uppercase tracking-wider'>
+																	{quest.city}
+																</span>
+															</div>
+															<h3 className='text-base sm:text-lg font-bold text-slate-900 mb-1 line-clamp-2 break-words'>
+																{quest.title}
+															</h3>
+															{quest.customAchievement && (
+																<div className='mb-2'>
+																	<span
+																		className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium border border-amber-200 shrink-0 whitespace-nowrap'
+																		title={`Достижение: ${quest.customAchievement.title} - ${quest.customAchievement.description}`}
+																	>
+																		🏆 Есть достижение
+																	</span>
+																</div>
+															)}
+															<p className='text-xs sm:text-sm text-slate-600 mb-3 line-clamp-2 sm:line-clamp-2'>
+																{quest.story}
+															</p>
+														</div>
+													</div>
+													{/* Прогресс */}
+													<div className='mb-3 sm:mb-4'>
+														<div className='flex items-center justify-between mb-1'>
+															<span className='text-xs font-medium text-slate-600'>
+																Прогресс
+															</span>
+															<span className='text-xs font-bold text-blue-600'>
+																{quest.overallProgress}%
+															</span>
+														</div>
+														<div className='h-2 bg-slate-200 rounded-full overflow-hidden'>
+															<div
+																className='h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-300'
+																style={{
+																	width: `${quest.overallProgress}%`,
+																}}
+															/>
+														</div>
+													</div>
+													<Button
+														variant='outline'
+														size='sm'
+														asChild
+														className='w-full sm:w-auto'
+													>
+														<Link to={`/map?quest=${quest.id}`}>
+															Открыть детали
+															<ArrowRight className='h-4 w-4 ml-2' />
+														</Link>
+													</Button>
+												</div>
+											</div>
+										</div>
+									)
+								})}
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }
