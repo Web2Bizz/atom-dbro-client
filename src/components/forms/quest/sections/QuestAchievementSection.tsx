@@ -9,7 +9,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { useDeleteAchievementMutation } from '@/store/entities/achievement'
 import { logger } from '@/utils/logger'
+import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react'
 import { Trophy, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 import type { QuestFormData } from '../schemas/quest-form.schema'
@@ -17,10 +19,57 @@ import type { QuestFormData } from '../schemas/quest-form.schema'
 export function QuestAchievementSection() {
 	const form = useFormContext<QuestFormData>()
 	const [deleteAchievementMutation] = useDeleteAchievementMutation()
+	const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+	const [isMobile, setIsMobile] = useState(false)
+	const [pickerWidth, setPickerWidth] = useState(350)
 
 	const customAchievement = form.watch('customAchievement')
 	const achievementId = form.watch('achievementId')
 	const hasAchievement = !!customAchievement
+
+	// Определяем, является ли устройство мобильным и вычисляем размеры picker
+	useEffect(() => {
+		const checkMobile = () => {
+			const mobile = window.innerWidth < 640 // sm breakpoint в Tailwind
+			setIsMobile(mobile)
+			setPickerWidth(mobile ? Math.min(window.innerWidth - 32, 350) : 350)
+		}
+
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+
+		return () => {
+			window.removeEventListener('resize', checkMobile)
+		}
+	}, [])
+
+	// Вычисляем высоту picker
+	const pickerHeight = isMobile ? 350 : 400
+
+	// Закрытие emoji picker по Escape и клику вне области
+	useEffect(() => {
+		if (!showEmojiPicker) return
+
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				setShowEmojiPicker(false)
+			}
+		}
+
+		const handleClickOutside = (e: MouseEvent) => {
+			const target = e.target as HTMLElement
+			if (!target.closest('[data-emoji-picker-container]')) {
+				setShowEmojiPicker(false)
+			}
+		}
+
+		document.addEventListener('keydown', handleEscape)
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => {
+			document.removeEventListener('keydown', handleEscape)
+			document.removeEventListener('mousedown', handleClickOutside)
+		}
+	}, [showEmojiPicker])
 
 	const handleToggle = async () => {
 		if (hasAchievement) {
@@ -89,17 +138,98 @@ export function QuestAchievementSection() {
 										Эмодзи <span className='text-red-500'>*</span>
 									</FormLabel>
 									<FormControl>
-										<div className='flex items-center gap-2'>
-											<Input
-												type='text'
-												{...field}
-												placeholder='🏆'
-												maxLength={2}
-												className='w-20 text-2xl text-center'
-											/>
-											<div className='text-sm text-slate-500'>
-												Введите эмодзи (1-2 символа)
+										<div className='relative' data-emoji-picker-container>
+											<div className='flex items-center gap-3'>
+												<button
+													type='button'
+													onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+													className='flex items-center justify-center w-16 h-16 rounded-lg border-2 border-slate-300 bg-white hover:border-blue-500 hover:bg-blue-50 transition-colors text-3xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+												>
+													{field.value || '🏆'}
+												</button>
+												<div className='flex-1'>
+													<p className='text-sm text-slate-600'>
+														Нажмите на кнопку, чтобы выбрать эмодзи
+													</p>
+													{field.value && (
+														<p className='text-xs text-slate-500 mt-1'>
+															Выбрано: {field.value}
+														</p>
+													)}
+												</div>
 											</div>
+											{showEmojiPicker && (
+												<>
+													{/* Overlay для мобильных устройств */}
+													{isMobile && (
+														<button
+															type='button'
+															className='fixed inset-0 bg-black/20 z-40'
+															onClick={() => setShowEmojiPicker(false)}
+															aria-label='Закрыть выбор эмодзи'
+														/>
+													)}
+													<div
+														className={`z-50 mt-2 shadow-2xl rounded-lg overflow-hidden border border-slate-200 bg-white ${
+															isMobile
+																? 'fixed left-4 right-4 top-1/2 -translate-y-1/2 max-h-[80vh] overflow-y-auto'
+																: 'absolute left-0 top-full'
+														}`}
+													>
+														<EmojiPicker
+															onEmojiClick={(emojiData: EmojiClickData) => {
+																field.onChange(emojiData.emoji)
+																setShowEmojiPicker(false)
+															}}
+															locale='ru'
+															searchPlaceHolder='Поиск эмодзи...'
+															previewConfig={{
+																showPreview: false,
+															}}
+															categories={[
+																{
+																	category: 'suggested',
+																	name: 'Недавние',
+																},
+																{
+																	category: 'smileys_people',
+																	name: 'Смайлы и люди',
+																},
+																{
+																	category: 'animals_nature',
+																	name: 'Животные и природа',
+																},
+																{
+																	category: 'food_drink',
+																	name: 'Еда и напитки',
+																},
+																{
+																	category: 'travel_places',
+																	name: 'Путешествия и места',
+																},
+																{
+																	category: 'activities',
+																	name: 'Активности',
+																},
+																{
+																	category: 'objects',
+																	name: 'Объекты',
+																},
+																{
+																	category: 'symbols',
+																	name: 'Символы',
+																},
+																{
+																	category: 'flags',
+																	name: 'Флаги',
+																},
+															]}
+															width={pickerWidth}
+															height={pickerHeight}
+														/>
+													</div>
+												</>
+											)}
 										</div>
 									</FormControl>
 									<FormMessage />
