@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/button'
 import { useQuestActions } from '@/hooks/useQuestActions'
 import { useUser } from '@/hooks/useUser'
-import { useGetUserQuestsQuery } from '@/store/entities/quest'
+import {
+	useGetUserAchievementsByUserIdQuery,
+	useGetUserQuestsQuery,
+} from '@/store/entities'
 import { transformApiQuestsToComponentQuests } from '@/utils/quest'
 import { ArrowRight, Clock, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -23,8 +26,17 @@ export function ActiveQuests() {
 		skip: !user?.id,
 	})
 
+	// Загружаем достижения пользователя через API для проверки уже разблокированных
+	const { data: achievementsResponse } = useGetUserAchievementsByUserIdQuery(
+		user?.id ?? '',
+		{
+			skip: !user?.id,
+		}
+	)
+
 	// Преобразуем квесты пользователя с сервера в формат компонентов
 	// Исключаем архивированные квесты
+	// Также сохраняем исходные данные квестов из API для доступа к achievementId
 	const participatingQuests = useMemo(() => {
 		if (!userQuestsResponse?.data?.quests) return []
 		const quests = transformApiQuestsToComponentQuests(
@@ -33,8 +45,75 @@ export function ActiveQuests() {
 		return quests.filter(q => q.status !== 'archived')
 	}, [userQuestsResponse])
 
+	// Создаем маппинг questId -> achievementId из исходных данных API
+	const questAchievementIdMap = useMemo(() => {
+		if (!userQuestsResponse?.data?.quests) return new Map<string, number>()
+		const map = new Map<string, number>()
+		userQuestsResponse.data.quests.forEach(quest => {
+			if (quest.achievementId) {
+				map.set(String(quest.id), quest.achievementId)
+			}
+		})
+		return map
+	}, [userQuestsResponse])
+
+	// Получаем список ID уже разблокированных достижений из API
+	const unlockedAchievementIds = useMemo(() => {
+		if (!achievementsResponse?.data?.achievements) return new Set<string>()
+		return new Set(
+			achievementsResponse.data.achievements
+				.filter(a => a.unlockedAt)
+				.map(a => String(a.id))
+		)
+	}, [achievementsResponse])
+
 	// Отслеживаем уже обработанные квесты, чтобы не показывать toast повторно
 	const processedQuestsRef = useRef<Set<string>>(new Set())
+	const initializedRef = useRef(false)
+
+	// Инициализируем processedQuestsRef на основе уже разблокированных достижений при первой загрузке
+	useEffect(() => {
+		if (!achievementsResponse || initializedRef.current) return
+		if (participatingQuests.length === 0) return
+
+		// Помечаем все завершенные квесты с уже разблокированными достижениями как обработанные
+		participatingQuests.forEach(quest => {
+			if (quest.status === 'completed' && quest.customAchievement) {
+				// Проверяем по achievementId квеста (если есть)
+				const questAchievementId = questAchievementIdMap.get(quest.id)
+				let hasAchievement = false
+
+				if (questAchievementId) {
+					// Проверяем по числовому ID из API
+					hasAchievement = unlockedAchievementIds.has(
+						String(questAchievementId)
+					)
+				}
+
+				// Также проверяем по строковому ID (fallback для старых данных)
+				if (!hasAchievement) {
+					const customAchievementId = `custom-${quest.id}`
+					hasAchievement = unlockedAchievementIds.has(customAchievementId)
+				}
+
+				if (hasAchievement) {
+					const questKey = `quest_completed_${quest.id}`
+					const achievementKey = `achievement_unlocked_${quest.id}_${
+						quest.customAchievement?.title || ''
+					}`
+					processedQuestsRef.current.add(questKey)
+					processedQuestsRef.current.add(achievementKey)
+				}
+			}
+		})
+
+		initializedRef.current = true
+	}, [
+		achievementsResponse,
+		participatingQuests,
+		unlockedAchievementIds,
+		questAchievementIdMap,
+	])
 
 	// Определяем, является ли устройство мобильным
 	useEffect(() => {
@@ -97,6 +176,8 @@ export function ActiveQuests() {
 	// Проверка завершения квестов и разблокировки достижений
 	useEffect(() => {
 		if (!user || participatingQuests.length === 0) return
+		// Ждем загрузки достижений из API и инициализации перед проверкой
+		if (!achievementsResponse || !initializedRef.current) return
 
 		participatingQuests.forEach(quest => {
 			// Проверяем завершение квеста (когда куратор нажал кнопку "Завершить квест")
@@ -113,14 +194,28 @@ export function ActiveQuests() {
 
 				// Проверяем, есть ли пользовательское достижение и не разблокировано ли оно уже
 				if (quest.customAchievement) {
-					const achievementId = `custom-${quest.id}`
-					const hasAchievement = user.achievements.some(
-						a => String(a.id) === achievementId
-					)
+					// Проверяем по achievementId квеста (если есть)
+					const questAchievementId = questAchievementIdMap.get(quest.id)
+					let hasAchievement = false
 
-					// Если достижение уже есть, помечаем квест как обработанный и не показываем тостер
+					if (questAchievementId) {
+						// Проверяем по числовому ID из API
+						hasAchievement = unlockedAchievementIds.has(
+							String(questAchievementId)
+						)
+					}
+
+					// Также проверяем по строковому ID (fallback для старых данных)
+					if (!hasAchievement) {
+						const customAchievementId = `custom-${quest.id}`
+						hasAchievement = unlockedAchievementIds.has(customAchievementId)
+					}
+
+					// Если достижение уже есть в API, помечаем квест как обработанный
+					// и НЕ вызываем checkQuestCompletion, чтобы не показывать уведомление
 					if (hasAchievement) {
 						processedQuestsRef.current.add(questKey)
+						processedQuestsRef.current.add(achievementKey)
 						return
 					}
 				}
@@ -128,6 +223,8 @@ export function ActiveQuests() {
 				// Помечаем квест как обработанный сразу, чтобы не обрабатывать его повторно
 				processedQuestsRef.current.add(questKey)
 
+				// Вызываем checkQuestCompletion только если достижение еще не разблокировано в API
+				// Это обновит локальное состояние пользователя
 				checkQuestCompletion(
 					quest,
 					// Callback для завершения квеста (не используется, но нужен для API)
@@ -138,9 +235,15 @@ export function ActiveQuests() {
 						if (processedQuestsRef.current.has(achievementKey)) {
 							return
 						}
+						// Дополнительная проверка: есть ли уже это достижение в API
+						// Это критически важно - если достижение уже есть в API, не показываем уведомление
+						if (unlockedAchievementIds.has(achievement.id)) {
+							processedQuestsRef.current.add(achievementKey)
+							return
+						}
 						processedQuestsRef.current.add(achievementKey)
 
-						// Показываем toast уведомление только один раз
+						// Показываем toast уведомление только если достижение действительно новое
 						toast.success('🏆 Достижение разблокировано!', {
 							description: `${achievement.icon} "${achievement.title}"`,
 							duration: 5000,
@@ -151,7 +254,17 @@ export function ActiveQuests() {
 		})
 		// Используем только необходимые зависимости
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user?.id, userQuestsResponse?.data?.quests?.length, checkQuestCompletion])
+	}, [
+		user?.id,
+		userQuestsResponse?.data?.quests?.length,
+		achievementsResponse?.data?.achievements?.length,
+		checkQuestCompletion,
+		questAchievementIdMap,
+		// Используем строковое представление Set для стабильности зависимостей
+		Array.from(unlockedAchievementIds)
+			.sort((a, b) => a.localeCompare(b))
+			.join(','),
+	])
 
 	if (participatingQuests.length === 0) {
 		return (
