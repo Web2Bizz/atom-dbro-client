@@ -1,5 +1,11 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from 'react'
 import { Skeleton } from './skeleton'
 
 interface ImageGalleryProps {
@@ -20,60 +26,40 @@ export function ImageGallery({
 	const [thumbnailsLoading, setThumbnailsLoading] = useState<boolean[]>(
 		images.map(() => true)
 	)
+	const imgRef = useRef<HTMLImageElement>(null)
+	const thumbnailRefs = useRef<(HTMLImageElement | null)[]>([])
 
 	// Сброс состояния загрузки при смене изображения
 	useEffect(() => {
-		// Проверяем, загружено ли изображение уже в кеше
-		const img = new Image()
-		let isMounted = true
-		
-		const handleLoad = () => {
-			if (isMounted) {
+		// Сбрасываем состояние загрузки при смене изображения
+		setImageLoading(true)
+	}, [currentIndex, currentImage])
+
+	// Проверяем, загружено ли изображение уже в кеше (после рендера)
+	useLayoutEffect(() => {
+		if (imgRef.current) {
+			// Если изображение уже загружено (в кеше), скрываем скелетон сразу
+			if (imgRef.current.complete && imgRef.current.naturalWidth > 0) {
 				setImageLoading(false)
 			}
 		}
-		
-		const handleError = () => {
-			if (isMounted) {
-				setImageLoading(false)
-			}
-		}
-		
-		img.onload = handleLoad
-		img.onerror = handleError
-		img.src = currentImage
-		
-		// Проверяем, загружено ли изображение уже в кеше
-		// Если да, скрываем скелетон сразу, иначе показываем и ждем загрузки
-		if (img.complete) {
-			// Изображение уже загружено - скрываем скелетон асинхронно
-			const timeoutId = setTimeout(() => {
-				if (isMounted) {
+	}, [currentIndex, currentImage])
+
+	// Дополнительная проверка через useEffect на случай, если useLayoutEffect сработал слишком рано
+	useEffect(() => {
+		const checkLoaded = () => {
+			if (imgRef.current) {
+				if (imgRef.current.complete && imgRef.current.naturalWidth > 0) {
 					setImageLoading(false)
 				}
-			}, 0)
-			
-			return () => {
-				isMounted = false
-				clearTimeout(timeoutId)
-				img.onload = null
-				img.onerror = null
-			}
-		} else {
-			// Изображение нужно загрузить - показываем скелетон асинхронно
-			const timeoutId = setTimeout(() => {
-				if (isMounted) {
-					setImageLoading(true)
-				}
-			}, 0)
-			
-			return () => {
-				isMounted = false
-				clearTimeout(timeoutId)
-				img.onload = null
-				img.onerror = null
 			}
 		}
+
+		// Проверяем сразу и с небольшой задержкой
+		checkLoaded()
+		const timeoutId = setTimeout(checkLoaded, 10)
+
+		return () => clearTimeout(timeoutId)
 	}, [currentIndex, currentImage])
 
 	// Сброс состояния загрузки миниатюр при смене массива изображений
@@ -82,6 +68,42 @@ export function ImageGallery({
 		const timeoutId = setTimeout(() => {
 			setThumbnailsLoading(images.map(() => true))
 		}, 0)
+		return () => clearTimeout(timeoutId)
+	}, [images])
+
+	// Проверяем, загружены ли миниатюры уже в кеше
+	useLayoutEffect(() => {
+		thumbnailRefs.current.forEach((img, index) => {
+			if (img && img.complete && img.naturalWidth > 0) {
+				setThumbnailsLoading(prev => {
+					const newState = [...prev]
+					newState[index] = false
+					return newState
+				})
+			}
+		})
+	}, [images])
+
+	// Дополнительная проверка миниатюр через useEffect
+	useEffect(() => {
+		const checkThumbnails = () => {
+			thumbnailRefs.current.forEach((img, index) => {
+				if (img && img.complete && img.naturalWidth > 0) {
+					setThumbnailsLoading(prev => {
+						if (prev[index]) {
+							const newState = [...prev]
+							newState[index] = false
+							return newState
+						}
+						return prev
+					})
+				}
+			})
+		}
+
+		checkThumbnails()
+		const timeoutId = setTimeout(checkThumbnails, 10)
+
 		return () => clearTimeout(timeoutId)
 	}, [images])
 
@@ -172,13 +194,17 @@ export function ImageGallery({
 					<Skeleton className='w-full max-w-4xl h-[70vh] rounded-lg' />
 				)}
 				<img
+					ref={imgRef}
 					src={currentImage}
 					alt={`Изображение ${currentIndex + 1} из ${images.length}`}
 					className={`max-w-full max-h-full object-contain rounded-lg transition-opacity duration-300 ${
 						imageLoading ? 'opacity-0 absolute' : 'opacity-100'
 					}`}
-					onLoad={() => {
-						setImageLoading(false)
+					onLoad={e => {
+						// Проверяем, что изображение действительно загружено
+						if (e.currentTarget.complete && e.currentTarget.naturalWidth > 0) {
+							setImageLoading(false)
+						}
 					}}
 					onError={() => {
 						setImageLoading(false)
@@ -215,17 +241,26 @@ export function ImageGallery({
 								<Skeleton className='absolute inset-0 w-full h-full' />
 							)}
 							<img
+								ref={el => {
+									thumbnailRefs.current[index] = el
+								}}
 								src={image}
 								alt={`Миниатюра ${index + 1}`}
 								className={`w-full h-full object-cover transition-opacity duration-300 ${
 									thumbnailsLoading[index] ? 'opacity-0' : 'opacity-100'
 								}`}
-								onLoad={() => {
-									setThumbnailsLoading(prev => {
-										const newState = [...prev]
-										newState[index] = false
-										return newState
-									})
+								onLoad={e => {
+									// Проверяем, что изображение действительно загружено
+									if (
+										e.currentTarget.complete &&
+										e.currentTarget.naturalWidth > 0
+									) {
+										setThumbnailsLoading(prev => {
+											const newState = [...prev]
+											newState[index] = false
+											return newState
+										})
+									}
 								}}
 								onError={() => {
 									setThumbnailsLoading(prev => {
