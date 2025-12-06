@@ -102,21 +102,45 @@ export function ActiveQuests() {
 			// Проверяем завершение квеста (когда куратор нажал кнопку "Завершить квест")
 			if (quest.status === 'completed') {
 				const questKey = `quest_completed_${quest.id}`
+				const achievementKey = `achievement_unlocked_${quest.id}_${
+					quest.customAchievement?.title || ''
+				}`
 
 				// Пропускаем, если уже обработали этот квест
 				if (processedQuestsRef.current.has(questKey)) {
 					return
 				}
 
+				// Проверяем, есть ли пользовательское достижение и не разблокировано ли оно уже
+				if (quest.customAchievement) {
+					const achievementId = `custom-${quest.id}`
+					const hasAchievement = user.achievements.some(
+						a => String(a.id) === achievementId
+					)
+
+					// Если достижение уже есть, помечаем квест как обработанный и не показываем тостер
+					if (hasAchievement) {
+						processedQuestsRef.current.add(questKey)
+						return
+					}
+				}
+
 				// Помечаем квест как обработанный сразу, чтобы не обрабатывать его повторно
 				processedQuestsRef.current.add(questKey)
+
 				checkQuestCompletion(
 					quest,
 					// Callback для завершения квеста (не используется, но нужен для API)
 					() => {},
 					// Callback для уведомления о разблокировке достижения
 					achievement => {
-						// Показываем toast уведомление
+						// Проверяем, не показывали ли уже тостер для этого достижения
+						if (processedQuestsRef.current.has(achievementKey)) {
+							return
+						}
+						processedQuestsRef.current.add(achievementKey)
+
+						// Показываем toast уведомление только один раз
 						toast.success('🏆 Достижение разблокировано!', {
 							description: `${achievement.icon} "${achievement.title}"`,
 							duration: 5000,
@@ -125,7 +149,9 @@ export function ActiveQuests() {
 				)
 			}
 		})
-	}, [user, participatingQuests, checkQuestCompletion])
+		// Используем только необходимые зависимости
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user?.id, userQuestsResponse?.data?.quests?.length, checkQuestCompletion])
 
 	if (participatingQuests.length === 0) {
 		return (

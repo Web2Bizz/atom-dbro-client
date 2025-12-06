@@ -433,18 +433,24 @@ export function useQuestActions() {
 				return
 			}
 
+			// Проверяем, что квест завершен куратором (статус completed)
+			if (quest.status !== 'completed') {
+				return
+			}
+
 			setUser(currentUser => {
 				if (!currentUser) return currentUser
 
 				// Проверяем, что пользователь участвует в квесте (через isParticipating из API)
 				// Если квест не имеет isParticipating, пропускаем проверку
 
-				// Проверяем, что квест завершен куратором (статус completed)
-				if (quest.status !== 'completed') {
-					return currentUser
-				}
-
 				let updatedUser = currentUser
+				let shouldNotifyAchievement = false
+				let achievementToNotify: {
+					id: string
+					title: string
+					icon: string
+				} | null = null
 
 				// Проверяем пользовательское достижение и добавляем его, если нужно
 				if (quest.customAchievement) {
@@ -472,27 +478,41 @@ export function useQuestActions() {
 							],
 						}
 
-						// Вызываем callback для уведомления о разблокировке
-						if (onAchievementUnlocked) {
-							onAchievementUnlocked({
-								id: achievementId,
-								title: quest.customAchievement.title,
-								icon: quest.customAchievement.icon,
-							})
+						// Сохраняем информацию о достижении для уведомления
+						shouldNotifyAchievement = true
+						achievementToNotify = {
+							id: achievementId,
+							title: quest.customAchievement.title,
+							icon: quest.customAchievement.icon,
 						}
 					}
+				}
+
+				// Вызываем callback для уведомления о разблокировке ТОЛЬКО если достижение было разблокировано
+				if (
+					shouldNotifyAchievement &&
+					achievementToNotify &&
+					onAchievementUnlocked
+				) {
+					// Вызываем callback асинхронно, чтобы избежать проблем с обновлением состояния
+					setTimeout(() => {
+						onAchievementUnlocked(achievementToNotify!)
+					}, 0)
 				}
 
 				// Вызываем callback для уведомления о завершении
 				// (проверка на дубликаты выполняется в компонентах через useRef)
 				if (onQuestCompleted) {
-					onQuestCompleted(quest)
+					// Вызываем callback асинхронно
+					setTimeout(() => {
+						onQuestCompleted(quest)
+					}, 0)
 				}
 
 				return updatedUser
 			})
 		},
-		[setUser]
+		[user, setUser]
 	)
 
 	return {

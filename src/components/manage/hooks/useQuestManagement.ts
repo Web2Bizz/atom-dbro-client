@@ -1,9 +1,5 @@
-import { allAchievements } from '@/data/achievements'
 import { useUser } from '@/hooks/useUser'
-import {
-	useLazyGetUserAchievementsByUserIdQuery,
-	useLazyGetUserQuery,
-} from '@/store/entities'
+import { useLazyGetUserQuery } from '@/store/entities'
 import {
 	useCompleteQuestMutation,
 	useGenerateCheckInTokenMutation,
@@ -33,7 +29,6 @@ export function useQuestManagement({
 		useGenerateCheckInTokenMutation()
 	const { user, setUser } = useUser()
 	const [getUser] = useLazyGetUserQuery()
-	const [getUserAchievements] = useLazyGetUserAchievementsByUserIdQuery()
 	const [showQRCode, setShowQRCode] = useState(false)
 	const [qrCodeData, setQrCodeData] = useState<string>('')
 	const [showArchiveDialog, setShowArchiveDialog] = useState(false)
@@ -116,47 +111,19 @@ export function useQuestManagement({
 	const handleComplete = async () => {
 		setIsCompleting(true)
 		try {
-			// Сохраняем текущие достижения пользователя для сравнения
-			const previousAchievements = user?.achievements || []
-			const previousAchievementIds = new Set(
-				previousAchievements.map(a => String(a.id))
-			)
-
 			await completeQuest(questId).unwrap()
 			toast.success('Квест успешно завершен!')
 
 			// Обновляем данные квеста
 			refetch()
 
-			// Обновляем данные пользователя и проверяем новые достижения
+			// Обновляем данные пользователя (достижения будут обработаны в ActiveQuests через checkQuestCompletion)
 			if (user?.id && setUser) {
 				try {
-					// Обновляем данные пользователя
 					const userResult = await getUser(user.id).unwrap()
 					if (userResult && setUser) {
 						const transformedUser = transformUserFromAPI(userResult)
 						setUser(transformedUser)
-					}
-
-					// Также проверяем достижения через API
-					const achievementsResult = await getUserAchievements(user.id).unwrap()
-					if (achievementsResult?.data?.achievements) {
-						const apiAchievements = achievementsResult.data.achievements
-						const newApiAchievements = apiAchievements.filter(
-							a => !previousAchievementIds.has(String(a.id))
-						)
-
-						for (const achievement of newApiAchievements) {
-							const achievementData =
-								allAchievements[achievement.id as keyof typeof allAchievements]
-							const title = achievementData?.title || achievement.title
-							const icon = achievementData?.icon || achievement.icon
-
-							toast.success('🏆 Достижение разблокировано!', {
-								description: `${icon} "${title}"`,
-								duration: 5000,
-							})
-						}
 					}
 				} catch (error) {
 					logger.error(
@@ -259,4 +226,3 @@ export function useQuestManagement({
 		isCompleting,
 	}
 }
-
