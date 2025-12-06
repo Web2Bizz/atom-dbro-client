@@ -9,6 +9,7 @@
 import { MyOrganizationsList } from '@/components/manage/MyOrganizationsList'
 import { MyQuestsList } from '@/components/manage/MyQuestsList'
 import { ManageTourProvider } from '@/components/tour'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { useUser } from '@/hooks/useUser'
 import { ProtectedRoute } from '@/provider/ProtectedRoute'
@@ -30,6 +31,7 @@ export default function ManagePage() {
 	const [activeTab, setActiveTab] = useState<'quests' | 'organizations'>(
 		currentTab
 	)
+	const [isTabChanging, setIsTabChanging] = useState(false)
 
 	// Загружаем данные для статистики
 	const { data: questsResponse } = useGetQuestsQuery()
@@ -72,9 +74,13 @@ export default function ManagePage() {
 	// Обновляем вкладку при изменении URL параметра
 	useEffect(() => {
 		if (currentTab !== activeTab) {
+			setIsTabChanging(true)
 			// Используем setTimeout для асинхронного обновления
 			const timeoutId = setTimeout(() => {
 				setActiveTab(currentTab)
+				setTimeout(() => {
+					setIsTabChanging(false)
+				}, 200)
 			}, 0)
 			return () => clearTimeout(timeoutId)
 		}
@@ -82,8 +88,16 @@ export default function ManagePage() {
 
 	// Обновляем URL при изменении вкладки
 	const handleTabChange = (tab: 'quests' | 'organizations') => {
+		if (tab === activeTab) return
+
+		setIsTabChanging(true)
 		setActiveTab(tab)
 		setSearchParams({ tab })
+
+		// Скрываем скелетон после небольшой задержки для плавной анимации
+		setTimeout(() => {
+			setIsTabChanging(false)
+		}, 200)
 	}
 
 	if (!user) {
@@ -123,7 +137,7 @@ export default function ManagePage() {
 
 					{/* Статистика (только для квестов) */}
 					{activeTab === 'quests' && (
-						<div className='manage-quests-stats-container grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 lg:mb-8'>
+						<div className='manage-quests-stats-container grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 lg:mb-8 transition-opacity duration-300 ease-in-out opacity-100'>
 							<div className='bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-slate-200/50 p-3 sm:p-4 shadow-sm'>
 								<div className='flex items-center justify-between gap-2'>
 									<div className='min-w-0 flex-1'>
@@ -257,9 +271,41 @@ export default function ManagePage() {
 						</div>
 
 						{/* Контент вкладок */}
-						<div className='p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-white to-slate-50/30'>
-							{activeTab === 'quests' && <MyQuestsList />}
-							{activeTab === 'organizations' && <MyOrganizationsList />}
+						<div className='bg-gradient-to-br from-white to-slate-50/30 relative'>
+							<div className='p-4 sm:p-6 lg:p-8'>
+								{isTabChanging ? (
+									<div className='space-y-4'>
+										{/* Скелетон для списка */}
+										{[...Array(3)].map((_, i) => (
+											<div
+												key={i}
+												className='bg-white rounded-lg border border-slate-200 p-4 sm:p-6'
+											>
+												<div className='flex items-start gap-4'>
+													<Skeleton className='w-20 h-20 sm:w-24 sm:h-24 rounded-lg flex-shrink-0' />
+													<div className='flex-1 space-y-3'>
+														<Skeleton className='h-6 w-3/4' />
+														<Skeleton className='h-4 w-full' />
+														<Skeleton className='h-4 w-2/3' />
+														<div className='flex gap-2 mt-4'>
+															<Skeleton className='h-8 w-24' />
+															<Skeleton className='h-8 w-24' />
+														</div>
+													</div>
+												</div>
+											</div>
+										))}
+									</div>
+								) : (
+									<div
+										key={activeTab}
+										className='transition-opacity duration-300 ease-in-out opacity-100'
+									>
+										{activeTab === 'quests' && <MyQuestsList />}
+										{activeTab === 'organizations' && <MyOrganizationsList />}
+									</div>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

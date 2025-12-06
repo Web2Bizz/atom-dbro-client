@@ -13,8 +13,8 @@ import EmojiPicker, {
 	type EmojiClickData,
 	Categories,
 } from 'emoji-picker-react'
-import { Trophy, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { AlertTriangle, Trophy, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 import type { QuestFormData } from '../schemas/quest-form.schema'
@@ -28,7 +28,14 @@ export function QuestAchievementSection() {
 
 	const customAchievement = form.watch('customAchievement')
 	const achievementId = form.watch('achievementId')
+	const stages = form.watch('stages')
 	const hasAchievement = !!customAchievement
+
+	// Проверяем, все ли этапы без требований
+	const allStagesWithoutRequirements = useMemo(() => {
+		if (!stages || stages.length === 0) return false
+		return stages.every(stage => stage.requirementType === 'no_required')
+	}, [stages])
 
 	// Определяем, является ли устройство мобильным и вычисляем размеры picker
 	useEffect(() => {
@@ -123,6 +130,31 @@ export function QuestAchievementSection() {
 					)}
 				</Button>
 			</div>
+
+			{/* Предупреждение о том, что все этапы без требований */}
+			{allStagesWithoutRequirements && (
+				<div className='rounded-lg border border-amber-300 bg-amber-50/80 p-4'>
+					<div className='flex items-start gap-3'>
+						<AlertTriangle className='h-5 w-5 text-amber-600 shrink-0 mt-0.5' />
+						<div className='flex-1'>
+							<h4 className='text-sm font-semibold text-amber-900 mb-1'>
+								Внимание: достижение не будет выдано
+							</h4>
+							<p className='text-sm text-amber-800'>
+								Все этапы квеста настроены без требований. Согласно логике
+								системы, достижение не может быть выдано пользователям при
+								завершении квеста, если все этапы не имеют требований
+								(финансовых, волонтеров или материальных).
+							</p>
+							<p className='text-sm text-amber-800 mt-2'>
+								Чтобы достижение могло быть выдано, необходимо добавить хотя бы
+								одному этапу требование (финансовую поддержку, волонтеров или
+								материалы) во вкладке "Этапы".
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{hasAchievement && (
 				<div className='space-y-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4'>
