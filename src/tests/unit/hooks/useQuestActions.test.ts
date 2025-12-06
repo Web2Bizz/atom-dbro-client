@@ -1,10 +1,10 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { useQuestActions } from '@/hooks/useQuestActions'
-import { UserContext } from '@/contexts/UserContext'
-import type { User, QuestContribution } from '@/types/user'
 import type { Quest } from '@/components/map/types/quest-types'
+import { UserContext } from '@/contexts/UserContext'
+import { useQuestActions } from '@/hooks/useQuestActions'
+import type { QuestContribution, User } from '@/types/user'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 
 // Мокируем зависимости
 const mockJoinQuest = vi.hoisted(() => vi.fn())
@@ -38,7 +38,7 @@ vi.mock('sonner', () => ({
 }))
 
 vi.mock('@/utils/auth', () => ({
-	transformUserFromAPI: vi.fn((user) => user),
+	transformUserFromAPI: vi.fn(user => user),
 }))
 
 const mockUser: User = {
@@ -69,7 +69,9 @@ const mockUser: User = {
 }
 
 describe('useQuestActions', () => {
-	let mockSetUser: Mock<(user: User | null | ((prev: User | null) => User | null)) => void>
+	let mockSetUser: Mock<
+		(user: User | null | ((prev: User | null) => User | null)) => void
+	>
 
 	beforeEach(() => {
 		mockSetUser = vi.fn()
@@ -524,7 +526,7 @@ describe('useQuestActions', () => {
 			}
 		})
 
-		it('должен разблокировать customAchievement при завершении квеста', () => {
+		it('должен разблокировать customAchievement при завершении квеста', async () => {
 			const { result } = renderHook(() => useQuestActions(), {
 				wrapper: createWrapper(mockUser),
 			})
@@ -579,11 +581,18 @@ describe('useQuestActions', () => {
 
 			expect(updatedUser.achievements).toHaveLength(1)
 			expect(updatedUser.achievements[0].id).toBe('custom-123')
-			expect(onQuestCompleted).toHaveBeenCalledWith(quest)
-			expect(onAchievementUnlocked).toHaveBeenCalledWith({
-				id: 'custom-123',
-				title: 'Quest Completed',
-				icon: '🎯',
+
+			// Ждем асинхронных вызовов колбэков (они вызываются через setTimeout)
+			await waitFor(() => {
+				expect(onQuestCompleted).toHaveBeenCalledWith(quest)
+			})
+
+			await waitFor(() => {
+				expect(onAchievementUnlocked).toHaveBeenCalledWith({
+					id: 'custom-123',
+					title: 'Quest Completed',
+					icon: '🎯',
+				})
 			})
 		})
 	})
@@ -616,4 +625,3 @@ describe('useQuestActions', () => {
 		})
 	})
 })
-

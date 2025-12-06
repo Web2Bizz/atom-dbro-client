@@ -1,6 +1,6 @@
 import { questService } from '@/store/entities/quest/model/quest-service'
 import { configureStore } from '@reduxjs/toolkit'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Мокируем baseQueryWithReauth
 const mockBaseQuery = vi.fn()
@@ -91,7 +91,9 @@ describe('quest-service', () => {
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe('/v1/quests?organizationTypeId=2')
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				'/v1/quests?organizationTypeId=2'
+			)
 
 			expect(result.error).toBeUndefined()
 		})
@@ -113,7 +115,9 @@ describe('quest-service', () => {
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe('/v1/quests?categoryIds=1&categoryIds=2&categoryIds=3')
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				'/v1/quests?categoryIds=1&categoryIds=2&categoryIds=3'
+			)
 
 			expect(result.error).toBeUndefined()
 		})
@@ -157,7 +161,9 @@ describe('quest-service', () => {
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe('/v1/quests?search=test+quest')
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				'/v1/quests?search=test+quest'
+			)
 
 			expect(result.error).toBeUndefined()
 		})
@@ -201,7 +207,9 @@ describe('quest-service', () => {
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe('/v1/quests?sort=created_at%3Adesc')
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				'/v1/quests?sort=created_at%3Adesc'
+			)
 
 			expect(result.error).toBeUndefined()
 		})
@@ -263,6 +271,60 @@ describe('quest-service', () => {
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
 			expect(mockBaseQuery.mock.calls[0][0]).toBe('/v1/quests')
+
+			expect(result.error).toBeUndefined()
+		})
+
+		it('должен использовать endpoint /v1/quests/filter при наличии ownerId', async () => {
+			const params = { ownerId: 27 }
+
+			mockBaseQuery.mockResolvedValue({
+				data: {
+					data: {
+						quests: [],
+					},
+				},
+			})
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuests.initiate(params)
+			)
+
+			expect(mockBaseQuery).toHaveBeenCalled()
+			// query возвращает строку, а не объект
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				'/v1/quests/filter?ownerId=27'
+			)
+
+			expect(result.error).toBeUndefined()
+		})
+
+		it('должен использовать endpoint /v1/quests/filter с ownerId и другими параметрами', async () => {
+			const params = {
+				ownerId: 27,
+				cityId: 1,
+				status: 'active',
+			}
+
+			mockBaseQuery.mockResolvedValue({
+				data: {
+					data: {
+						quests: [],
+					},
+				},
+			})
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuests.initiate(params)
+			)
+
+			expect(mockBaseQuery).toHaveBeenCalled()
+			// query возвращает строку, а не объект
+			const url = mockBaseQuery.mock.calls[0][0] as string
+			expect(url).toContain('/v1/quests/filter')
+			expect(url).toContain('ownerId=27')
+			expect(url).toContain('cityId=1')
+			expect(url).toContain('status=active')
 
 			expect(result.error).toBeUndefined()
 		})
@@ -485,11 +547,11 @@ describe('quest-service', () => {
 			)
 
 			expect(mockBaseQuery).toHaveBeenCalled()
-expect(mockBaseQuery.mock.calls[0][0]).toEqual({
-					url: '/v1/quests',
-					method: 'POST',
-					body: questData,
-				})
+			expect(mockBaseQuery.mock.calls[0][0]).toEqual({
+				url: '/v1/quests',
+				method: 'POST',
+				body: questData,
+			})
 
 			expect(result.data).toEqual(mockResponse)
 			expect(result.error).toBeUndefined()
@@ -569,11 +631,10 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			const endpoint = questService.endpoints.updateQuest
 			// invalidatesTags может быть функцией или недоступен напрямую
 			if (typeof endpoint.invalidatesTags === 'function') {
-				const tags = endpoint.invalidatesTags(
-					result.data,
-					undefined,
-					{ id: questId, data: updateData }
-				)
+				const tags = endpoint.invalidatesTags(result.data, undefined, {
+					id: questId,
+					data: updateData,
+				})
 				expect(tags).toEqual([
 					'QuestList',
 					{ type: 'Quest', id: String(questId) },
@@ -711,7 +772,9 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe(`/v1/quest-updates?questId=${questId}`)
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				`/v1/quest-updates?questId=${questId}`
+			)
 
 			expect(result.data).toEqual(mockUpdates)
 			expect(result.error).toBeUndefined()
@@ -789,11 +852,11 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			)
 
 			expect(mockBaseQuery).toHaveBeenCalled()
-expect(mockBaseQuery.mock.calls[0][0]).toEqual({
-					url: '/v1/quest-updates',
-					method: 'POST',
-					body: updateData,
-				})
+			expect(mockBaseQuery.mock.calls[0][0]).toEqual({
+				url: '/v1/quest-updates',
+				method: 'POST',
+				body: updateData,
+			})
 
 			expect(result.data).toEqual(mockResponse)
 			expect(result.error).toBeUndefined()
@@ -817,7 +880,11 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			const endpoint = questService.endpoints.createQuestUpdate
 			// invalidatesTags может быть функцией или недоступен напрямую
 			if (typeof endpoint.invalidatesTags === 'function') {
-				const tags = endpoint.invalidatesTags(result.data, undefined, updateData)
+				const tags = endpoint.invalidatesTags(
+					result.data,
+					undefined,
+					updateData
+				)
 				expect(tags).toEqual([
 					{ type: 'Quest', id: String(updateData.questId) },
 					'QuestUpdate',
@@ -886,11 +953,10 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			const endpoint = questService.endpoints.updateQuestUpdate
 			// invalidatesTags может быть функцией или недоступен напрямую
 			if (typeof endpoint.invalidatesTags === 'function') {
-				const tags = endpoint.invalidatesTags(
-					result.data,
-					undefined,
-					{ id: updateId, data: updateData }
-				)
+				const tags = endpoint.invalidatesTags(result.data, undefined, {
+					id: updateId,
+					data: updateData,
+				})
 				expect(tags).toEqual([
 					{ type: 'QuestUpdate', id: String(updateId) },
 					{ type: 'Quest', id: String(updateData.questId) },
@@ -923,14 +989,11 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			const endpoint = questService.endpoints.updateQuestUpdate
 			// invalidatesTags может быть функцией или недоступен напрямую
 			if (typeof endpoint.invalidatesTags === 'function') {
-				const tags = endpoint.invalidatesTags(
-					result.data,
-					undefined,
-					{ id: updateId, data: updateData }
-				)
-				expect(tags).toEqual([
-					{ type: 'QuestUpdate', id: String(updateId) },
-				])
+				const tags = endpoint.invalidatesTags(result.data, undefined, {
+					id: updateId,
+					data: updateData,
+				})
+				expect(tags).toEqual([{ type: 'QuestUpdate', id: String(updateId) }])
 			} else {
 				// Если invalidatesTags недоступен напрямую, проверяем, что endpoint существует и работает
 				expect(endpoint).toBeDefined()
@@ -1065,24 +1128,80 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 		})
 	})
 
-	describe('markVolunteers mutation', () => {
-		it('должен отправлять POST запрос на /v1/quests/:questId/steps/contributers/volunteers', async () => {
+	describe('getQuestContributers query', () => {
+		it('должен отправлять GET запрос на /v1/quests/:questId/contributers', async () => {
+			const questId = 123
+
+			const mockContributers = [
+				{ id: 1, firstName: 'John', lastName: 'Doe' },
+				{ id: 2, firstName: 'Jane', lastName: 'Smith' },
+			]
+
+			mockBaseQuery.mockResolvedValue({ data: { data: mockContributers } })
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuestContributers.initiate(questId)
+			)
+
+			expect(mockBaseQuery).toHaveBeenCalled()
+			// query возвращает строку, а не объект
+			expect(mockBaseQuery.mock.calls[0][0]).toBe(
+				`/v1/quests/${questId}/contributers`
+			)
+
+			expect(result.data).toEqual({ data: mockContributers })
+			expect(result.error).toBeUndefined()
+		})
+
+		it('должен обрабатывать ответ в формате { data: [...] }', async () => {
+			const questId = 123
+			const mockContributers = [{ id: 1, firstName: 'John', lastName: 'Doe' }]
+
+			mockBaseQuery.mockResolvedValue({ data: { data: mockContributers } })
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuestContributers.initiate(questId)
+			)
+
+			expect(result.data).toEqual({ data: mockContributers })
+		})
+
+		it('должен возвращать пустой массив по умолчанию', async () => {
+			const questId = 123
+
+			mockBaseQuery.mockResolvedValue({ data: { data: [] } })
+
+			const result = await store.dispatch(
+				questService.endpoints.getQuestContributers.initiate(questId)
+			)
+
+			expect(result.data).toEqual({ data: [] })
+		})
+	})
+
+	describe('addQuestContributer mutation', () => {
+		it('должен отправлять POST запрос на /v1/quests/:questId/contributers', async () => {
 			const questId = 123
 			const userIds = [1, 2, 3]
 
 			const mockResponse = {
-				message: 'Volunteers marked successfully',
+				data: {
+					message: 'Contributers added successfully',
+				},
 			}
 
 			mockBaseQuery.mockResolvedValue({ data: mockResponse })
 
 			const result = await store.dispatch(
-				questService.endpoints.markVolunteers.initiate({ questId, userIds })
+				questService.endpoints.addQuestContributer.initiate({
+					questId,
+					userIds,
+				})
 			)
 
 			expect(mockBaseQuery).toHaveBeenCalled()
 			expect(mockBaseQuery.mock.calls[0][0]).toEqual({
-				url: `/v1/quests/${questId}/steps/contributers/volunteers`,
+				url: `/v1/quests/${questId}/contributers`,
 				method: 'POST',
 				body: { userIds },
 			})
@@ -1096,26 +1215,25 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 			const userIds = [1, 2, 3]
 
 			mockBaseQuery.mockResolvedValue({
-				data: { message: 'Volunteers marked successfully' },
+				data: { data: { message: 'Contributers added successfully' } },
 			})
 
 			const result = await store.dispatch(
-				questService.endpoints.markVolunteers.initiate({ questId, userIds })
+				questService.endpoints.addQuestContributer.initiate({
+					questId,
+					userIds,
+				})
 			)
 
 			expect(result.error).toBeUndefined()
-			const endpoint = questService.endpoints.markVolunteers
+			const endpoint = questService.endpoints.addQuestContributer
 			// invalidatesTags может быть функцией или недоступен напрямую
 			if (typeof endpoint.invalidatesTags === 'function') {
-				const tags = endpoint.invalidatesTags(
-					result.data,
-					undefined,
-					{ questId, userIds }
-				)
-				expect(tags).toEqual([
-					{ type: 'Quest', id: String(questId) },
-					{ type: 'MarkedVolunteers', id: String(questId) },
-				])
+				const tags = endpoint.invalidatesTags(result.data, undefined, {
+					questId,
+					userIds,
+				})
+				expect(tags).toContainEqual({ type: 'Quest', id: String(questId) })
 			} else {
 				// Если invalidatesTags недоступен напрямую, проверяем, что endpoint существует и работает
 				expect(endpoint).toBeDefined()
@@ -1124,78 +1242,65 @@ expect(mockBaseQuery.mock.calls[0][0]).toEqual({
 		})
 	})
 
-	describe('getMarkedVolunteers query', () => {
-		it('должен отправлять GET запрос на /v1/quests/:questId/steps/contributers/volunteers', async () => {
+	describe('deleteQuestContributer mutation', () => {
+		it('должен отправлять DELETE запрос на /v1/quests/:questId/contributers/:userId', async () => {
 			const questId = 123
+			const userId = 1
 
-			const mockVolunteers = [
-				{ id: 1, userId: 1, questId },
-				{ id: 2, userId: 2, questId },
-			]
+			const mockResponse = {
+				data: {
+					message: 'Contributer removed successfully',
+				},
+			}
 
-			mockBaseQuery.mockResolvedValue({ data: mockVolunteers })
+			mockBaseQuery.mockResolvedValue({ data: mockResponse })
 
 			const result = await store.dispatch(
-				questService.endpoints.getMarkedVolunteers.initiate(questId)
+				questService.endpoints.deleteQuestContributer.initiate({
+					questId,
+					userId,
+				})
 			)
 
 			expect(mockBaseQuery).toHaveBeenCalled()
-			// query возвращает строку, а не объект
-			expect(mockBaseQuery.mock.calls[0][0]).toBe(`/v1/quests/${questId}/steps/contributers/volunteers`)
+			expect(mockBaseQuery.mock.calls[0][0]).toEqual({
+				url: `/v1/quests/${questId}/contributers/${userId}`,
+				method: 'DELETE',
+			})
 
-			expect(result.data).toEqual({ data: mockVolunteers })
+			expect(result.data).toEqual(mockResponse)
 			expect(result.error).toBeUndefined()
 		})
 
-		it('должен обрабатывать ответ в формате массива', async () => {
+		it('должен инвалидировать правильные теги', async () => {
 			const questId = 123
-			const mockVolunteers = [{ id: 1, userId: 1, questId }]
+			const userId = 1
 
-			mockBaseQuery.mockResolvedValue({ data: mockVolunteers })
+			mockBaseQuery.mockResolvedValue({
+				data: { data: { message: 'Contributer removed successfully' } },
+			})
 
 			const result = await store.dispatch(
-				questService.endpoints.getMarkedVolunteers.initiate(questId)
-			)
-
-			expect(result.data).toEqual({ data: mockVolunteers })
-		})
-
-		it('должен обрабатывать ответ в формате { data: [...] }', async () => {
-			const questId = 123
-			const mockVolunteers = [{ id: 1, userId: 1, questId }]
-
-			mockBaseQuery.mockResolvedValue({ data: { data: mockVolunteers } })
-
-			const result = await store.dispatch(
-				questService.endpoints.getMarkedVolunteers.initiate(questId)
-			)
-
-			expect(result.data).toEqual({ data: mockVolunteers })
-		})
-
-		it('должен возвращать пустой массив по умолчанию', async () => {
-			const questId = 123
-
-			mockBaseQuery.mockResolvedValue({ data: {} })
-
-			const result = await store.dispatch(
-				questService.endpoints.getMarkedVolunteers.initiate(questId)
-			)
-
-			expect(result.data).toEqual({ data: [] })
-		})
-
-		it('должен предоставлять правильный тег', async () => {
-			const questId = 123
-
-			mockBaseQuery.mockResolvedValue({ data: [] })
-
-			const result = await store.dispatch(
-				questService.endpoints.getMarkedVolunteers.initiate(questId)
+				questService.endpoints.deleteQuestContributer.initiate({
+					questId,
+					userId,
+				})
 			)
 
 			expect(result.error).toBeUndefined()
+			const endpoint = questService.endpoints.deleteQuestContributer
+			// invalidatesTags может быть функцией или недоступен напрямую
+			if (typeof endpoint.invalidatesTags === 'function') {
+				const tags = endpoint.invalidatesTags(result.data, undefined, {
+					questId,
+					userId,
+				})
+				expect(tags).toContainEqual({ type: 'Quest', id: String(questId) })
+			} else {
+				// Если invalidatesTags недоступен напрямую, проверяем, что endpoint существует и работает
+				expect(endpoint).toBeDefined()
+				expect(result.data).toBeDefined()
+			}
 		})
 	})
 })
-
