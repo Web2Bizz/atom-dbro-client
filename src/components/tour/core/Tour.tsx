@@ -1,4 +1,10 @@
-import Joyride, { ACTIONS, type CallBackProps, type Step } from 'react-joyride'
+import { lazy, Suspense } from 'react'
+import { ACTIONS, type CallBackProps, type Step } from 'react-joyride'
+
+// Динамический импорт Joyride для уменьшения размера основного бандла
+const Joyride = lazy(() =>
+	import('react-joyride').then(module => ({ default: module.default }))
+)
 
 interface TourProps {
 	readonly steps: Step[]
@@ -112,29 +118,31 @@ export function Tour({
 	}
 
 	return (
-		<Joyride
-			steps={steps}
-			run={runTour}
-			continuous
-			showProgress={false}
-			showSkipButton
-			disableOverlayClose={false}
-			callback={handleJoyrideCallback}
-			styles={styles || defaultStyles}
-			locale={locale}
-			scrollOffset={100}
-			floaterProps={{
-				disableAnimation: true,
-				options: {
-					preventOverflow: {
-						boundariesElement: 'viewport',
-						padding: 20,
+		<Suspense fallback={null}>
+			<Joyride
+				steps={steps}
+				run={runTour}
+				continuous
+				showProgress={false}
+				showSkipButton
+				disableOverlayClose={false}
+				callback={handleJoyrideCallback}
+				styles={styles || defaultStyles}
+				locale={locale}
+				scrollOffset={100}
+				floaterProps={{
+					disableAnimation: true,
+					options: {
+						preventOverflow: {
+							boundariesElement: 'viewport',
+							padding: 20,
+						},
+						flip: {
+							behavior: ['top', 'bottom', 'left', 'right'],
+						},
 					},
-					flip: {
-						behavior: ['top', 'bottom', 'left', 'right'],
-					},
-				},
-			}}
-		/>
+				}}
+			/>
+		</Suspense>
 	)
 }

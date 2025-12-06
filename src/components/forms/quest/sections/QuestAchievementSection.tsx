@@ -9,15 +9,18 @@ import {
 import { Input } from '@/components/ui/input'
 import { useDeleteAchievementMutation } from '@/store/entities/achievement'
 import { logger } from '@/utils/logger'
-import EmojiPicker, {
-	type EmojiClickData,
-	Categories,
-} from 'emoji-picker-react'
+import type { EmojiClickData } from 'emoji-picker-react'
+import { Categories } from 'emoji-picker-react'
 import { AlertTriangle, Trophy, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 import type { QuestFormData } from '../schemas/quest-form.schema'
+
+// Динамический импорт EmojiPicker для уменьшения размера основного бандла
+const EmojiPicker = lazy(() =>
+	import('emoji-picker-react').then(module => ({ default: module.default }))
+)
 
 export function QuestAchievementSection() {
 	const form = useFormContext<QuestFormData>()
@@ -211,56 +214,64 @@ export function QuestAchievementSection() {
 																: 'absolute left-0 top-full'
 														}`}
 													>
-														<EmojiPicker
-															onEmojiClick={(emojiData: EmojiClickData) => {
-																field.onChange(emojiData.emoji)
-																setShowEmojiPicker(false)
-															}}
-															searchPlaceHolder='Поиск эмодзи...'
-															previewConfig={{
-																showPreview: false,
-															}}
-															categories={[
-																{
-																	category: Categories.SUGGESTED,
-																	name: 'Недавние',
-																},
-																{
-																	category: Categories.SMILEYS_PEOPLE,
-																	name: 'Смайлы и люди',
-																},
-																{
-																	category: Categories.ANIMALS_NATURE,
-																	name: 'Животные и природа',
-																},
-																{
-																	category: Categories.FOOD_DRINK,
-																	name: 'Еда и напитки',
-																},
-																{
-																	category: Categories.TRAVEL_PLACES,
-																	name: 'Путешествия и места',
-																},
-																{
-																	category: Categories.ACTIVITIES,
-																	name: 'Активности',
-																},
-																{
-																	category: Categories.OBJECTS,
-																	name: 'Объекты',
-																},
-																{
-																	category: Categories.SYMBOLS,
-																	name: 'Символы',
-																},
-																{
-																	category: Categories.FLAGS,
-																	name: 'Флаги',
-																},
-															]}
-															width={pickerWidth}
-															height={pickerHeight}
-														/>
+														<Suspense
+															fallback={
+																<div className='flex items-center justify-center h-full p-4'>
+																	Загрузка...
+																</div>
+															}
+														>
+															<EmojiPicker
+																onEmojiClick={(emojiData: EmojiClickData) => {
+																	field.onChange(emojiData.emoji)
+																	setShowEmojiPicker(false)
+																}}
+																searchPlaceHolder='Поиск эмодзи...'
+																previewConfig={{
+																	showPreview: false,
+																}}
+																categories={[
+																	{
+																		category: Categories.SUGGESTED,
+																		name: 'Недавние',
+																	},
+																	{
+																		category: Categories.SMILEYS_PEOPLE,
+																		name: 'Смайлы и люди',
+																	},
+																	{
+																		category: Categories.ANIMALS_NATURE,
+																		name: 'Животные и природа',
+																	},
+																	{
+																		category: Categories.FOOD_DRINK,
+																		name: 'Еда и напитки',
+																	},
+																	{
+																		category: Categories.TRAVEL_PLACES,
+																		name: 'Путешествия и места',
+																	},
+																	{
+																		category: Categories.ACTIVITIES,
+																		name: 'Активности',
+																	},
+																	{
+																		category: Categories.OBJECTS,
+																		name: 'Объекты',
+																	},
+																	{
+																		category: Categories.SYMBOLS,
+																		name: 'Символы',
+																	},
+																	{
+																		category: Categories.FLAGS,
+																		name: 'Флаги',
+																	},
+																]}
+																width={pickerWidth}
+																height={pickerHeight}
+															/>
+														</Suspense>
 													</div>
 												</>
 											)}
