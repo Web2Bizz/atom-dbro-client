@@ -49,6 +49,18 @@ export default defineConfig({
 				manualChunks(id) {
 					// Разделяем node_modules на отдельные чанки
 					if (id.includes('node_modules')) {
+						// ВАЖНО: react-leaflet должен быть в том же чанке, что и React
+						// так как использует React.createContext
+						// Проверяем react-leaflet ПЕРВЫМ, до всех других проверок на react
+						if (id.includes('react-leaflet')) {
+							return 'react-vendor'
+						}
+
+						// react-leaflet-cluster тоже зависит от react-leaflet
+						if (id.includes('react-leaflet-cluster')) {
+							return 'react-vendor'
+						}
+
 						// React DOM отдельно от React (React меньше)
 						if (id.includes('react-dom')) {
 							return 'react-dom-vendor'
@@ -60,6 +72,7 @@ export default defineConfig({
 							(id.includes('react') &&
 								!id.includes('react-dom') &&
 								!id.includes('react-leaflet') &&
+								!id.includes('react-leaflet-cluster') &&
 								!id.includes('react-router') &&
 								!id.includes('react-redux') &&
 								!id.includes('react-hook-form') &&
@@ -92,8 +105,13 @@ export default defineConfig({
 							return 'redux-toolkit-vendor'
 						}
 
-						// Leaflet и карты - большая библиотека, загружается только на странице карты
-						if (id.includes('leaflet') || id.includes('react-leaflet')) {
+						// Leaflet core - большая библиотека, загружается только на странице карты
+						// react-leaflet и react-leaflet-cluster уже обработаны выше
+						if (
+							id.includes('leaflet') &&
+							!id.includes('react-leaflet') &&
+							!id.includes('react-leaflet-cluster')
+						) {
 							return 'leaflet-vendor'
 						}
 
