@@ -27,6 +27,11 @@ const baseQuery = fetchBaseQuery({
 	},
 })
 
+// Базовый запрос БЕЗ авторизации (для refresh endpoint)
+const baseQueryWithoutAuth = fetchBaseQuery({
+	baseUrl: API_BASE_URL,
+})
+
 // Интерсептор для автоматического обновления токена при 401
 export const baseQueryWithReauth = async (
 	args: string | FetchArgs,
@@ -79,8 +84,8 @@ export const baseQueryWithReauth = async (
 			logger.info(
 				'[baseQueryWithReauth] Отправляем запрос на обновление токена'
 			)
-			// Пытаемся обновить токен
-			const refreshResult = await baseQuery(
+			// Пытаемся обновить токен (БЕЗ авторизации в заголовке)
+			const refreshResult = await baseQueryWithoutAuth(
 				{
 					url: '/v1/auth/refresh',
 					method: 'POST',
@@ -90,8 +95,43 @@ export const baseQueryWithReauth = async (
 				extraOptions
 			)
 
-			if (refreshResult.data) {
-				const refreshData = refreshResult.data as RefreshTokenResponse
+			logger.info('[baseQueryWithReauth] Результат refresh запроса:', {
+				hasData: !!refreshResult.data,
+				hasError: !!refreshResult.error,
+				errorStatus:
+					refreshResult.error && 'status' in refreshResult.error
+						? refreshResult.error.status
+						: null,
+			})
+
+			// Проверяем, что ответ успешен и содержит данные
+			if (refreshResult.data && !refreshResult.error) {
+				// Обрабатываем разные форматы ответа: { access_token, refresh_token } или { data: { access_token, refresh_token } }
+				let refreshData: RefreshTokenResponse
+
+				if (
+					typeof refreshResult.data === 'object' &&
+					'access_token' in refreshResult.data
+				) {
+					// Прямой формат: { access_token: ..., refresh_token: ... }
+					refreshData = refreshResult.data as RefreshTokenResponse
+				} else if (
+					typeof refreshResult.data === 'object' &&
+					'data' in refreshResult.data &&
+					refreshResult.data.data &&
+					typeof refreshResult.data.data === 'object' &&
+					'access_token' in refreshResult.data.data
+				) {
+					// Обернутый формат: { data: { access_token: ..., refresh_token: ... } }
+					refreshData = refreshResult.data.data as RefreshTokenResponse
+				} else {
+					logger.error(
+						'[baseQueryWithReauth] Неожиданный формат ответа refresh:',
+						refreshResult.data
+					)
+					removeToken()
+					return result
+				}
 
 				logger.info('[baseQueryWithReauth] Токен успешно обновлен')
 
@@ -146,7 +186,15 @@ export const baseQueryWithReauth = async (
 			} else {
 				// Если refresh не удался, очищаем токены и возвращаем оригинальную ошибку
 				logger.error(
-					'[baseQueryWithReauth] Не удалось обновить токен, очищаем токены'
+					'[baseQueryWithReauth] Не удалось обновить токен, очищаем токены',
+					{
+						hasError: !!refreshResult.error,
+						errorStatus:
+							refreshResult.error && 'status' in refreshResult.error
+								? refreshResult.error.status
+								: null,
+						errorData: refreshResult.error,
+					}
 				)
 				removeToken()
 				// Возвращаем оригинальную ошибку 401

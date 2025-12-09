@@ -41,6 +41,7 @@ export interface Organization {
 	city: City
 	helpTypes: HelpType[]
 	isApproved?: boolean
+	ownerId?: number | string
 }
 
 // Re-export для обратной совместимости (старые типы)

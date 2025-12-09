@@ -2,8 +2,8 @@ import type { Organization } from '@/components/map/types/types'
 import { MAX_ORGANIZATIONS_PER_USER } from '@/constants'
 import { useUser } from '@/hooks/useUser'
 import { useUpdateUserMutation } from '@/store/entities'
-import { useGetCitiesQuery } from '@/store/entities/city'
 import type { CityResponse } from '@/store/entities/city'
+import { useGetCitiesQuery } from '@/store/entities/city'
 import {
 	useCreateOrganizationMutation,
 	useDeleteOrganizationMutation,
@@ -337,7 +337,7 @@ export function useOrganizationForm(
 					if (error && typeof error === 'object' && 'data' in error) {
 						logger.error('Error details:', error.data)
 					}
-					toast.error('Не удалось обновить ID организации у пользователя')
+					// toast.error('Не удалось обновить ID организации у пользователя')
 				}
 
 				setUserOrganizationId(organizationIdString)

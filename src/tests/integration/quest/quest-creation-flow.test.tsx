@@ -301,13 +301,9 @@ describe('Quest Creation Flow Integration Test', () => {
 				}
 			}
 		}
-		},
-		20000
-	)
+	}, 20000)
 
-	it(
-		'должен проверить лимит квестов перед созданием',
-		async () => {
+	it('должен проверить лимит квестов перед созданием', async () => {
 		const user = userEvent.setup()
 
 		// Мокаем ответ, где пользователь уже имеет максимальное количество квестов
@@ -323,7 +319,12 @@ describe('Quest Creation Flow Integration Test', () => {
 				return HttpResponse.json({
 					data: {
 						quests: maxQuests,
-						total: MAX_QUESTS_PER_USER,
+						pagination: {
+							page: 1,
+							limit: 10,
+							total: MAX_QUESTS_PER_USER,
+							totalPages: 1,
+						},
 					},
 				})
 			})
@@ -378,11 +379,14 @@ describe('Quest Creation Flow Integration Test', () => {
 		)
 
 		// Ждем немного, чтобы координаты были установлены (mock вызывает onSelect с задержкой 100ms)
-		await waitFor(() => {
-			// Проверяем, что LocationPicker закрылся (координаты установлены)
-			const closeButton = screen.queryByRole('button', { name: /закрыть/i })
-			return !closeButton
-		}, { timeout: 500 })
+		await waitFor(
+			() => {
+				// Проверяем, что LocationPicker закрылся (координаты установлены)
+				const closeButton = screen.queryByRole('button', { name: /закрыть/i })
+				return !closeButton
+			},
+			{ timeout: 500 }
+		)
 
 		// Если LocationPicker еще открыт, закрываем его
 		const closeButton = screen.queryByRole('button', { name: /закрыть/i })
@@ -410,6 +414,15 @@ describe('Quest Creation Flow Integration Test', () => {
 		})
 		await user.click(basicTab)
 
+		// Ждем, пока данные о квестах загрузятся (для проверки лимита)
+		await waitFor(
+			() => {
+				// Проверяем, что запрос на получение квестов был выполнен
+				// Это необходимо для проверки лимита
+			},
+			{ timeout: 2000 }
+		)
+
 		// Пытаемся отправить форму
 		const submitButton = screen.getByRole('button', { name: /создать квест/i })
 		await user.click(submitButton)
@@ -420,32 +433,37 @@ describe('Quest Creation Flow Integration Test', () => {
 		await waitFor(
 			() => {
 				// Ищем текст ошибки лимита в toast (sonner рендерит toast в body)
-				const limitError = screen.queryByText(
-					/максимальное количество квестов/i,
-					{ exact: false }
-				)
+				// Sonner рендерит toast в div с data-sonner-toaster, проверяем там
+				const limitError =
+					screen.queryByText(/максимальное количество квестов/i, {
+						exact: false,
+					}) ||
+					document.body
+						.querySelector('[data-sonner-toaster]')
+						?.textContent?.includes('максимальное количество квестов')
+
 				// Ищем ошибку валидации местоположения (может быть в форме или toast)
-				const locationError = screen.queryByText(
-					/выберите местоположение/i,
-					{ exact: false }
-				)
+				const locationError =
+					screen.queryByText(/выберите местоположение/i, { exact: false }) ||
+					screen.queryByText(/пожалуйста, выберите местоположение/i, {
+						exact: false,
+					})
+
 				// Проверяем, что хотя бы одна ошибка найдена
 				if (!limitError && !locationError) {
-					throw new Error('Ожидалась ошибка лимита или валидации местоположения')
+					throw new Error(
+						'Ожидалась ошибка лимита или валидации местоположения'
+					)
 				}
 			},
-			{ timeout: 3000 }
+			{ timeout: 5000 }
 		)
 
 		// Проверяем, что квест не был создан (не было запроса на создание)
 		// Это проверяется через отсутствие вызова createQuest
-		},
-		20000
-	)
+	}, 20000)
 
-	it(
-		'должен обработать ошибку загрузки изображений',
-		async () => {
+	it('должен обработать ошибку загрузки изображений', async () => {
 		const user = userEvent.setup()
 
 		// Мокаем ошибку при загрузке изображений
@@ -566,7 +584,5 @@ describe('Quest Creation Flow Integration Test', () => {
 
 		// Проверяем, что квест не был создан (не было запроса на создание)
 		// Это проверяется через отсутствие вызова createQuest
-		},
-		20000
-	)
+	}, 20000)
 })

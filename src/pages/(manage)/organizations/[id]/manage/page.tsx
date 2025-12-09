@@ -80,10 +80,8 @@ export default function OrganizationManagePage() {
 	}
 
 	// Проверяем, что пользователь является владельцем организации
-	const org = organization.id
-	const isOwner =
-		org === user.createdOrganizationId ||
-		String(org) === user.createdOrganizationId
+	const org = organization.ownerId
+	const isOwner = org === user.id || String(org) === user.id
 
 	if (!isOwner) {
 		return (

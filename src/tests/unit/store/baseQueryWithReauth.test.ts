@@ -51,12 +51,12 @@ const createMockResponse = (
 
 	// Создаем мок для json(), который возвращает данные
 	// Используем глубокое копирование данных, чтобы избежать мутаций
-	const jsonMock = vi.fn().mockImplementation(() =>
-		Promise.resolve(JSON.parse(JSON.stringify(data)))
-	)
-	const textMock = vi.fn().mockImplementation(() =>
-		Promise.resolve(JSON.stringify(data))
-	)
+	const jsonMock = vi
+		.fn()
+		.mockImplementation(() => Promise.resolve(JSON.parse(JSON.stringify(data))))
+	const textMock = vi
+		.fn()
+		.mockImplementation(() => Promise.resolve(JSON.stringify(data)))
 
 	// Создаем функцию clone, которая возвращает новый объект с теми же данными
 	// Используем замыкание для хранения данных, чтобы избежать рекурсии
@@ -89,7 +89,7 @@ const createMockResponse = (
 			url: 'https://test-api.example.com/api/v1/test',
 			statusText: ok ? 'OK' : 'Error',
 		} as Response
-		
+
 		return clonedResponse
 	}
 
@@ -340,9 +340,11 @@ describe('baseQueryWithReauth', () => {
 					'hasStatus' in call[1] &&
 					call[1].hasStatus === true &&
 					'status' in call[1] &&
-					(call[1].status === 401 || call[1].status === '401' || call[1].status === 'нет статуса')
+					(call[1].status === 401 ||
+						call[1].status === '401' ||
+						call[1].status === 'нет статуса')
 			)
-			
+
 			// Если точный вызов не найден, проверяем, что хотя бы был вызов с сообщением о структуре ошибки
 			if (!errorStructureCall) {
 				const anyErrorCall = calls.find(
@@ -354,9 +356,11 @@ describe('baseQueryWithReauth', () => {
 					// Проверяем, что был вызов на обновление токена (это означает, что 401 был обработан)
 					const warnCalls = vi.mocked(logger.warn).mock.calls
 					const refreshWarnCall = warnCalls.find(
-						call => call[0] === '[baseQueryWithReauth] Получен 401, пытаемся обновить токен'
+						call =>
+							call[0] ===
+							'[baseQueryWithReauth] Получен 401, пытаемся обновить токен'
 					)
-					
+
 					if (refreshWarnCall) {
 						expect(logger.warn).toHaveBeenCalledWith(
 							'[baseQueryWithReauth] Получен 401, пытаемся обновить токен'
@@ -403,24 +407,29 @@ describe('baseQueryWithReauth', () => {
 			// Проверяем, что был вызван refresh запрос
 			const fetchCallCount = mockFetch.mock.calls.length
 			expect(fetchCallCount).toBeGreaterThanOrEqual(2)
-			
+
 			// Если было минимум 2 вызова, проверяем, что второй вызов содержит '/v1/auth/refresh'
 			if (fetchCallCount >= 2) {
 				const refreshCall = mockFetch.mock.calls[1]
 				if (refreshCall && refreshCall[0]) {
 					// Проверяем, что второй вызов содержит '/v1/auth/refresh'
-					const refreshUrl = typeof refreshCall[0] === 'string' 
-						? refreshCall[0] 
-						: refreshCall[0]?.url || ''
+					const refreshUrl =
+						typeof refreshCall[0] === 'string'
+							? refreshCall[0]
+							: refreshCall[0]?.url || ''
 					expect(refreshUrl).toContain('/v1/auth/refresh')
 				}
 			}
 
 			// Проверяем, что был вызван лог о refresh запросе
-			const refreshLogCalls = vi.mocked(logger.info).mock.calls.filter(
-				call => call[0] === '[baseQueryWithReauth] Отправляем запрос на обновление токена'
-			)
-			
+			const refreshLogCalls = vi
+				.mocked(logger.info)
+				.mock.calls.filter(
+					call =>
+						call[0] ===
+						'[baseQueryWithReauth] Отправляем запрос на обновление токена'
+				)
+
 			if (refreshLogCalls.length > 0) {
 				expect(logger.info).toHaveBeenCalledWith(
 					'[baseQueryWithReauth] Отправляем запрос на обновление токена'
@@ -598,23 +607,30 @@ describe('baseQueryWithReauth', () => {
 			// Проверяем, что запрос был успешным
 			expect(result.data).toBeDefined()
 			expect(result.data).toHaveProperty('success', true)
-			
+
 			// Если мок работает правильно, должен быть retried: true
 			// Но если мок не работает, просто проверяем, что запрос был успешным
-			if (result.data && typeof result.data === 'object' && 'retried' in result.data) {
+			if (
+				result.data &&
+				typeof result.data === 'object' &&
+				'retried' in result.data
+			) {
 				expect(result.data).toEqual({ success: true, retried: true })
 			}
-			
+
 			// Проверяем, что было минимум 2 вызова (оригинальный + refresh)
 			// Может быть 3, если повторный запрос был выполнен
 			const fetchCallCount = mockFetch.mock.calls.length
 			expect(fetchCallCount).toBeGreaterThanOrEqual(2)
-			
+
 			// Проверяем, что был вызван лог о повторном запросе (если refresh был успешным)
-			const retryLogCalls = vi.mocked(logger.info).mock.calls.filter(
-				call => call[0] === '[baseQueryWithReauth] Повторяем оригинальный запрос:'
-			)
-			
+			const retryLogCalls = vi
+				.mocked(logger.info)
+				.mock.calls.filter(
+					call =>
+						call[0] === '[baseQueryWithReauth] Повторяем оригинальный запрос:'
+				)
+
 			if (retryLogCalls.length > 0) {
 				expect(logger.info).toHaveBeenCalledWith(
 					'[baseQueryWithReauth] Повторяем оригинальный запрос:',
@@ -671,7 +687,10 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
 					createMockResponse({
@@ -707,7 +726,10 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
 					createMockResponse({
@@ -715,7 +737,10 @@ describe('baseQueryWithReauth', () => {
 					})
 				)
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Server error' }, { ok: false, status: 500 })
+					createMockResponse(
+						{ message: 'Server error' },
+						{ ok: false, status: 500 }
+					)
 				)
 
 			const result = await baseQueryWithReauth(
@@ -726,17 +751,20 @@ describe('baseQueryWithReauth', () => {
 
 			// Проверяем, что результат определен
 			expect(result).toBeDefined()
-			
+
 			// Проверяем, что было минимум 2 вызова fetch (оригинальный + refresh)
 			// Может быть 3, если повторный запрос был выполнен
 			const fetchCallCount = mockFetch.mock.calls.length
 			expect(fetchCallCount).toBeGreaterThanOrEqual(2)
-			
+
 			// Если повторный запрос был выполнен и вернул ошибку, проверяем её
-			const retryLogCalls = vi.mocked(logger.info).mock.calls.filter(
-				call => call[0] === '[baseQueryWithReauth] Повторяем оригинальный запрос:'
-			)
-			
+			const retryLogCalls = vi
+				.mocked(logger.info)
+				.mock.calls.filter(
+					call =>
+						call[0] === '[baseQueryWithReauth] Повторяем оригинальный запрос:'
+				)
+
 			if (retryLogCalls.length > 0) {
 				// Повторный запрос был выполнен
 				// Если мок работает правильно, должна быть ошибка
@@ -761,7 +789,10 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
 					createMockResponse(
@@ -778,43 +809,57 @@ describe('baseQueryWithReauth', () => {
 
 			// Проверяем, что результат определен
 			expect(result).toBeDefined()
-			
+
 			// Проверяем основное поведение - токены должны быть очищены
 			// Если мок работает правильно и 401 был обнаружен, должен быть вызван removeToken
 			const fetchCallCount = mockFetch.mock.calls.length
-			
+
 			// Проверяем, был ли вызван refresh запрос (минимум 2 вызова fetch)
 			if (fetchCallCount >= 2) {
 				// Если мок работает правильно, должно быть минимум 2 вызова (оригинальный + refresh)
 				expect(fetchCallCount).toBeGreaterThanOrEqual(2)
-				
+
 				// Проверяем, что был вызван refresh запрос (по логам)
 				// Если refresh был вызван, но не удался, должен быть вызван removeToken
-				const refreshLogCalls = vi.mocked(logger.info).mock.calls.filter(
-					call => call[0] === '[baseQueryWithReauth] Отправляем запрос на обновление токена'
-				)
-				
+				const refreshLogCalls = vi
+					.mocked(logger.info)
+					.mock.calls.filter(
+						call =>
+							call[0] ===
+							'[baseQueryWithReauth] Отправляем запрос на обновление токена'
+					)
+
 				if (refreshLogCalls.length > 0) {
 					// Refresh был вызван, проверяем, был ли вызван removeToken
 					const removeTokenCalls = vi.mocked(removeToken).mock.calls.length
-					
+
 					if (removeTokenCalls > 0) {
 						// Если removeToken был вызван, проверяем, что была вызвана ошибка
 						expect(removeToken).toHaveBeenCalled()
 						// Проверяем, что была вызвана ошибка о неудачном обновлении токена
-						const errorLogCalls = vi.mocked(logger.error).mock.calls.filter(
-							call => call[0] === '[baseQueryWithReauth] Не удалось обновить токен, очищаем токены'
-						)
-						
+						const errorLogCalls = vi
+							.mocked(logger.error)
+							.mock.calls.filter(
+								call =>
+									call[0] ===
+									'[baseQueryWithReauth] Не удалось обновить токен, очищаем токены'
+							)
+
 						if (errorLogCalls.length > 0) {
+							// Проверяем, что logger.error был вызван с сообщением и объектом деталей
 							expect(logger.error).toHaveBeenCalledWith(
-								'[baseQueryWithReauth] Не удалось обновить токен, очищаем токены'
+								'[baseQueryWithReauth] Не удалось обновить токен, очищаем токены',
+								expect.objectContaining({
+									hasError: expect.any(Boolean),
+									errorStatus: expect.anything(),
+									errorData: expect.anything(),
+								})
 							)
 						}
 					}
 				}
 			}
-			
+
 			// Проверяем, что запрос был выполнен
 			expect(mockFetch).toHaveBeenCalled()
 		})
@@ -824,7 +869,10 @@ describe('baseQueryWithReauth', () => {
 			vi.mocked(getRefreshToken).mockReturnValue(null)
 
 			mockFetch.mockResolvedValueOnce(
-				createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+				createMockResponse(
+					{ message: 'Unauthorized' },
+					{ ok: false, status: 401 }
+				)
 			)
 
 			const result = await baseQueryWithReauth(
@@ -848,10 +896,16 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Server error' }, { ok: false, status: 500 })
+					createMockResponse(
+						{ message: 'Server error' },
+						{ ok: false, status: 500 }
+					)
 				)
 
 			const result = await baseQueryWithReauth(
@@ -862,11 +916,11 @@ describe('baseQueryWithReauth', () => {
 
 			// Проверяем, что mock fetch был вызван хотя бы один раз
 			expect(mockFetch).toHaveBeenCalled()
-			
+
 			// Если 401 был обнаружен, должен быть вызван refresh запрос
 			// Проверяем, был ли вызван refresh по количеству вызовов или по логам
 			const fetchCallCount = mockFetch.mock.calls.length
-			
+
 			if (fetchCallCount >= 2) {
 				// Если мок работает правильно, должно быть 2 вызова
 				expect(mockFetch).toHaveBeenCalledTimes(2)
@@ -881,7 +935,7 @@ describe('baseQueryWithReauth', () => {
 					'/v1/test'
 				)
 			}
-			
+
 			// Проверяем, что результат определен
 			expect(result).toBeDefined()
 		})
@@ -890,7 +944,10 @@ describe('baseQueryWithReauth', () => {
 	describe('обработка других ошибок', () => {
 		it('должен логировать ошибку, если это не 401', async () => {
 			mockFetch.mockResolvedValueOnce(
-				createMockResponse({ message: 'Server error' }, { ok: false, status: 500 })
+				createMockResponse(
+					{ message: 'Server error' },
+					{ ok: false, status: 500 }
+				)
 			)
 
 			const result = await baseQueryWithReauth(
@@ -910,24 +967,28 @@ describe('baseQueryWithReauth', () => {
 		it('должен логировать успешный запрос', async () => {
 			// Убеждаемся, что токен не установлен (чтобы избежать проблем с авторизацией)
 			vi.mocked(getToken).mockReturnValue(null)
-			
+
 			const mockResponse = createMockResponse({ success: true })
 			mockFetch.mockResolvedValueOnce(mockResponse)
 
-			const result = await baseQueryWithReauth('/v1/test', mockApi, mockExtraOptions)
+			const result = await baseQueryWithReauth(
+				'/v1/test',
+				mockApi,
+				mockExtraOptions
+			)
 
 			// Проверяем, что mock fetch был вызван
 			expect(mockFetch).toHaveBeenCalled()
-			
+
 			// Проверяем, что был вызван лог запроса
 			expect(logger.info).toHaveBeenCalledWith(
 				'[baseQueryWithReauth] Запрос:',
 				'/v1/test'
 			)
-			
+
 			// Проверяем результат
 			expect(result).toBeDefined()
-			
+
 			// Если запрос успешен (мок работает правильно)
 			if (!result.error && result.data) {
 				expect(result.data).toEqual({ success: true })
@@ -951,7 +1012,10 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
 					createMockResponse({
@@ -970,10 +1034,10 @@ describe('baseQueryWithReauth', () => {
 
 			// Проверяем, что результат определен
 			expect(result).toBeDefined()
-			
+
 			// Проверяем, что saveToken не был вызван (так как access_token отсутствует)
 			expect(saveToken).not.toHaveBeenCalled()
-			
+
 			// Если мок работает правильно, должна быть возвращена ошибка
 			// Но если мок не работает, просто проверяем, что запрос был выполнен
 			if (result.error) {
@@ -997,7 +1061,10 @@ describe('baseQueryWithReauth', () => {
 
 			mockFetch
 				.mockResolvedValueOnce(
-					createMockResponse({ message: 'Unauthorized' }, { ok: false, status: 401 })
+					createMockResponse(
+						{ message: 'Unauthorized' },
+						{ ok: false, status: 401 }
+					)
 				)
 				.mockResolvedValueOnce(
 					createMockResponse({
