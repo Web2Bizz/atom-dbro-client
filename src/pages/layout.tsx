@@ -1,42 +1,45 @@
-import { Header } from '@/components'
-import { Toaster } from '@/components/ui/sonner'
-import { UserProvider } from '@/contexts/UserContext'
-import { PWAProvider } from '@/pwa/PWAContext'
-import { setupStore } from '@/store/store'
-import { useMemo } from 'react'
-import { Provider } from 'react-redux'
-import { PersistGate } from 'redux-persist/integration/react'
+import { Header, SupportButton } from "@/components";
+import { Toaster } from "@/components/ui/sonner";
+import { SocketProvider } from "@/contexts/SocketContext";
+import { UserProvider } from "@/contexts/UserContext";
+import { PWAProvider } from "@/pwa/PWAContext";
+import { setupStore } from "@/store/store";
+import { useMemo } from "react";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 
 interface LayoutProps {
-	children: React.ReactNode
+  children: React.ReactNode;
 }
 
 // Создаем store один раз вне компонента (singleton pattern)
-let storeInstance: ReturnType<typeof setupStore> | null = null
+let storeInstance: ReturnType<typeof setupStore> | null = null;
 
 function getStore() {
-	if (!storeInstance) {
-		storeInstance = setupStore()
-	}
-	return storeInstance
+  if (!storeInstance) {
+    storeInstance = setupStore();
+  }
+  return storeInstance;
 }
 
 export default function Layout({ children }: Readonly<LayoutProps>) {
-	// Используем useMemo для гарантии, что store создается только один раз
-	const { store, persistor } = useMemo(() => getStore(), [])
+  // Используем useMemo для гарантии, что store создается только один раз
+  const { store, persistor } = useMemo(() => getStore(), []);
 
-	return (
-		<Provider store={store}>
-			<PersistGate loading={null} persistor={persistor}>
-				<UserProvider>
-					<PWAProvider>
-						<Header />
-						<main>{children}</main>
-						{/* <SupportButton /> */}
-						<Toaster />
-					</PWAProvider>
-				</UserProvider>
-			</PersistGate>
-		</Provider>
-	)
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <UserProvider>
+          <SocketProvider>
+            <PWAProvider>
+              <Header />
+              <main>{children}</main>
+              <SupportButton />
+              <Toaster />
+            </PWAProvider>
+          </SocketProvider>
+        </UserProvider>
+      </PersistGate>
+    </Provider>
+  );
 }

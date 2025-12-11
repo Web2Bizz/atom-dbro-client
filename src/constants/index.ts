@@ -2,6 +2,8 @@
 
 export const API_BASE_URL = 'https://it-hackathon-team05.mephi.ru/api'
 
+export const SOCKET_SERVSER = 'https://it-hackathon-team05.mephi.ru/chatty/socket.io'
+
 export const DEFAULT_MAP_CENTER: [number, number] = [55.751244, 37.618423]
 export const DEFAULT_MAP_ZOOM = 4
 export const SEARCH_MAP_ZOOM = 15
