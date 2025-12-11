@@ -6,7 +6,7 @@ import { io, type Socket } from 'socket.io-client'
 
 export type SocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
-interface SocketContextType {
+export interface SocketContextType {
 	socket: Socket | null
 	status: SocketStatus
 	subscribe: <T = unknown>(event: string, callback: (data: T) => void) => () => void
