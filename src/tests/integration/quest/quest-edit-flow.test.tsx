@@ -168,14 +168,21 @@ describe('Quest Edit Flow Integration Test', () => {
 		// Рендерим форму редактирования
 		renderWithProviders(<QuestEditForm questId={1} />)
 
-		// Ждем загрузки данных квеста
+		// Ждем загрузки данных квеста и заполнения формы
 		await waitFor(() => {
-			expect(screen.getByLabelText(/название квеста/i)).toBeInTheDocument()
+			const titleInput = screen.getByLabelText(/название квеста/i)
+			expect(titleInput).toHaveValue('Существующий квест')
 		})
 
 		// Проверяем, что форма заполнена данными из API
 		const titleInput = screen.getByLabelText(/название квеста/i)
 		expect(titleInput).toHaveValue('Существующий квест')
+
+		// Ждем заполнения описания
+		await waitFor(() => {
+			const storyTextarea = screen.getByLabelText(/описание квеста/i)
+			expect(storyTextarea).toHaveValue('Описание существующего квеста')
+		})
 
 		const storyTextarea = screen.getByLabelText(/описание квеста/i)
 		expect(storyTextarea).toHaveValue('Описание существующего квеста')
